@@ -80,13 +80,24 @@ func main() {
 	scene := scene.New()
 	scene.Systems().AddSystem(ecs.NewRenderSystem(renderer))
 	scene.Systems().AddSystem(ecs.NewPhysicsSystem())
+	scene.Systems().AddSystem(ecs.NewPhysicsSystem())
 
-	// Create an entity with Transform + Velocity + Renderable
 	e := scene.AddEntity()
-	e.AddComponent(ecs.NewTransform())
-	e.AddComponent(&ecs.Velocity{V: [3]float32{0.5, 0, 0}})
+	t := ecs.NewTransform()
+	rb := ecs.NewRigidBody(1.0)            // mass = 1
+	acc := ecs.NewAcceleration(0, -9.8, 0) // constant gravity
+	e.AddComponent(t)
+	e.AddComponent(rb)
+	e.AddComponent(acc)
 	e.AddComponent(&ecs.Renderable{MeshID: "triangle", MaterialID: "basic"})
+
 	// Wait for shaders (or timeout)
+	go func() {
+		for {
+			rb.ApplyForce(0, -9.8, 0) // gravity along Y
+			time.Sleep(time.Second / 60)
+		}
+	}()
 	select {
 	case s := <-shaderCh:
 		if s.err != nil {

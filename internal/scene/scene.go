@@ -21,6 +21,7 @@ type Scene struct {
 	entities []*ecs.Entity
 	camera   Camera
 	nextID   int64
+	sysMgr   *ecs.SystemManager
 }
 
 // New returns a basic scene with a default camera.
@@ -36,7 +37,12 @@ func New() *Scene {
 			Far:      100,
 		},
 		nextID: 1,
+		sysMgr: ecs.NewSystemManager(),
 	}
+}
+
+func (s *Scene) Systems() *ecs.SystemManager {
+	return s.sysMgr
 }
 
 // AddEntity creates a new entity, appends it to the scene, and returns it.
@@ -64,7 +70,10 @@ func (s *Scene) Camera() *Camera {
 
 // Update runs per-frame updates on entities. dt is seconds since last frame.
 func (s *Scene) Update(dt float32) {
+	// Update entity-local components
 	for _, e := range s.entities {
 		e.Update(dt)
 	}
+	// Run global systems
+	s.sysMgr.Update(dt, s.entities)
 }
