@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/engine"
 	"go-engine/Go-Cordance/internal/scene"
 )
@@ -77,7 +78,14 @@ func main() {
 	// Create renderer and scene
 	renderer := engine.NewRenderer()
 	scene := scene.New()
+	scene.Systems().AddSystem(ecs.NewRenderSystem(renderer))
+	scene.Systems().AddSystem(ecs.NewPhysicsSystem())
 
+	// Create an entity with Transform + Velocity + Renderable
+	e := scene.AddEntity()
+	e.AddComponent(ecs.NewTransform())
+	e.AddComponent(&ecs.Velocity{V: [3]float32{0.5, 0, 0}})
+	e.AddComponent(&ecs.Renderable{MeshID: "triangle", MaterialID: "basic"})
 	// Wait for shaders (or timeout)
 	select {
 	case s := <-shaderCh:
