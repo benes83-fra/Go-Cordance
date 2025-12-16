@@ -1,0 +1,123 @@
+package main
+
+import (
+	"log"
+	"os"
+	"os/signal"
+	"runtime"
+	"syscall"
+	"time"
+
+	"go-engine/Go-Cordance/internal/engine"
+	"go-engine/Go-Cordance/internal/scene"
+)
+
+const (
+	width  = 800
+	height = 600
+)
+
+func init() {
+	// OpenGL/GLFW require the main OS thread
+	runtime.LockOSThread()
+}
+
+func main() {
+	// Basic logging
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	// Graceful shutdown on SIGINT/SIGTERM
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+
+	// Initialize GLFW + GL
+	window, err := engine.InitGLFW(width, height, "Go3D Prototype")
+	if err != nil {
+		log.Fatalf("InitGLFW: %v", err)
+	}
+	defer func() {
+		window.Destroy()
+		// engine.InitGLFW calls glfw.Init; caller must call Terminate
+		// but keep termination centralized
+		engine.TerminateGLFW()
+	}()
+
+	// Load shaders in background to avoid blocking startup
+	shaderCh := make(chan struct {
+		vert string
+		frag string
+		err  error
+	}, 1)
+	go func() {
+		vert, err1 := engine.LoadShaderSource("assets/shaders/triangle.vert")
+		frag, err2 := engine.LoadShaderSource("assets/shaders/triangle.frag")
+		if err1 != nil {
+			shaderCh <- struct {
+				vert string
+				frag string
+				err  error
+			}{"", "", err1}
+			return
+		}
+		if err2 != nil {
+			shaderCh <- struct {
+				vert string
+				frag string
+				err  error
+			}{"", "", err2}
+			return
+		}
+		shaderCh <- struct {
+			vert string
+			frag string
+			err  error
+		}{vert, frag, nil}
+	}()
+
+	// Create renderer and scene
+	renderer := engine.NewRenderer()
+	scene := scene.New()
+
+	// Wait for shaders (or timeout)
+	select {
+	case s := <-shaderCh:
+		if s.err != nil {
+			log.Fatalf("shader load: %v", s.err)
+		}
+		if err := renderer.Init(s.vert, s.frag); err != nil {
+			log.Fatalf("renderer init: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		log.Fatal("timed out loading shaders")
+	}
+	defer renderer.Shutdown()
+
+	// Main loop: fixed timestep update + render
+	const targetFPS = 60
+	frameDur := time.Second / time.Duration(targetFPS)
+	ticker := time.NewTicker(frameDur)
+	defer ticker.Stop()
+
+	//last := time.Now()
+loop:
+	for {
+		select {
+		case <-stop:
+			break loop
+		case <-ticker.C:
+			// Poll events via engine wrapper
+			engine.PollEvents()
+
+			// Fixed timestep update
+			scene.Update(float32(1.0 / float32(targetFPS)))
+
+			// Render
+			renderer.Draw()
+
+			// Swap buffers
+			window.SwapBuffers()
+		}
+	}
+
+	// final cleanup happens via deferred calls
+}
