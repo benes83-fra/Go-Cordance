@@ -79,16 +79,23 @@ func main() {
 	renderer := engine.NewRenderer()
 	scene := scene.New()
 	scene.Systems().AddSystem(ecs.NewRenderSystem(renderer))
+	scene.Systems().AddSystem(ecs.NewForceSystem(0, -9.8, 0))
 	scene.Systems().AddSystem(ecs.NewPhysicsSystem())
-	scene.Systems().AddSystem(ecs.NewPhysicsSystem())
+	scene.Systems().AddSystem(ecs.NewCollisionSystem())
+	scene.Systems().AddSystem(ecs.NewTorqueSystem(0, 1.0, 0)) // torque around Y
 
 	e := scene.AddEntity()
 	t := ecs.NewTransform()
-	rb := ecs.NewRigidBody(1.0)            // mass = 1
-	acc := ecs.NewAcceleration(0, -9.8, 0) // constant gravity
+	rb := ecs.NewRigidBody(1.0)
+	av := ecs.NewAngularVelocity(0, 0, 0)
+	am := ecs.NewAngularMass(1.0, 2.0, 3.0) // inertia values
+	ad := ecs.NewAngularDamping(0.98)
+
 	e.AddComponent(t)
 	e.AddComponent(rb)
-	e.AddComponent(acc)
+	e.AddComponent(av)
+	e.AddComponent(am)
+	e.AddComponent(ad)
 	e.AddComponent(&ecs.Renderable{MeshID: "triangle", MaterialID: "basic"})
 
 	// Wait for shaders (or timeout)

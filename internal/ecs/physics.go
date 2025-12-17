@@ -25,6 +25,12 @@ func (ps *PhysicsSystem) Update(dt float32, entities []*Entity) {
 		var t *Transform
 		var rb *RigidBody
 		var acc *Acceleration
+		var damp *Damping
+		var av *AngularVelocity
+		var aa *AngularAcceleration
+		var ad *AngularDamping
+		var am *AngularMass
+
 		for _, c := range e.Components {
 			switch comp := c.(type) {
 			case *Transform:
@@ -33,26 +39,76 @@ func (ps *PhysicsSystem) Update(dt float32, entities []*Entity) {
 				rb = comp
 			case *Acceleration:
 				acc = comp
+			case *Damping:
+				damp = comp
+			case *AngularVelocity:
+				av = comp
+			case *AngularAcceleration:
+				aa = comp
+
+			case *AngularDamping:
+				ad = comp
+			case *AngularMass:
+				am = comp
+
 			}
 		}
-		if t != nil && rb != nil {
-			// Compute acceleration from forces if any
+
+		// Linear integration
+		if t != nil && rb != nil && rb.Mass > 0 {
 			ax := rb.Force[0]/rb.Mass + acc.A[0]
 			ay := rb.Force[1]/rb.Mass + acc.A[1]
 			az := rb.Force[2]/rb.Mass + acc.A[2]
 
-			// Integrate velocity
 			rb.Vel[0] += ax * dt
 			rb.Vel[1] += ay * dt
 			rb.Vel[2] += az * dt
 
-			// Integrate position
+			if damp != nil {
+				rb.Vel[0] *= damp.Factor
+				rb.Vel[1] *= damp.Factor
+				rb.Vel[2] *= damp.Factor
+			}
+
 			t.Position[0] += rb.Vel[0] * dt
 			t.Position[1] += rb.Vel[1] * dt
 			t.Position[2] += rb.Vel[2] * dt
 
-			// Clear forces for next frame
 			rb.ClearForce()
 		}
+
+		// Angular integration
+
+		// Apply angular acceleration if present
+		if t != nil && av != nil {
+			// Apply angular acceleration if present
+			if aa != nil {
+				av.Vel[0] += aa.Acc[0] * dt
+				av.Vel[1] += aa.Acc[1] * dt
+				av.Vel[2] += aa.Acc[2] * dt
+			}
+			if am != nil {
+				if am.Inertia[0] > 0 {
+					av.Vel[0] += (aa.Acc[0] / am.Inertia[0]) * dt
+				}
+				if am.Inertia[1] > 0 {
+					av.Vel[1] += (aa.Acc[1] / am.Inertia[1]) * dt
+				}
+				if am.Inertia[2] > 0 {
+					av.Vel[2] += (aa.Acc[2] / am.Inertia[2]) * dt
+				}
+			}
+			// Apply angular damping if present
+			if ad != nil {
+				av.Vel[0] *= ad.Factor
+				av.Vel[1] *= ad.Factor
+				av.Vel[2] *= ad.Factor
+			}
+			// Integrate rotation
+			t.Rotation[0] += av.Vel[0] * dt
+			t.Rotation[1] += av.Vel[1] * dt
+			t.Rotation[2] += av.Vel[2] * dt
+		}
+
 	}
 }
