@@ -32,10 +32,11 @@ func main() {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	// Initialize GLFW + GL
-	window, err := engine.InitGLFW(width, height, "Go3D Prototype")
+	window, err := engine.InitGLFW(width, height, "Go Cordance")
 	if err != nil {
-		log.Fatalf("InitGLFW: %v", err)
+		log.Fatal(err)
 	}
+
 	defer func() {
 		window.Destroy()
 		// engine.InitGLFW calls glfw.Init; caller must call Terminate
@@ -80,8 +81,10 @@ func main() {
 	renderer := engine.NewRenderer()
 	scene := scene.New()
 
-	camSys := ecs.NewCameraSystem()
+	camSys := ecs.NewCameraSystem(window)
+	camCtrl := ecs.NewCameraControllerSystem(window)
 	scene.Systems().AddSystem(camSys)
+	scene.Systems().AddSystem(camCtrl)
 	scene.Systems().AddSystem(ecs.NewRenderSystem(renderer, meshMgr))
 	scene.Systems().AddSystem(ecs.NewForceSystem(0, -9.8, 0))
 	scene.Systems().AddSystem(ecs.NewPhysicsSystem())
