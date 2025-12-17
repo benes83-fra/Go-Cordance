@@ -7,7 +7,13 @@ type Material struct {
 	Color     [4]float32
 }
 
+/*
 func NewMaterial(shader, texture string, color [4]float32) *Material {
 	return &Material{ShaderID: shader, TextureID: texture, Color: color}
+}*/
+
+func NewMaterial(color [4]float32) *Material {
+	return &Material{Color: color}
 }
+
 func (m *Material) Update(dt float32) { _ = dt }

@@ -2,11 +2,9 @@ package main
 
 import (
 	"log"
-	"os"
-	"os/signal"
-	"runtime"
-	"syscall"
-	"time"
+
+	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/glfw/v3.3/glfw"
 
 	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/engine"
@@ -18,145 +16,91 @@ const (
 	height = 600
 )
 
-func init() {
-	// OpenGL/GLFW require the main OS thread
-	runtime.LockOSThread()
-}
-
 func main() {
-	// Basic logging
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	if err := glfw.Init(); err != nil {
+		log.Fatal(err)
+	}
+	glfw.WindowHint(glfw.ContextVersionMajor, 4)
+	glfw.WindowHint(glfw.ContextVersionMinor, 1)
+	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
+	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
-	// Graceful shutdown on SIGINT/SIGTERM
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
-
-	// Initialize GLFW + GL
-	window, err := engine.InitGLFW(width, height, "Go Cordance")
+	window, err := glfw.CreateWindow(width, height, "Go-Cordance Prototype", nil, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
+	window.MakeContextCurrent()
 
-	defer func() {
-		window.Destroy()
-		// engine.InitGLFW calls glfw.Init; caller must call Terminate
-		// but keep termination centralized
-		engine.TerminateGLFW()
-	}()
+	if err := gl.Init(); err != nil {
+		log.Fatal(err)
+	}
 
-	// Load shaders in background to avoid blocking startup
-	shaderCh := make(chan struct {
-		vert string
-		frag string
-		err  error
-	}, 1)
-	go func() {
-		vert, err1 := engine.LoadShaderSource("assets/shaders/triangle.vert")
-		frag, err2 := engine.LoadShaderSource("assets/shaders/triangle.frag")
-		if err1 != nil {
-			shaderCh <- struct {
-				vert string
-				frag string
-				err  error
-			}{"", "", err1}
-			return
+	// Compile shaders and set viewport
+	vertexSrc := `#version 330 core
+		    layout(location = 0) in vec3 position;
+		    uniform mat4 model;
+		    uniform mat4 view;
+		    uniform mat4 projection;
+		    void main() {
+		        gl_Position = projection * view * model * vec4(position, 1.0);
+		    }`
+	fragmentSrc := `#version 330 core
+			out vec4 FragColor;
+			uniform vec4 baseColor;
+			void main() {
+				FragColor = baseColor;
+			}`
+
+	renderer := engine.NewRenderer(vertexSrc, fragmentSrc, width, height)
+
+	// Resize callback updates viewport
+	window.SetFramebufferSizeCallback(func(_ *glfw.Window, w, h int) {
+		if h == 0 {
+			h = 1
 		}
-		if err2 != nil {
-			shaderCh <- struct {
-				vert string
-				frag string
-				err  error
-			}{"", "", err2}
-			return
-		}
-		shaderCh <- struct {
-			vert string
-			frag string
-			err  error
-		}{vert, frag, nil}
-	}()
+		gl.Viewport(0, 0, int32(w), int32(h))
+	})
+
 	meshMgr := engine.NewMeshManager()
 	meshMgr.RegisterTriangle("triangle")
-	// Create renderer and scene
-	renderer := engine.NewRenderer()
+
 	scene := scene.New()
 
 	camSys := ecs.NewCameraSystem(window)
+	renderSys := ecs.NewRenderSystem(renderer, meshMgr, camSys)
+
 	camCtrl := ecs.NewCameraControllerSystem(window)
-	scene.Systems().AddSystem(camSys)
-	scene.Systems().AddSystem(camCtrl)
-	scene.Systems().AddSystem(ecs.NewRenderSystem(renderer, meshMgr))
-	scene.Systems().AddSystem(ecs.NewForceSystem(0, -9.8, 0))
+
+	scene.Systems().AddSystem(ecs.NewForceSystem(0, -9.8, 0)) // gravity
 	scene.Systems().AddSystem(ecs.NewPhysicsSystem())
-	scene.Systems().AddSystem(ecs.NewCollisionSystem())
-	scene.Systems().AddSystem(ecs.NewTorqueSystem(0, 1.0, 0)) // torque around Y
+	scene.Systems().AddSystem(camCtrl) // updates Camera component
+	scene.Systems().AddSystem(camSys)  // computes view/projection from Camera
+	scene.Systems().AddSystem(renderSys)
 
-	// Add a camera entity
-	camEntity := scene.AddEntity()
-	camEntity.AddComponent(ecs.NewCamera())
+	// Camera entity
+	cam := scene.AddEntity()
+	cam.AddComponent(ecs.NewCamera()) // default at (0,0,3) looking at origin
 
-	e := scene.AddEntity()
-	t := ecs.NewTransform()
-	rb := ecs.NewRigidBody(1.0)
-	av := ecs.NewAngularVelocity(0, 0, 0)
-	am := ecs.NewAngularMass(1.0, 2.0, 3.0) // inertia values
-	ad := ecs.NewAngularDamping(0.98)
-	e.AddComponent(ecs.NewMesh("triangle"))
-	e.AddComponent(ecs.NewMaterial("basicShader", "none", [4]float32{1, 1, 1, 1}))
-	e.AddComponent(t)
-	e.AddComponent(rb)
-	e.AddComponent(av)
-	e.AddComponent(am)
-	e.AddComponent(ad)
+	// Triangle entity
+	// Triangle entity with material
+	tri := scene.AddEntity()
+	tri.AddComponent(ecs.NewTransform([3]float32{0, 2, 0})) // start above ground
+	tri.AddComponent(ecs.NewMesh("triangle"))
+	tri.AddComponent(ecs.NewMaterial([4]float32{0.0, 1.0, 0.0, 1.0}))
+	tri.AddComponent(ecs.NewRigidBody(1.0)) // mass = 1
 
-	e.AddComponent(&ecs.Renderable{MeshID: "triangle", MaterialID: "basic"})
+	last := glfw.GetTime()
+	for !window.ShouldClose() {
+		now := glfw.GetTime()
+		dt := float32(now - last)
+		last = now
 
-	// Wait for shaders (or timeout)
-	go func() {
-		for {
-			rb.ApplyForce(0, -9.8, 0) // gravity along Y
-			time.Sleep(time.Second / 60)
-		}
-	}()
-	select {
-	case s := <-shaderCh:
-		if s.err != nil {
-			log.Fatalf("shader load: %v", s.err)
-		}
-		if err := renderer.Init(s.vert, s.frag); err != nil {
-			log.Fatalf("renderer init: %v", err)
-		}
-	case <-time.After(5 * time.Second):
-		log.Fatal("timed out loading shaders")
+		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+		scene.Update(dt)
+
+		window.SwapBuffers()
+		glfw.PollEvents()
 	}
-	defer renderer.Shutdown()
-
-	// Main loop: fixed timestep update + render
-	const targetFPS = 60
-	frameDur := time.Second / time.Duration(targetFPS)
-	ticker := time.NewTicker(frameDur)
-	defer ticker.Stop()
-
-	//last := time.Now()
-loop:
-	for {
-		select {
-		case <-stop:
-			break loop
-		case <-ticker.C:
-			// Poll events via engine wrapper
-			engine.PollEvents()
-
-			// Fixed timestep update
-			scene.Update(float32(1.0 / float32(targetFPS)))
-
-			// Render
-			renderer.Draw()
-
-			// Swap buffers
-			window.SwapBuffers()
-		}
-	}
-
-	// final cleanup happens via deferred calls
+	glfw.Terminate()
 }

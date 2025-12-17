@@ -1,3 +1,4 @@
+// internal/ecs/camerasystem.go
 package ecs
 
 import (
@@ -15,9 +16,11 @@ func NewCameraSystem(window *glfw.Window) *CameraSystem {
 	return &CameraSystem{window: window}
 }
 
-func (cs *CameraSystem) Update(dt float32, entities []*Entity) {
-	_ = dt
+func (cs *CameraSystem) Update(_ float32, entities []*Entity) {
 	w, h := cs.window.GetSize()
+	if h == 0 {
+		h = 1
+	}
 	aspect := float32(w) / float32(h)
 
 	for _, e := range entities {
@@ -28,14 +31,12 @@ func (cs *CameraSystem) Update(dt float32, entities []*Entity) {
 					mgl32.Vec3{cam.Target[0], cam.Target[1], cam.Target[2]},
 					mgl32.Vec3{cam.Up[0], cam.Up[1], cam.Up[2]},
 				)
-				cs.Projection = mgl32.Perspective(
-					mgl32.DegToRad(cam.Fov),
-					aspect,
-					cam.Near,
-					cam.Far,
-				)
+				cs.Projection = mgl32.Perspective(mgl32.DegToRad(cam.Fov), aspect, cam.Near, cam.Far)
 				return
 			}
 		}
 	}
+	// Fallback to identity (prevents black if no active camera)
+	cs.View = mgl32.Ident4()
+	cs.Projection = mgl32.Ident4()
 }

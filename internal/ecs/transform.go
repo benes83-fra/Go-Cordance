@@ -10,13 +10,16 @@ type Transform struct {
 	Scale    [3]float32
 }
 
-// NewTransform returns a default transform.
+/*// NewTransform returns a default transform.
 func NewTransform() *Transform {
 	return &Transform{
 		Position: [3]float32{0, 0, 0},
 		Rotation: [3]float32{0, 0, 0},
 		Scale:    [3]float32{1, 1, 1},
 	}
+}*/
+func NewTransform(pos [3]float32) *Transform {
+	return &Transform{Position: pos}
 }
 
 // Update is a no-op by default. You can embed or extend Transform to animate it.
