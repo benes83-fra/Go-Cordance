@@ -74,15 +74,23 @@ func main() {
 			err  error
 		}{vert, frag, nil}
 	}()
-
+	meshMgr := engine.NewMeshManager()
+	meshMgr.RegisterTriangle("triangle")
 	// Create renderer and scene
 	renderer := engine.NewRenderer()
 	scene := scene.New()
-	scene.Systems().AddSystem(ecs.NewRenderSystem(renderer))
+
+	camSys := ecs.NewCameraSystem()
+	scene.Systems().AddSystem(camSys)
+	scene.Systems().AddSystem(ecs.NewRenderSystem(renderer, meshMgr))
 	scene.Systems().AddSystem(ecs.NewForceSystem(0, -9.8, 0))
 	scene.Systems().AddSystem(ecs.NewPhysicsSystem())
 	scene.Systems().AddSystem(ecs.NewCollisionSystem())
 	scene.Systems().AddSystem(ecs.NewTorqueSystem(0, 1.0, 0)) // torque around Y
+
+	// Add a camera entity
+	camEntity := scene.AddEntity()
+	camEntity.AddComponent(ecs.NewCamera())
 
 	e := scene.AddEntity()
 	t := ecs.NewTransform()
@@ -90,12 +98,14 @@ func main() {
 	av := ecs.NewAngularVelocity(0, 0, 0)
 	am := ecs.NewAngularMass(1.0, 2.0, 3.0) // inertia values
 	ad := ecs.NewAngularDamping(0.98)
-
+	e.AddComponent(ecs.NewMesh("triangle"))
+	e.AddComponent(ecs.NewMaterial("basicShader", "none", [4]float32{1, 1, 1, 1}))
 	e.AddComponent(t)
 	e.AddComponent(rb)
 	e.AddComponent(av)
 	e.AddComponent(am)
 	e.AddComponent(ad)
+
 	e.AddComponent(&ecs.Renderable{MeshID: "triangle", MaterialID: "basic"})
 
 	// Wait for shaders (or timeout)

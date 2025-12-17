@@ -56,9 +56,14 @@ func (ps *PhysicsSystem) Update(dt float32, entities []*Entity) {
 
 		// Linear integration
 		if t != nil && rb != nil && rb.Mass > 0 {
-			ax := rb.Force[0]/rb.Mass + acc.A[0]
-			ay := rb.Force[1]/rb.Mass + acc.A[1]
-			az := rb.Force[2]/rb.Mass + acc.A[2]
+			ax := rb.Force[0] / rb.Mass
+			ay := rb.Force[1] / rb.Mass
+			az := rb.Force[2] / rb.Mass
+			if acc != nil {
+				ax += acc.A[0]
+				ay += acc.A[1]
+				az += acc.A[2]
+			}
 
 			rb.Vel[0] += ax * dt
 			rb.Vel[1] += ay * dt
@@ -88,14 +93,16 @@ func (ps *PhysicsSystem) Update(dt float32, entities []*Entity) {
 				av.Vel[2] += aa.Acc[2] * dt
 			}
 			if am != nil {
-				if am.Inertia[0] > 0 {
-					av.Vel[0] += (aa.Acc[0] / am.Inertia[0]) * dt
-				}
-				if am.Inertia[1] > 0 {
-					av.Vel[1] += (aa.Acc[1] / am.Inertia[1]) * dt
-				}
-				if am.Inertia[2] > 0 {
-					av.Vel[2] += (aa.Acc[2] / am.Inertia[2]) * dt
+				if aa != nil {
+					if am.Inertia[0] > 0 {
+						av.Vel[0] += (aa.Acc[0] / am.Inertia[0]) * dt
+					}
+					if am.Inertia[1] > 0 {
+						av.Vel[1] += (aa.Acc[1] / am.Inertia[1]) * dt
+					}
+					if am.Inertia[2] > 0 {
+						av.Vel[2] += (aa.Acc[2] / am.Inertia[2]) * dt
+					}
 				}
 			}
 			// Apply angular damping if present
