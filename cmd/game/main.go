@@ -52,6 +52,7 @@ func main() {
 
 	meshMgr := engine.NewMeshManager()
 	meshMgr.RegisterTriangle("triangle")
+	meshMgr.RegisterCube("cube")
 
 	scene := scene.New()
 
@@ -91,6 +92,13 @@ func main() {
 	tri2.AddComponent(ecs.NewMaterial([4]float32{0, 0, 1, 1}))
 	tri2.AddComponent(ecs.NewRigidBody(1.0))
 	tri2.AddComponent(ecs.NewColliderSphere(0.5))
+
+	cube := scene.AddEntity()
+	cube.AddComponent(ecs.NewTransform([3]float32{0.0, 3.0, 0.0}))
+	cube.AddComponent(ecs.NewMesh("cube")) // register cube mesh in MeshManager
+	cube.AddComponent(ecs.NewMaterial([4]float32{1.0, 1.0, 0.0, 1.0}))
+	cube.AddComponent(ecs.NewRigidBody(1.0))
+	cube.AddComponent(ecs.NewColliderAABB([3]float32{0.5, 0.5, 0.5})) // half extents
 	last := glfw.GetTime()
 	for !window.ShouldClose() {
 		now := glfw.GetTime()
@@ -105,7 +113,7 @@ func main() {
 		scene.Update(dt)
 
 		window.SwapBuffers()
-		glfw.PollEvents()
+		engine.PollEvents()
 	}
-	glfw.Terminate()
+	engine.TerminateGLFW()
 }
