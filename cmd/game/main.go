@@ -91,11 +91,15 @@ func main() {
 	// Triangle entity
 	// Triangle entity with material
 	tri := scene.AddEntity()
-	tri.AddComponent(ecs.NewTransform([3]float32{0, 2, 0})) // start above ground
+	tri.AddComponent(ecs.NewTransform([3]float32{-0.6, 2.0, 0.0}))
 	tri.AddComponent(ecs.NewMesh("triangle"))
 	tri.AddComponent(ecs.NewMaterial([4]float32{0.0, 1.0, 0.0, 1.0}))
-	tri.AddComponent(ecs.NewRigidBody(0.1)) // mass = 1
+	tri.AddComponent(ecs.NewRigidBody(1.0))
 
+	tri2 := scene.AddEntity()
+	tri2.AddComponent(ecs.NewTransform([3]float32{0.6, 0.5, 0.0}))
+	tri2.AddComponent(ecs.NewMesh("triangle"))
+	tri2.AddComponent(ecs.NewMaterial([4]float32{0.0, 0.0, 1.0, 1.0}))
 	last := glfw.GetTime()
 	for !window.ShouldClose() {
 		now := glfw.GetTime()
@@ -104,8 +108,6 @@ func main() {
 		if dt > 0.05 {
 			dt = 0.05
 		} // clamp to ~20 FPS max step
-
-		last = now
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 

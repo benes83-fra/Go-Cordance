@@ -59,6 +59,7 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 		vao := rs.MeshManager.GetVAO(mesh.ID)
 		gl.BindVertexArray(vao)
 		gl.DrawArrays(gl.TRIANGLES, 0, 3)
+		gl.BindVertexArray(0)
 
 	}
 }

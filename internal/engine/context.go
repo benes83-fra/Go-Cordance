@@ -34,6 +34,9 @@ func InitGLFW(width, height int, title string) (*glfw.Window, error) {
 		glfw.Terminate()
 		return nil, err
 	}
+	gl.Enable(gl.DEPTH_TEST)
+	gl.ClearColor(0.1, 0.1, 0.1, 1.0)
+	gl.Viewport(0, 0, int32(width), int32(height))
 	return window, nil
 }
 func PollEvents() {
