@@ -17,24 +17,6 @@ const (
 )
 
 func main() {
-	/*if err := glfw.Init(); err != nil {
-		log.Fatal(err)
-	}
-	glfw.WindowHint(glfw.ContextVersionMajor, 4)
-	glfw.WindowHint(glfw.ContextVersionMinor, 1)
-	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
-	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-
-	window, err := glfw.CreateWindow(width, height, "Go-Cordance Prototype", nil, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	window.MakeContextCurrent()
-	glfw.SwapInterval(1)
-
-	if err := gl.Init(); err != nil {
-		log.Fatal(err)
-	}*/
 
 	window, err := engine.InitGLFW(width, height, "Go Cordance")
 	if err != nil {
@@ -80,6 +62,7 @@ func main() {
 
 	scene.Systems().AddSystem(ecs.NewForceSystem(0, -9.8, 0)) // gravity
 	scene.Systems().AddSystem(ecs.NewPhysicsSystem())
+	scene.Systems().AddSystem(ecs.NewCollisionSystem())
 	scene.Systems().AddSystem(camCtrl) // updates Camera component
 	scene.Systems().AddSystem(camSys)  // computes view/projection from Camera
 	scene.Systems().AddSystem(renderSys)
@@ -88,18 +71,26 @@ func main() {
 	cam := scene.AddEntity()
 	cam.AddComponent(ecs.NewCamera()) // default at (0,0,3) looking at origin
 
+	// Ground entity
+	ground := scene.AddEntity()
+	ground.AddComponent(ecs.NewTransform([3]float32{0, 0, 0}))
+	ground.AddComponent(ecs.NewColliderPlane(-1.0)) // y=0 plane
+
 	// Triangle entity
 	// Triangle entity with material
 	tri := scene.AddEntity()
-	tri.AddComponent(ecs.NewTransform([3]float32{-0.6, 2.0, 0.0}))
+	tri.AddComponent(ecs.NewTransform([3]float32{0, 2, 0}))
 	tri.AddComponent(ecs.NewMesh("triangle"))
 	tri.AddComponent(ecs.NewMaterial([4]float32{0.0, 1.0, 0.0, 1.0}))
 	tri.AddComponent(ecs.NewRigidBody(1.0))
+	tri.AddComponent(ecs.NewColliderSphere(0.5)) // simple bounding sphere
 
 	tri2 := scene.AddEntity()
-	tri2.AddComponent(ecs.NewTransform([3]float32{0.6, 0.5, 0.0}))
+	tri2.AddComponent(ecs.NewTransform([3]float32{0.5, 3, 0}))
 	tri2.AddComponent(ecs.NewMesh("triangle"))
-	tri2.AddComponent(ecs.NewMaterial([4]float32{0.0, 0.0, 1.0, 1.0}))
+	tri2.AddComponent(ecs.NewMaterial([4]float32{0, 0, 1, 1}))
+	tri2.AddComponent(ecs.NewRigidBody(1.0))
+	tri2.AddComponent(ecs.NewColliderSphere(0.5))
 	last := glfw.GetTime()
 	for !window.ShouldClose() {
 		now := glfw.GetTime()
