@@ -27,6 +27,7 @@ func InitGLFW(width, height int, title string) (*glfw.Window, error) {
 		return nil, err
 	}
 	window.MakeContextCurrent()
+	glfw.SwapInterval(1)
 
 	if err := gl.Init(); err != nil {
 		window.Destroy()

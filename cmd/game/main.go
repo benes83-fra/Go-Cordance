@@ -17,7 +17,7 @@ const (
 )
 
 func main() {
-	if err := glfw.Init(); err != nil {
+	/*if err := glfw.Init(); err != nil {
 		log.Fatal(err)
 	}
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
@@ -30,11 +30,16 @@ func main() {
 		log.Fatal(err)
 	}
 	window.MakeContextCurrent()
+	glfw.SwapInterval(1)
 
 	if err := gl.Init(); err != nil {
 		log.Fatal(err)
-	}
+	}*/
 
+	window, err := engine.InitGLFW(width, height, "Go Cordance")
+	if err != nil {
+		log.Fatal(err)
+	}
 	// Compile shaders and set viewport
 	vertexSrc := `#version 330 core
 		    layout(location = 0) in vec3 position;
@@ -52,14 +57,16 @@ func main() {
 			}`
 
 	renderer := engine.NewRenderer(vertexSrc, fragmentSrc, width, height)
-
+	renderer.InitUniforms()
 	// Resize callback updates viewport
+
 	window.SetFramebufferSizeCallback(func(_ *glfw.Window, w, h int) {
 		if h == 0 {
 			h = 1
 		}
 		gl.Viewport(0, 0, int32(w), int32(h))
 	})
+	window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 
 	meshMgr := engine.NewMeshManager()
 	meshMgr.RegisterTriangle("triangle")
@@ -87,12 +94,17 @@ func main() {
 	tri.AddComponent(ecs.NewTransform([3]float32{0, 2, 0})) // start above ground
 	tri.AddComponent(ecs.NewMesh("triangle"))
 	tri.AddComponent(ecs.NewMaterial([4]float32{0.0, 1.0, 0.0, 1.0}))
-	tri.AddComponent(ecs.NewRigidBody(1.0)) // mass = 1
+	tri.AddComponent(ecs.NewRigidBody(0.1)) // mass = 1
 
 	last := glfw.GetTime()
 	for !window.ShouldClose() {
 		now := glfw.GetTime()
 		dt := float32(now - last)
+		last = now
+		if dt > 0.05 {
+			dt = 0.05
+		} // clamp to ~20 FPS max step
+
 		last = now
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)

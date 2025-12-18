@@ -8,14 +8,26 @@ import (
 )
 
 type Renderer struct {
-	Program uint32
+	Program    uint32
+	LocModel   int32
+	LocView    int32
+	LocProj    int32
+	LocBaseCol int32
+}
+
+func (r *Renderer) InitUniforms() {
+	r.LocModel = gl.GetUniformLocation(r.Program, gl.Str("model\x00"))
+	r.LocView = gl.GetUniformLocation(r.Program, gl.Str("view\x00"))
+	r.LocProj = gl.GetUniformLocation(r.Program, gl.Str("projection\x00"))
+	r.LocBaseCol = gl.GetUniformLocation(r.Program, gl.Str("baseColor\x00"))
 }
 
 func NewRenderer(vertexSrc, fragmentSrc string, width, height int) *Renderer {
 	prog := compileProgram(vertexSrc, fragmentSrc)
-	gl.Viewport(0, 0, int32(width), int32(height)) // critical
 	gl.Enable(gl.DEPTH_TEST)
 	gl.ClearColor(0.1, 0.1, 0.1, 1.0)
+	gl.Viewport(0, 0, int32(width), int32(height)) // critical
+
 	return &Renderer{Program: prog}
 }
 
