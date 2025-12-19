@@ -80,12 +80,22 @@ func main() {
 	scene.Systems().AddSystem(renderSys)
 
 	window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-		if key == glfw.KeyF1 && action == glfw.Press {
-			debugSys.Enabled = !debugSys.Enabled
-			log.Printf("Debug rendering: %v", debugSys.Enabled)
+		if action == glfw.Press {
+			switch key {
+			case glfw.KeyLeft:
+				renderSys.LightDir[0] -= 0.1
+			case glfw.KeyRight:
+				renderSys.LightDir[0] += 0.1
+			case glfw.KeyUp:
+				renderSys.LightDir[1] += 0.1
+			case glfw.KeyDown:
+				renderSys.LightDir[1] -= 0.1
+			case glfw.KeyF1:
+				debugSys.Enabled = !debugSys.Enabled
+				log.Printf("Debug rendering: %v", debugSys.Enabled)
+			}
 		}
 	})
-
 	// Camera entity
 	cam := scene.AddEntity()
 	cam.AddComponent(ecs.NewCamera()) // default at (0,0,3) looking at origin

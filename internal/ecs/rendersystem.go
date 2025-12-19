@@ -2,8 +2,10 @@ package ecs
 
 import (
 	"go-engine/Go-Cordance/internal/engine"
+	"math"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
@@ -11,10 +13,16 @@ type RenderSystem struct {
 	Renderer     *engine.Renderer
 	MeshManager  *engine.MeshManager
 	CameraSystem *CameraSystem
+	LightDir     [3]float32
 }
 
 func NewRenderSystem(r *engine.Renderer, mm *engine.MeshManager, cs *CameraSystem) *RenderSystem {
-	return &RenderSystem{Renderer: r, MeshManager: mm, CameraSystem: cs}
+	return &RenderSystem{
+		Renderer:     r,
+		MeshManager:  mm,
+		CameraSystem: cs,
+		LightDir:     [3]float32{1.0, -0.7, -0.3}, // starting direction
+	}
 }
 
 func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
@@ -41,9 +49,13 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 
 		// Build MVP
 		model := mgl32.Translate3D(t.Position[0], t.Position[1], t.Position[2])
-		lightDir := [3]float32{1.0, -0.7, -0.3}
+		//lightDir := [3]float32{1.0, -0.7, -0.3}
+		angle := float32(glfw.GetTime()) // seconds since start
+		rs.LightDir[0] = float32(math.Cos(float64(angle)))
+		rs.LightDir[2] = float32(math.Sin(float64(angle)))
+		rs.LightDir[1] = -0.7 // keep some downward tilt
 
-		gl.Uniform3fv(rs.Renderer.LocLightDir, 1, &lightDir[0])
+		gl.Uniform3fv(rs.Renderer.LocLightDir, 1, &rs.LightDir[0])
 
 		camPos := rs.CameraSystem.Position // from your Camera component
 		gl.Uniform3fv(rs.Renderer.LocViewPos, 1, &camPos[0])
