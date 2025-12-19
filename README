@@ -35,7 +35,14 @@ It explores how far Go can be pushed for real‑time graphics, physics, and enti
 
 ## 📂 Project Structure
 
-cmd/game/ # Entry point demo binary internal/ # Core engine packages camera/ # Camera component/system physics/ # Physics system and colliders mesh/ # Mesh generation and handling material/ # Material component and shader integration assets/shaders/ # GLSL shader files go.mod, go.sum # Go module definitions
+cmd/game/ # Entry point demo binary 
+internal/ # Core engine packages 
+camera/ # Camera component/system 
+physics/ # Physics system and colliders 
+mesh/ # Mesh generation and handling 
+material/ # Material component and shader integration 
+assets/shaders/ # GLSL shader files
+go.mod, go.sum # Go module definitions
 
 Code
 
@@ -53,7 +60,16 @@ Code
 git clone https://github.com/benes83-fra/Go-Cordance.git
 cd Go-Cordance/cmd/game
 go run .
+
 This will launch the demo scene with camera, meshes, and physics enabled.
+
+The camera can be controled WASD + Mouse,
+F1 toggles/untoggles Collsion Debugging
+F2 toggles/untoggles Lighting Debuggen
+
+The Lightsource rotation can be stopped/started with SPACE
+and the arrow keys allow to move the the light independently of the gizmo
+
 
 🛠 Development Roadmap
 Planned improvements:

@@ -10,18 +10,21 @@ import (
 )
 
 type RenderSystem struct {
-	Renderer     *engine.Renderer
-	MeshManager  *engine.MeshManager
-	CameraSystem *CameraSystem
-	LightDir     [3]float32
+	Renderer       *engine.Renderer
+	MeshManager    *engine.MeshManager
+	CameraSystem   *CameraSystem
+	LightDir       [3]float32
+	LightEntity    *Entity
+	OrbitalEnabled bool
 }
 
 func NewRenderSystem(r *engine.Renderer, mm *engine.MeshManager, cs *CameraSystem) *RenderSystem {
 	return &RenderSystem{
-		Renderer:     r,
-		MeshManager:  mm,
-		CameraSystem: cs,
-		LightDir:     [3]float32{1.0, -0.7, -0.3}, // starting direction
+		Renderer:       r,
+		MeshManager:    mm,
+		CameraSystem:   cs,
+		LightDir:       [3]float32{1.0, -0.7, -0.3}, // starting direction
+		OrbitalEnabled: true,
 	}
 }
 
@@ -29,10 +32,23 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 	gl.UseProgram(rs.Renderer.Program)
 	view := rs.CameraSystem.View
 	proj := rs.CameraSystem.Projection
+	if rs.OrbitalEnabled {
+		angle := float32(glfw.GetTime()) // seconds since start
+		rs.LightDir[0] = float32(math.Cos(float64(angle)))
+		rs.LightDir[2] = float32(math.Sin(float64(angle)))
+		rs.LightDir[1] = -0.7 // keep some downward tilt
+	}
 	for _, e := range entities {
 		var t *Transform
 		var mesh *Mesh
 		var mat *Material
+		if rs.LightEntity != nil {
+			if t, ok := rs.LightEntity.GetComponent((*Transform)(nil)).(*Transform); ok {
+				t.Position[0] = rs.LightDir[0] * 5
+				t.Position[1] = rs.LightDir[1] * 5
+				t.Position[2] = rs.LightDir[2] * 5
+			}
+		}
 		for _, c := range e.Components {
 			switch v := c.(type) {
 			case *Transform:
@@ -50,10 +66,6 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 		// Build MVP
 		model := mgl32.Translate3D(t.Position[0], t.Position[1], t.Position[2])
 		//lightDir := [3]float32{1.0, -0.7, -0.3}
-		angle := float32(glfw.GetTime()) // seconds since start
-		rs.LightDir[0] = float32(math.Cos(float64(angle)))
-		rs.LightDir[2] = float32(math.Sin(float64(angle)))
-		rs.LightDir[1] = -0.7 // keep some downward tilt
 
 		gl.Uniform3fv(rs.Renderer.LocLightDir, 1, &rs.LightDir[0])
 
