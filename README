@@ -1,0 +1,76 @@
+# Go‑Cordance
+
+Go‑Cordance is a lightweight 3D engine prototype written in Go.  
+It explores how far Go can be pushed for real‑time graphics, physics, and entity‑component‑system (ECS) style architecture. The project is experimental but already demonstrates meshes, materials, cameras, physics, and shader‑based rendering.
+
+---
+
+## ✨ Features
+
+- **Entity–Component–System (ECS) architecture**
+  - Entities composed of modular components (Mesh, Material, Camera, etc.)
+  - Systems update and render components independently
+
+- **Rendering**
+  - OpenGL pipeline with GLSL shaders
+  - Mesh support (including sphere meshes with normals)
+  - Material properties (ambient, diffuse, specular, shininess)
+  - Debug overlays (wireframe colliders, bounding boxes)
+
+- **Physics**
+  - Basic collision detection and rigid body updates
+  - Collider visualization integrated into the render loop
+
+- **Camera**
+  - Minimal Camera component and CameraSystem
+  - View/projection matrix handling
+  - Lighting uniforms passed through camera system
+
+- **Debugging**
+  - Toggleable debug rendering system
+  - Separate shader for collider visualization
+  - Empirical validation of material/shader differences
+
+---
+
+## 📂 Project Structure
+
+cmd/game/ # Entry point demo binary internal/ # Core engine packages camera/ # Camera component/system physics/ # Physics system and colliders mesh/ # Mesh generation and handling material/ # Material component and shader integration assets/shaders/ # GLSL shader files go.mod, go.sum # Go module definitions
+
+Code
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Go 1.21+ (modules enabled)
+- OpenGL drivers (tested with modern desktop GPUs)
+- `glfw` and `go-gl` bindings (installed via `go get`)
+
+### Build & Run
+```bash
+git clone https://github.com/benes83-fra/Go-Cordance.git
+cd Go-Cordance/cmd/game
+go run .
+This will launch the demo scene with camera, meshes, and physics enabled.
+
+🛠 Development Roadmap
+Planned improvements:
+
+Texture support (diffuse, normal maps)
+
+Advanced lighting (PBR, shadows)
+
+Expanded physics (joints, constraints)
+
+Scene graph and asset pipeline
+
+Profiling and benchmarking tools
+
+Editor / configuration system
+
+Documentation and tutorials
+
+🤝 Contributing
+Contributions are welcome! Please open issues for bugs or feature requests, and submit pull requests against the main branch.
