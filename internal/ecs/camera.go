@@ -32,7 +32,7 @@ func (c *Camera) ViewMatrix() mgl32.Mat4 {
 }
 
 func (c *Camera) ProjectionMatrix() mgl32.Mat4 {
-	return mgl32.Perspective(c.Fov, c.Aspect, c.Near, c.Far)
+	return mgl32.Perspective(mgl32.DegToRad(c.Fov), c.Aspect, c.Near, c.Far)
 }
 
 func (c *Camera) Update(dt float32) {

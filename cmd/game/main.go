@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -23,21 +24,14 @@ func main() {
 		log.Fatal(err)
 	}
 	// Compile shaders and set viewport
-	vertexSrc := `#version 330 core
-		    layout(location = 0) in vec3 position;
-		    uniform mat4 model;
-		    uniform mat4 view;
-		    uniform mat4 projection;
-		    void main() {
-		        gl_Position = projection * view * model * vec4(position, 1.0);
-		    }`
-	fragmentSrc := `#version 330 core
-			out vec4 FragColor;
-			uniform vec4 baseColor;
-			void main() {
-				FragColor = baseColor;
-			}`
-
+	vertexSrc, err := engine.LoadShaderSource("assets/shaders/vertex.glsl")
+	if err != nil {
+		fmt.Printf("%s --", err)
+	}
+	fragmentSrc, err := engine.LoadShaderSource("assets/shaders/fragment.glsl")
+	if err != nil {
+		fmt.Printf("%s --", err)
+	}
 	renderer := engine.NewRenderer(vertexSrc, fragmentSrc, width, height)
 	renderer.InitUniforms()
 	// Resize callback updates viewport
@@ -63,21 +57,14 @@ func main() {
 	renderSys := ecs.NewRenderSystem(renderer, meshMgr, camSys)
 
 	camCtrl := ecs.NewCameraControllerSystem(window)
-	debugVertexSrc := `#version 330 core
-						layout(location = 0) in vec3 position;
-						uniform mat4 model;
-						uniform mat4 view;
-						uniform mat4 projection;
-						void main() {
-							gl_Position = projection * view * model * vec4(position, 1.0);
-						}`
-
-	debugFragmentSrc := `#version 330 core
-						out vec4 FragColor;
-						uniform vec4 debugColor;
-						void main() {
-							FragColor = debugColor;
-						}`
+	debugVertexSrc, err := engine.LoadShaderSource("assets/shaders/debug_vertex.glsl")
+	if err != nil {
+		fmt.Printf("%s --", err)
+	}
+	debugFragmentSrc, err := engine.LoadShaderSource("assets/shaders/debug_fragment.glsl")
+	if err != nil {
+		fmt.Printf("%s --", err)
+	}
 
 	debugRenderer := engine.NewDebugRenderer(debugVertexSrc, debugFragmentSrc)
 	debugSys := ecs.NewDebugRenderSystem(debugRenderer, meshMgr, camSys)
