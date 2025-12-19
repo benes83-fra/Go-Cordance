@@ -73,3 +73,22 @@ func compileProgram(vert, frag string) uint32 {
 	gl.DeleteShader(fs)
 	return prog
 }
+
+type DebugRenderer struct {
+	Program  uint32
+	LocModel int32
+	LocView  int32
+	LocProj  int32
+	LocColor int32
+}
+
+func NewDebugRenderer(vertexSrc, fragmentSrc string) *DebugRenderer {
+	prog := compileProgram(vertexSrc, fragmentSrc) // reuse your shader compile helper
+	return &DebugRenderer{
+		Program:  prog,
+		LocModel: gl.GetUniformLocation(prog, gl.Str("model\x00")),
+		LocView:  gl.GetUniformLocation(prog, gl.Str("view\x00")),
+		LocProj:  gl.GetUniformLocation(prog, gl.Str("projection\x00")),
+		LocColor: gl.GetUniformLocation(prog, gl.Str("debugColor\x00")),
+	}
+}

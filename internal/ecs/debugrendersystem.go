@@ -8,20 +8,21 @@ import (
 )
 
 type DebugRenderSystem struct {
-	Renderer     *engine.Renderer
+	Renderer     *engine.DebugRenderer
 	MeshManager  *engine.MeshManager
 	CameraSystem *CameraSystem
 	Enabled      bool
 }
 
-func NewDebugRenderSystem(r *engine.Renderer, mm *engine.MeshManager, cs *CameraSystem) *DebugRenderSystem {
-	return &DebugRenderSystem{Renderer: r, MeshManager: mm, CameraSystem: cs}
+func NewDebugRenderSystem(r *engine.DebugRenderer, mm *engine.MeshManager, cs *CameraSystem) *DebugRenderSystem {
+	return &DebugRenderSystem{Renderer: r, MeshManager: mm, CameraSystem: cs, Enabled: true}
 }
 
 func (drs *DebugRenderSystem) Update(_ float32, entities []*Entity) {
 	if !drs.Enabled {
 		return
 	}
+
 	gl.UseProgram(drs.Renderer.Program)
 	view := drs.CameraSystem.View
 	proj := drs.CameraSystem.Projection
@@ -30,7 +31,6 @@ func (drs *DebugRenderSystem) Update(_ float32, entities []*Entity) {
 		var t *Transform
 		var sphere *ColliderSphere
 		var box *ColliderAABB
-
 		for _, c := range e.Components {
 			switch comp := c.(type) {
 			case *Transform:
@@ -41,22 +41,18 @@ func (drs *DebugRenderSystem) Update(_ float32, entities []*Entity) {
 				box = comp
 			}
 		}
-
 		if t == nil {
 			continue
 		}
 
-		// Build model matrix
 		model := mgl32.Translate3D(t.Position[0], t.Position[1], t.Position[2])
-
 		gl.UniformMatrix4fv(drs.Renderer.LocModel, 1, false, &model[0])
 		gl.UniformMatrix4fv(drs.Renderer.LocView, 1, false, &view[0])
 		gl.UniformMatrix4fv(drs.Renderer.LocProj, 1, false, &proj[0])
 
-		// Debug color (red for spheres, cyan for boxes)
 		if sphere != nil {
 			col := [4]float32{1, 0, 0, 1} // red
-			gl.Uniform4fv(drs.Renderer.LocBaseCol, 1, &col[0])
+			gl.Uniform4fv(drs.Renderer.LocColor, 1, &col[0])
 			vao := drs.MeshManager.GetVAO("wire_sphere")
 			gl.BindVertexArray(vao)
 			count := drs.MeshManager.GetCount("wire_sphere")
@@ -68,7 +64,7 @@ func (drs *DebugRenderSystem) Update(_ float32, entities []*Entity) {
 
 		if box != nil {
 			col := [4]float32{0, 1, 1, 1} // cyan
-			gl.Uniform4fv(drs.Renderer.LocBaseCol, 1, &col[0])
+			gl.Uniform4fv(drs.Renderer.LocColor, 1, &col[0])
 			vao := drs.MeshManager.GetVAO("wire_cube")
 			gl.BindVertexArray(vao)
 			count := drs.MeshManager.GetCount("wire_cube")
@@ -77,6 +73,5 @@ func (drs *DebugRenderSystem) Update(_ float32, entities []*Entity) {
 			gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
 			gl.BindVertexArray(0)
 		}
-
 	}
 }

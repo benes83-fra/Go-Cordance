@@ -63,7 +63,25 @@ func main() {
 	renderSys := ecs.NewRenderSystem(renderer, meshMgr, camSys)
 
 	camCtrl := ecs.NewCameraControllerSystem(window)
-	debugSys := ecs.NewDebugRenderSystem(renderer, meshMgr, camSys)
+	debugVertexSrc := `#version 330 core
+						layout(location = 0) in vec3 position;
+						uniform mat4 model;
+						uniform mat4 view;
+						uniform mat4 projection;
+						void main() {
+							gl_Position = projection * view * model * vec4(position, 1.0);
+						}`
+
+	debugFragmentSrc := `#version 330 core
+						out vec4 FragColor;
+						uniform vec4 debugColor;
+						void main() {
+							FragColor = debugColor;
+						}`
+
+	debugRenderer := engine.NewDebugRenderer(debugVertexSrc, debugFragmentSrc)
+	debugSys := ecs.NewDebugRenderSystem(debugRenderer, meshMgr, camSys)
+	scene.Systems().AddSystem(debugSys)
 
 	scene.Systems().AddSystem(ecs.NewForceSystem(0, -9.8, 0)) // gravity
 	scene.Systems().AddSystem(ecs.NewPhysicsSystem())
