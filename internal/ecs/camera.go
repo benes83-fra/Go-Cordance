@@ -16,8 +16,8 @@ type Camera struct {
 
 func NewCamera() *Camera {
 	return &Camera{
-		Position: [3]float32{0, 0, 3},
-		Target:   [3]float32{0, 0, 0},
+		Position: [3]float32{0, 2, 5},
+		Target:   [3]float32{0, 2, 0},
 		Up:       [3]float32{0, 1, 0},
 		Fov:      60,
 		Aspect:   4.0 / 3.0,

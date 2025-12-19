@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -26,11 +25,11 @@ func main() {
 	// Compile shaders and set viewport
 	vertexSrc, err := engine.LoadShaderSource("assets/shaders/vertex.glsl")
 	if err != nil {
-		fmt.Printf("%s --", err)
+		log.Fatal(err)
 	}
 	fragmentSrc, err := engine.LoadShaderSource("assets/shaders/fragment.glsl")
 	if err != nil {
-		fmt.Printf("%s --", err)
+		log.Fatal(err)
 	}
 	renderer := engine.NewRenderer(vertexSrc, fragmentSrc, width, height)
 	renderer.InitUniforms()
@@ -61,11 +60,11 @@ func main() {
 	camCtrl := ecs.NewCameraControllerSystem(window)
 	debugVertexSrc, err := engine.LoadShaderSource("assets/shaders/debug_vertex.glsl")
 	if err != nil {
-		fmt.Printf("%s --", err)
+		log.Fatal(err)
 	}
 	debugFragmentSrc, err := engine.LoadShaderSource("assets/shaders/debug_fragment.glsl")
 	if err != nil {
-		fmt.Printf("%s --", err)
+		log.Fatal(err)
 	}
 
 	debugRenderer := engine.NewDebugRenderer(debugVertexSrc, debugFragmentSrc)
@@ -132,6 +131,34 @@ func main() {
 	sphere.AddComponent(ecs.NewMaterial([4]float32{0.0, 1.0, 0.0, 1.0}))
 	sphere.AddComponent(ecs.NewRigidBody(1.0))
 	sphere.AddComponent(ecs.NewColliderSphere(0.5))
+
+	// Shiny metal cube
+	metalCube := scene.AddEntity()
+	metalCube.AddComponent(ecs.NewTransform([3]float32{1.5, 4.0, 0.0}))
+	metalCube.AddComponent(ecs.NewMesh("cube"))
+	metalCube.AddComponent(&ecs.Material{
+		BaseColor: [4]float32{0.8, 0.8, 0.9, 1.0}, // light gray
+		Ambient:   0.1,
+		Diffuse:   0.6,
+		Specular:  1.0,  // strong specular
+		Shininess: 64.0, // tight highlight
+	})
+	metalCube.AddComponent(ecs.NewRigidBody(1.0))
+	metalCube.AddComponent(ecs.NewColliderAABB([3]float32{0.5, 0.5, 0.5}))
+
+	// Matte plastic cube
+	plasticCube := scene.AddEntity()
+	plasticCube.AddComponent(ecs.NewTransform([3]float32{-1.5, 4.0, 0.0}))
+	plasticCube.AddComponent(ecs.NewMesh("cube"))
+	plasticCube.AddComponent(&ecs.Material{
+		BaseColor: [4]float32{0.2, 0.7, 0.2, 1.0}, // green
+		Ambient:   0.3,
+		Diffuse:   0.8,
+		Specular:  0.1, // weak specular
+		Shininess: 8.0, // broad, dull highlight
+	})
+	plasticCube.AddComponent(ecs.NewRigidBody(1.0))
+	plasticCube.AddComponent(ecs.NewColliderAABB([3]float32{0.5, 0.5, 0.5}))
 
 	// Sphere–AABB collisions
 	last := glfw.GetTime()
