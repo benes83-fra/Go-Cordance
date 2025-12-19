@@ -1,7 +1,11 @@
 // internal/engine/meshmanager.go
 package engine
 
-import "github.com/go-gl/gl/v4.1-core/gl"
+import (
+	"math"
+
+	"github.com/go-gl/gl/v4.1-core/gl"
+)
 
 type MeshManager struct {
 	vaos   map[string]uint32
@@ -77,6 +81,96 @@ func (mm *MeshManager) RegisterCube(id string) {
 		1, 5, 6, 6, 2, 1, // right
 		3, 2, 6, 6, 7, 3, // top
 		0, 1, 5, 5, 4, 0, // bottom
+	}
+
+	var vao, vbo, ebo uint32
+	gl.GenVertexArrays(1, &vao)
+	gl.GenBuffers(1, &vbo)
+	gl.GenBuffers(1, &ebo)
+
+	gl.BindVertexArray(vao)
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
+
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
+
+	gl.EnableVertexAttribArray(0)
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
+
+	gl.BindVertexArray(0)
+
+	mm.vaos[id] = vao
+	mm.counts[id] = int32(len(indices))
+}
+
+func (mm *MeshManager) RegisterWireCube(id string) {
+	// same vertices as cube, but indices for edges
+	vertices := []float32{
+		-0.5, -0.5, 0.5,
+		0.5, -0.5, 0.5,
+		0.5, 0.5, 0.5,
+		-0.5, 0.5, 0.5,
+		-0.5, -0.5, -0.5,
+		0.5, -0.5, -0.5,
+		0.5, 0.5, -0.5,
+		-0.5, 0.5, -0.5,
+	}
+	indices := []uint32{
+		0, 1, 1, 2, 2, 3, 3, 0, // front
+		4, 5, 5, 6, 6, 7, 7, 4, // back
+		0, 4, 1, 5, 2, 6, 3, 7, // sides
+	}
+	// same VAO/VBO/EBO setup as before
+	// store in mm.vaos[id], mm.counts[id]
+	var vao, vbo, ebo uint32
+	gl.GenVertexArrays(1, &vao)
+	gl.GenBuffers(1, &vbo)
+	gl.GenBuffers(1, &ebo)
+
+	gl.BindVertexArray(vao)
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
+
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
+
+	gl.EnableVertexAttribArray(0)
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
+
+	gl.BindVertexArray(0)
+
+	mm.vaos[id] = vao
+	mm.counts[id] = int32(len(indices))
+}
+func (mm *MeshManager) RegisterWireSphere(id string, slices, stacks int) {
+	var vertices []float32
+	var indices []uint32
+
+	// Generate vertices
+	for i := 0; i <= stacks; i++ {
+		phi := float32(i) * (3.14159 / float32(stacks)) // latitude
+		for j := 0; j <= slices; j++ {
+			theta := float32(j) * (2.0 * 3.14159 / float32(slices)) // longitude
+			x := float32(math.Sin(float64(phi)) * math.Cos(float64(theta)))
+			y := float32(math.Cos(float64(phi)))
+			z := float32(math.Sin(float64(phi)) * math.Sin(float64(theta)))
+			vertices = append(vertices, x*0.5, y*0.5, z*0.5) // radius 0.5
+		}
+	}
+
+	// Generate line indices (wireframe grid)
+	for i := 0; i < stacks; i++ {
+		for j := 0; j < slices; j++ {
+			first := uint32(i*(slices+1) + j)
+			second := first + uint32(slices+1)
+			// vertical lines
+			indices = append(indices, first, second)
+			// horizontal lines
+			indices = append(indices, first, first+1)
+		}
 	}
 
 	var vao, vbo, ebo uint32

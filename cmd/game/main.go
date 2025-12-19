@@ -53,6 +53,9 @@ func main() {
 	meshMgr := engine.NewMeshManager()
 	meshMgr.RegisterTriangle("triangle")
 	meshMgr.RegisterCube("cube")
+	meshMgr.RegisterWireCube("wire_cube")
+	meshMgr.RegisterWireSphere("wire_sphere", 16, 16)
+	// optionally: meshMgr.RegisterWireSphere("wire_sphere")
 
 	scene := scene.New()
 
@@ -60,6 +63,7 @@ func main() {
 	renderSys := ecs.NewRenderSystem(renderer, meshMgr, camSys)
 
 	camCtrl := ecs.NewCameraControllerSystem(window)
+	debugSys := ecs.NewDebugRenderSystem(renderer, meshMgr, camSys)
 
 	scene.Systems().AddSystem(ecs.NewForceSystem(0, -9.8, 0)) // gravity
 	scene.Systems().AddSystem(ecs.NewPhysicsSystem())
@@ -67,6 +71,14 @@ func main() {
 	scene.Systems().AddSystem(camCtrl) // updates Camera component
 	scene.Systems().AddSystem(camSys)  // computes view/projection from Camera
 	scene.Systems().AddSystem(renderSys)
+	scene.Systems().AddSystem(debugSys)
+
+	window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+		if key == glfw.KeyF1 && action == glfw.Press {
+			debugSys.Enabled = !debugSys.Enabled
+			log.Printf("Debug rendering: %v", debugSys.Enabled)
+		}
+	})
 
 	// Camera entity
 	cam := scene.AddEntity()
