@@ -41,6 +41,11 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 
 		// Build MVP
 		model := mgl32.Translate3D(t.Position[0], t.Position[1], t.Position[2])
+		lightDir := [3]float32{0.5, -1.0, -0.3}
+		gl.Uniform3fv(rs.Renderer.LocLightDir, 1, &lightDir[0])
+
+		camPos := rs.CameraSystem.Position // from your Camera component
+		gl.Uniform3fv(rs.Renderer.LocViewPos, 1, &camPos[0])
 
 		gl.UniformMatrix4fv(rs.Renderer.LocModel, 1, false, &model[0])
 		gl.UniformMatrix4fv(rs.Renderer.LocView, 1, false, &view[0])

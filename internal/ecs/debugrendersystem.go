@@ -51,7 +51,12 @@ func (drs *DebugRenderSystem) Update(_ float32, entities []*Entity) {
 		gl.UniformMatrix4fv(drs.Renderer.LocProj, 1, false, &proj[0])
 
 		if sphere != nil {
-			col := [4]float32{1, 0, 0, 1} // red
+			// scale by radius
+			scale := mgl32.Scale3D(sphere.Radius, sphere.Radius, sphere.Radius)
+			model = model.Mul4(scale)
+			gl.UniformMatrix4fv(drs.Renderer.LocModel, 1, false, &model[0])
+
+			col := [4]float32{1, 0, 0, 1}
 			gl.Uniform4fv(drs.Renderer.LocColor, 1, &col[0])
 			vao := drs.MeshManager.GetVAO("wire_sphere")
 			gl.BindVertexArray(vao)
@@ -63,7 +68,12 @@ func (drs *DebugRenderSystem) Update(_ float32, entities []*Entity) {
 		}
 
 		if box != nil {
-			col := [4]float32{0, 1, 1, 1} // cyan
+			// scale by half extents
+			scale := mgl32.Scale3D(box.HalfExtents[0]*2, box.HalfExtents[1]*2, box.HalfExtents[2]*2)
+			model = model.Mul4(scale)
+			gl.UniformMatrix4fv(drs.Renderer.LocModel, 1, false, &model[0])
+
+			col := [4]float32{0, 1, 1, 1}
 			gl.Uniform4fv(drs.Renderer.LocColor, 1, &col[0])
 			vao := drs.MeshManager.GetVAO("wire_cube")
 			gl.BindVertexArray(vao)

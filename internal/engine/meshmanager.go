@@ -59,21 +59,20 @@ func (mm *MeshManager) RegisterTriangle(id string) {
 }
 
 func (mm *MeshManager) RegisterCube(id string) {
-	// 8 vertices of a cube (centered at origin, size 1)
+	// 8 vertices with positions + normals
 	vertices := []float32{
-		// Front face
-		-0.5, -0.5, 0.5,
-		0.5, -0.5, 0.5,
-		0.5, 0.5, 0.5,
-		-0.5, 0.5, 0.5,
-		// Back face
-		-0.5, -0.5, -0.5,
-		0.5, -0.5, -0.5,
-		0.5, 0.5, -0.5,
-		-0.5, 0.5, -0.5,
+		// positions        // normals
+		-0.5, -0.5, 0.5, 0, 0, 1, // front face
+		0.5, -0.5, 0.5, 0, 0, 1,
+		0.5, 0.5, 0.5, 0, 0, 1,
+		-0.5, 0.5, 0.5, 0, 0, 1,
+
+		-0.5, -0.5, -0.5, 0, 0, -1, // back face
+		0.5, -0.5, -0.5, 0, 0, -1,
+		0.5, 0.5, -0.5, 0, 0, -1,
+		-0.5, 0.5, -0.5, 0, 0, -1,
 	}
 
-	// Indices for 12 triangles (two per face)
 	indices := []uint32{
 		0, 1, 2, 2, 3, 0, // front
 		4, 5, 6, 6, 7, 4, // back
@@ -96,8 +95,13 @@ func (mm *MeshManager) RegisterCube(id string) {
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
 
+	// Position attribute
 	gl.EnableVertexAttribArray(0)
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(0))
+
+	// Normal attribute
+	gl.EnableVertexAttribArray(1)
+	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(3*4))
 
 	gl.BindVertexArray(0)
 

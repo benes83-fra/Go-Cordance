@@ -10,6 +10,7 @@ type CameraSystem struct {
 	View       mgl32.Mat4
 	Projection mgl32.Mat4
 	window     *glfw.Window
+	Position   [3]float32 // NEW
 }
 
 func NewCameraSystem(window *glfw.Window) *CameraSystem {
@@ -24,6 +25,11 @@ func (cs *CameraSystem) Update(_ float32, entities []*Entity) {
 	aspect := float32(w) / float32(h)
 
 	for _, e := range entities {
+		if cam, ok := e.GetComponent((*Camera)(nil)).(*Camera); ok {
+			cs.View = cam.ViewMatrix()
+			cs.Projection = cam.ProjectionMatrix()
+			cs.Position = cam.Position
+		}
 		for _, c := range e.Components {
 			if cam, ok := c.(*Camera); ok && cam.Active {
 				cs.View = mgl32.LookAtV(
@@ -40,3 +46,16 @@ func (cs *CameraSystem) Update(_ float32, entities []*Entity) {
 	cs.View = mgl32.Ident4()
 	cs.Projection = mgl32.Ident4()
 }
+
+/*
+func (cs *CameraSystem) Update(_ float32, entities []*Entity) {
+	for _, e := range entities {
+		for _, c := range e.Components {
+			if cam, ok := c.(*Camera); ok {
+				cs.View = cam.ViewMatrix()
+				cs.Projection = cam.ProjectionMatrix()
+				cs.Position = [3]float32{cam.Position.X(), cam.Position.Y(), cam.Position.Z()}
+			}
+		}
+	}
+}*/
