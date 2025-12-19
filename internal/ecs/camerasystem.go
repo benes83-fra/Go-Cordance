@@ -37,7 +37,9 @@ func (cs *CameraSystem) Update(_ float32, entities []*Entity) {
 					mgl32.Vec3{cam.Target[0], cam.Target[1], cam.Target[2]},
 					mgl32.Vec3{cam.Up[0], cam.Up[1], cam.Up[2]},
 				)
+
 				cs.Projection = mgl32.Perspective(mgl32.DegToRad(cam.Fov), aspect, cam.Near, cam.Far)
+				cs.Position = cam.Position // IMPORTANT
 				return
 			}
 		}
@@ -46,16 +48,3 @@ func (cs *CameraSystem) Update(_ float32, entities []*Entity) {
 	cs.View = mgl32.Ident4()
 	cs.Projection = mgl32.Ident4()
 }
-
-/*
-func (cs *CameraSystem) Update(_ float32, entities []*Entity) {
-	for _, e := range entities {
-		for _, c := range e.Components {
-			if cam, ok := c.(*Camera); ok {
-				cs.View = cam.ViewMatrix()
-				cs.Projection = cam.ProjectionMatrix()
-				cs.Position = [3]float32{cam.Position.X(), cam.Position.Y(), cam.Position.Z()}
-			}
-		}
-	}
-}*/

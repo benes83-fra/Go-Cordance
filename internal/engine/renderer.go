@@ -32,6 +32,17 @@ func (r *Renderer) InitUniforms() {
 	r.LocDiffuse = gl.GetUniformLocation(r.Program, gl.Str("matDiffuse\x00"))
 	r.LocSpecular = gl.GetUniformLocation(r.Program, gl.Str("matSpecular\x00"))
 	r.LocShininess = gl.GetUniformLocation(r.Program, gl.Str("matShininess\x00"))
+	names := map[string]int32{
+		"model": r.LocModel, "view": r.LocView, "projection": r.LocProj,
+		"baseColor": r.LocBaseCol, "lightDir": r.LocLightDir, "viewPos": r.LocViewPos,
+		"matAmbient": r.LocAmbient, "matDiffuse": r.LocDiffuse,
+		"matSpecular": r.LocSpecular, "matShininess": r.LocShininess,
+	}
+	for n, loc := range names {
+		if loc == -1 {
+			fmt.Printf("WARN: uniform %s not found in program\n", n)
+		}
+	}
 
 }
 

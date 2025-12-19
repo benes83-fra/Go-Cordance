@@ -59,27 +59,58 @@ func (mm *MeshManager) RegisterTriangle(id string) {
 }
 
 func (mm *MeshManager) RegisterCube(id string) {
-	// 8 vertices with positions + normals
+	// 24 vertices: 6 faces * 4 verts, each with position+normal
 	vertices := []float32{
-		// positions        // normals
-		-0.5, -0.5, 0.5, 0, 0, 1, // front face
+		// Front (+Z)
+		-0.5, -0.5, 0.5, 0, 0, 1,
 		0.5, -0.5, 0.5, 0, 0, 1,
 		0.5, 0.5, 0.5, 0, 0, 1,
 		-0.5, 0.5, 0.5, 0, 0, 1,
 
-		-0.5, -0.5, -0.5, 0, 0, -1, // back face
+		// Back (-Z)
 		0.5, -0.5, -0.5, 0, 0, -1,
-		0.5, 0.5, -0.5, 0, 0, -1,
+		-0.5, -0.5, -0.5, 0, 0, -1,
 		-0.5, 0.5, -0.5, 0, 0, -1,
+		0.5, 0.5, -0.5, 0, 0, -1,
+
+		// Left (-X)
+		-0.5, -0.5, -0.5, -1, 0, 0,
+		-0.5, -0.5, 0.5, -1, 0, 0,
+		-0.5, 0.5, 0.5, -1, 0, 0,
+		-0.5, 0.5, -0.5, -1, 0, 0,
+
+		// Right (+X)
+		0.5, -0.5, 0.5, 1, 0, 0,
+		0.5, -0.5, -0.5, 1, 0, 0,
+		0.5, 0.5, -0.5, 1, 0, 0,
+		0.5, 0.5, 0.5, 1, 0, 0,
+
+		// Top (+Y)
+		-0.5, 0.5, 0.5, 0, 1, 0,
+		0.5, 0.5, 0.5, 0, 1, 0,
+		0.5, 0.5, -0.5, 0, 1, 0,
+		-0.5, 0.5, -0.5, 0, 1, 0,
+
+		// Bottom (-Y)
+		-0.5, -0.5, -0.5, 0, -1, 0,
+		0.5, -0.5, -0.5, 0, -1, 0,
+		0.5, -0.5, 0.5, 0, -1, 0,
+		-0.5, -0.5, 0.5, 0, -1, 0,
 	}
 
 	indices := []uint32{
-		0, 1, 2, 2, 3, 0, // front
-		4, 5, 6, 6, 7, 4, // back
-		0, 4, 7, 7, 3, 0, // left
-		1, 5, 6, 6, 2, 1, // right
-		3, 2, 6, 6, 7, 3, // top
-		0, 1, 5, 5, 4, 0, // bottom
+		// Front
+		0, 1, 2, 2, 3, 0,
+		// Back
+		4, 5, 6, 6, 7, 4,
+		// Left
+		8, 9, 10, 10, 11, 8,
+		// Right
+		12, 13, 14, 14, 15, 12,
+		// Top
+		16, 17, 18, 18, 19, 16,
+		// Bottom
+		20, 21, 22, 22, 23, 20,
 	}
 
 	var vao, vbo, ebo uint32
@@ -95,11 +126,9 @@ func (mm *MeshManager) RegisterCube(id string) {
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
 
-	// Position attribute
 	gl.EnableVertexAttribArray(0)
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(0))
 
-	// Normal attribute
 	gl.EnableVertexAttribArray(1)
 	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(3*4))
 
@@ -143,7 +172,8 @@ func (mm *MeshManager) RegisterWireCube(id string) {
 
 	gl.EnableVertexAttribArray(0)
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
-
+	gl.EnableVertexAttribArray(1)
+	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(3*4))
 	gl.BindVertexArray(0)
 
 	mm.vaos[id] = vao
@@ -193,6 +223,8 @@ func (mm *MeshManager) RegisterWireSphere(id string, slices, stacks int) {
 	gl.EnableVertexAttribArray(0)
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
 
+	gl.EnableVertexAttribArray(1)
+	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(3*4))
 	gl.BindVertexArray(0)
 
 	mm.vaos[id] = vao

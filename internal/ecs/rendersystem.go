@@ -41,7 +41,7 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 
 		// Build MVP
 		model := mgl32.Translate3D(t.Position[0], t.Position[1], t.Position[2])
-		lightDir := [3]float32{0.5, -0.8, 0.0}
+		lightDir := [3]float32{1.0, -0.7, -0.3}
 
 		gl.Uniform3fv(rs.Renderer.LocLightDir, 1, &lightDir[0])
 
