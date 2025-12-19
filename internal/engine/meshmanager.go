@@ -57,6 +57,35 @@ func (mm *MeshManager) RegisterTriangle(id string) {
 	mm.vaos[id] = vao
 	mm.counts[id] = int32(len(indices))
 }
+func (mm *MeshManager) RegisterLine(id string) {
+	// Two vertices: origin and unit Z
+	vertices := []float32{
+		0, 0, 0,
+		0, 0, 1,
+	}
+	indices := []uint32{0, 1}
+
+	var vao uint32
+	gl.GenVertexArrays(1, &vao)
+	gl.BindVertexArray(vao)
+
+	var vbo, ebo uint32
+	gl.GenBuffers(1, &vbo)
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
+
+	gl.GenBuffers(1, &ebo)
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
+
+	gl.EnableVertexAttribArray(0)
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
+
+	gl.BindVertexArray(0)
+
+	mm.vaos[id] = vao
+	mm.counts[id] = int32(len(indices))
+}
 
 func (mm *MeshManager) RegisterCube(id string) {
 	// 24 vertices: 6 faces * 4 verts, each with position+normal

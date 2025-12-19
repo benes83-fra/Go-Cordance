@@ -15,6 +15,7 @@ type RenderSystem struct {
 	CameraSystem   *CameraSystem
 	LightDir       [3]float32
 	LightEntity    *Entity
+	LightArrow     *Entity
 	OrbitalEnabled bool
 }
 
@@ -47,6 +48,12 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 				t.Position[0] = rs.LightDir[0] * 5
 				t.Position[1] = rs.LightDir[1] * 5
 				t.Position[2] = rs.LightDir[2] * 5
+			}
+		}
+		if rs.LightArrow != nil {
+			if t, ok := rs.LightArrow.GetComponent((*Transform)(nil)).(*Transform); ok {
+				// scale the line to point in LightDir
+				t.Scale = [3]float32{rs.LightDir[0] * 5, rs.LightDir[1] * 5, rs.LightDir[2] * 5}
 			}
 		}
 		for _, c := range e.Components {
@@ -91,7 +98,14 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 		gl.BindVertexArray(vao)
 		count := rs.MeshManager.GetCount(mesh.ID)
 		//gl.DrawArrays(gl.TRIANGLES, 0, 3)
-		gl.DrawElements(gl.TRIANGLES, count, gl.UNSIGNED_INT, gl.PtrOffset(0))
+		if mesh.ID == "line" {
+			gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
+			gl.DrawElements(gl.LINES, count, gl.UNSIGNED_INT, gl.PtrOffset(0))
+			gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
+		} else {
+			gl.DrawElements(gl.TRIANGLES, count, gl.UNSIGNED_INT, gl.PtrOffset(0))
+		}
+
 		gl.BindVertexArray(0)
 
 	}

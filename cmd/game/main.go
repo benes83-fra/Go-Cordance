@@ -51,6 +51,7 @@ func main() {
 	meshMgr.RegisterWireCube("wire_cube")
 	meshMgr.RegisterWireSphere("wire_sphere", 16, 16)
 	meshMgr.RegisterSphere("sphere", 32, 16) // slices, stacks
+	meshMgr.RegisterLine("line")
 
 	// optionally: meshMgr.RegisterWireSphere("wire_sphere")
 
@@ -173,6 +174,12 @@ func main() {
 	lightDebug.Track(lightGizmo)
 	lightDebug.SetColor(lightGizmo, [4]float32{1.0, 1.0, 0.2, 1.0}) // bright yellow
 
+	lightArrow := scene.AddEntity()
+	lightArrow.AddComponent(ecs.NewTransform([3]float32{0, 0, 0})) // starts at origin
+	lightArrow.AddComponent(ecs.NewMesh("line"))
+	lightDebug.Track(lightArrow)
+	lightDebug.SetColor(lightArrow, [4]float32{1.0, 0.5, 0.0, 1.0}) // orange arrow
+	renderSys.LightArrow = lightArrow
 	// Sphere–AABB collisions
 	last := glfw.GetTime()
 	for !window.ShouldClose() {
