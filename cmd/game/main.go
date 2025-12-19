@@ -93,12 +93,28 @@ func main() {
 	tri2.AddComponent(ecs.NewRigidBody(1.0))
 	tri2.AddComponent(ecs.NewColliderSphere(0.5))
 
-	cube := scene.AddEntity()
-	cube.AddComponent(ecs.NewTransform([3]float32{0.0, 3.0, 0.0}))
-	cube.AddComponent(ecs.NewMesh("cube")) // register cube mesh in MeshManager
-	cube.AddComponent(ecs.NewMaterial([4]float32{1.0, 1.0, 0.0, 1.0}))
-	cube.AddComponent(ecs.NewRigidBody(1.0))
-	cube.AddComponent(ecs.NewColliderAABB([3]float32{0.5, 0.5, 0.5})) // half extents
+	cube1 := scene.AddEntity()
+	cube1.AddComponent(ecs.NewTransform([3]float32{0.0, 4.0, 0.0}))
+	cube1.AddComponent(ecs.NewMesh("cube"))
+	cube1.AddComponent(ecs.NewMaterial([4]float32{1.0, 0.0, 0.0, 1.0}))
+	cube1.AddComponent(ecs.NewRigidBody(1.0))
+	cube1.AddComponent(ecs.NewColliderAABB([3]float32{0.5, 0.5, 0.5}))
+
+	cube2 := scene.AddEntity()
+	cube2.AddComponent(ecs.NewTransform([3]float32{0.2, 6.0, 0.0}))
+	cube2.AddComponent(ecs.NewMesh("cube"))
+	cube2.AddComponent(ecs.NewMaterial([4]float32{0.0, 1.0, 0.0, 1.0}))
+	cube2.AddComponent(ecs.NewRigidBody(1.0))
+	cube2.AddComponent(ecs.NewColliderAABB([3]float32{0.5, 0.5, 0.5}))
+
+	sphere := scene.AddEntity()
+	sphere.AddComponent(ecs.NewTransform([3]float32{0.0, 4.0, 0.0}))
+	sphere.AddComponent(ecs.NewMesh("triangle")) // still using triangle mesh for sphere placeholder
+	sphere.AddComponent(ecs.NewMaterial([4]float32{0.0, 1.0, 0.0, 1.0}))
+	sphere.AddComponent(ecs.NewRigidBody(1.0))
+	sphere.AddComponent(ecs.NewColliderSphere(0.5))
+
+	// Sphere–AABB collisions
 	last := glfw.GetTime()
 	for !window.ShouldClose() {
 		now := glfw.GetTime()
