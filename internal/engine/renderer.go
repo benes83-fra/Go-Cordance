@@ -8,13 +8,17 @@ import (
 )
 
 type Renderer struct {
-	Program     uint32
-	LocModel    int32
-	LocView     int32
-	LocProj     int32
-	LocBaseCol  int32
-	LocLightDir int32 // NEW
-	LocViewPos  int32 // NEW
+	Program      uint32
+	LocModel     int32
+	LocView      int32
+	LocProj      int32
+	LocBaseCol   int32
+	LocLightDir  int32
+	LocViewPos   int32
+	LocAmbient   int32
+	LocDiffuse   int32
+	LocSpecular  int32
+	LocShininess int32
 }
 
 func (r *Renderer) InitUniforms() {
@@ -24,6 +28,11 @@ func (r *Renderer) InitUniforms() {
 	r.LocBaseCol = gl.GetUniformLocation(r.Program, gl.Str("baseColor\x00"))
 	r.LocLightDir = gl.GetUniformLocation(r.Program, gl.Str("lightDir\x00")) // NEW
 	r.LocViewPos = gl.GetUniformLocation(r.Program, gl.Str("viewPos\x00"))   // NEW
+	r.LocAmbient = gl.GetUniformLocation(r.Program, gl.Str("matAmbient\x00"))
+	r.LocDiffuse = gl.GetUniformLocation(r.Program, gl.Str("matDiffuse\x00"))
+	r.LocSpecular = gl.GetUniformLocation(r.Program, gl.Str("matSpecular\x00"))
+	r.LocShininess = gl.GetUniformLocation(r.Program, gl.Str("matShininess\x00"))
+
 }
 
 func NewRenderer(vertexSrc, fragmentSrc string, width, height int) *Renderer {

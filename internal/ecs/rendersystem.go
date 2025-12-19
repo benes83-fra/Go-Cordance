@@ -53,7 +53,13 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 
 		// Upload material color
 
-		gl.Uniform4fv(rs.Renderer.LocBaseCol, 1, &mat.Color[0])
+		if mat != nil {
+			gl.Uniform4fv(rs.Renderer.LocBaseCol, 1, &mat.BaseColor[0])
+			gl.Uniform1f(rs.Renderer.LocAmbient, mat.Ambient)
+			gl.Uniform1f(rs.Renderer.LocDiffuse, mat.Diffuse)
+			gl.Uniform1f(rs.Renderer.LocSpecular, mat.Specular)
+			gl.Uniform1f(rs.Renderer.LocShininess, mat.Shininess)
+		}
 
 		// Draw
 		vao := rs.MeshManager.GetVAO(mesh.ID)

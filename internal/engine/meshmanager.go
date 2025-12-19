@@ -199,4 +199,63 @@ func (mm *MeshManager) RegisterWireSphere(id string, slices, stacks int) {
 	mm.counts[id] = int32(len(indices))
 }
 
+func (mm *MeshManager) RegisterSphere(id string, slices, stacks int) {
+	var vertices []float32
+	var indices []uint32
+
+	// Generate vertices with normals
+	for i := 0; i <= stacks; i++ {
+		phi := float32(i) * (3.14159 / float32(stacks)) // latitude
+		for j := 0; j <= slices; j++ {
+			theta := float32(j) * (2.0 * 3.14159 / float32(slices)) // longitude
+
+			x := float32(math.Sin(float64(phi)) * math.Cos(float64(theta)))
+			y := float32(math.Cos(float64(phi)))
+			z := float32(math.Sin(float64(phi)) * math.Sin(float64(theta)))
+
+			// Position (radius 0.5) and normal (unit vector)
+			vertices = append(vertices,
+				x*0.5, y*0.5, z*0.5, // position
+				x, y, z) // normal
+		}
+	}
+
+	// Generate indices
+	for i := 0; i < stacks; i++ {
+		for j := 0; j < slices; j++ {
+			first := uint32(i*(slices+1) + j)
+			second := first + uint32(slices+1)
+
+			indices = append(indices, first, second, first+1)
+			indices = append(indices, second, second+1, first+1)
+		}
+	}
+
+	var vao, vbo, ebo uint32
+	gl.GenVertexArrays(1, &vao)
+	gl.GenBuffers(1, &vbo)
+	gl.GenBuffers(1, &ebo)
+
+	gl.BindVertexArray(vao)
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
+
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
+
+	// Position attribute
+	gl.EnableVertexAttribArray(0)
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(0))
+
+	// Normal attribute
+	gl.EnableVertexAttribArray(1)
+	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(3*4))
+
+	gl.BindVertexArray(0)
+
+	mm.vaos[id] = vao
+	mm.counts[id] = int32(len(indices))
+}
+
 func (mm *MeshManager) GetVAO(id string) uint32 { return mm.vaos[id] }

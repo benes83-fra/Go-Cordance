@@ -49,6 +49,8 @@ func main() {
 	meshMgr.RegisterCube("cube")
 	meshMgr.RegisterWireCube("wire_cube")
 	meshMgr.RegisterWireSphere("wire_sphere", 16, 16)
+	meshMgr.RegisterSphere("sphere", 32, 16) // slices, stacks
+
 	// optionally: meshMgr.RegisterWireSphere("wire_sphere")
 
 	scene := scene.New()
@@ -126,7 +128,7 @@ func main() {
 
 	sphere := scene.AddEntity()
 	sphere.AddComponent(ecs.NewTransform([3]float32{0.0, 4.0, 0.0}))
-	sphere.AddComponent(ecs.NewMesh("triangle")) // still using triangle mesh for sphere placeholder
+	sphere.AddComponent(ecs.NewMesh("sphere"))
 	sphere.AddComponent(ecs.NewMaterial([4]float32{0.0, 1.0, 0.0, 1.0}))
 	sphere.AddComponent(ecs.NewRigidBody(1.0))
 	sphere.AddComponent(ecs.NewColliderSphere(0.5))
