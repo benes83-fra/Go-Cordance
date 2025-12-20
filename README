@@ -30,8 +30,13 @@ It explores how far Go can be pushed for real‑time graphics, physics, and enti
   - Toggleable debug rendering system
   - Separate shader for collider visualization
   - Empirical validation of material/shader differences
+
 - **Textures**
   - Simple texture system introduced
+
+- **Mesh Loader**
+  - A simple MeshLoader was introduced to load .obj files
+
 ---
 
 ## 📂 Project Structure

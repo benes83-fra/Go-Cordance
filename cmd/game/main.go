@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -76,9 +77,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	texID2, err := engine.LoadTexture("assets/textures/teapot_diffuse.png")
+	if err != nil {
+		fmt.Println("Could not load :", texID2)
+		log.Fatal(err)
+	}
 
 	crateTex := ecs.NewTexture(texID)
-
+	teaTex := ecs.NewTexture(texID2)
 	debugRenderer := engine.NewDebugRenderer(debugVertexSrc, debugFragmentSrc)
 	debugSys := ecs.NewDebugRenderSystem(debugRenderer, meshMgr, camSys)
 	lightDebug := ecs.NewLightDebugRenderSystem(debugRenderer, meshMgr, camSys) // for gizmo
@@ -135,9 +141,10 @@ func main() {
 	cube1.AddComponent(ecs.NewColliderAABB([3]float32{0.5, 0.5, 0.5}))
 
 	cube2 := scene.AddEntity()
+	cube2.AddComponent(teaTex)
 	cube2.AddComponent(ecs.NewTransform([3]float32{0.2, 6.0, 0.0}))
 	cube2.AddComponent(ecs.NewMesh("cube"))
-	cube2.AddComponent(ecs.NewMaterial([4]float32{0.0, 1.0, 0.0, 1.0}))
+	cube2.AddComponent(ecs.NewMaterial([4]float32{.8, 1.0, 0.8, 1.0}))
 	cube2.AddComponent(ecs.NewRigidBody(1.0))
 	cube2.AddComponent(ecs.NewColliderAABB([3]float32{0.5, 0.5, 0.5}))
 	/*
@@ -150,6 +157,7 @@ func main() {
 	*/
 	// Shiny metal cube
 	metalCube := scene.AddEntity()
+	metalCube.AddComponent(crateTex)
 	metalCube.AddComponent(ecs.NewTransform([3]float32{1.5, 4.0, 0.0}))
 	metalCube.AddComponent(ecs.NewMesh("cube24"))
 	metalCube.AddComponent(&ecs.Material{
@@ -164,6 +172,7 @@ func main() {
 
 	// Matte plastic cube
 	plasticCube := scene.AddEntity()
+	plasticCube.AddComponent(crateTex)
 	plasticCube.AddComponent(ecs.NewTransform([3]float32{-1.5, 4.0, 0.0}))
 	plasticCube.AddComponent(ecs.NewMesh("cube24"))
 	plasticCube.AddComponent(&ecs.Material{
@@ -176,10 +185,19 @@ func main() {
 	plasticCube.AddComponent(ecs.NewRigidBody(1.0))
 	plasticCube.AddComponent(ecs.NewColliderAABB([3]float32{0.5, 0.5, 0.5}))
 	teapot := scene.AddEntity()
+
+	teapot.AddComponent(teaTex)
 	teapot.AddComponent(ecs.NewTransform([3]float32{0, 2, 0}))
 	teapot.AddComponent(ecs.NewMesh("teapot"))
-	teapot.AddComponent(ecs.NewMaterial([4]float32{1, 1, 1, 1}))
 	// optional texture
+
+	teapot.AddComponent(&ecs.Material{
+		BaseColor: [4]float32{1, 1, 1, 1.0}, // green
+		Ambient:   0.4,
+		Diffuse:   0.6,
+		Specular:  0.02, // weak specular
+		Shininess: 2.0,  // broad, dull highlight
+	})
 
 	lightGizmo := scene.AddEntity()
 	lightGizmo.AddComponent(ecs.NewTransform([3]float32{5, 5, 0}))
