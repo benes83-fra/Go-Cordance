@@ -17,6 +17,9 @@ type RenderSystem struct {
 	LightEntity    *Entity
 	LightArrow     *Entity
 	OrbitalEnabled bool
+
+	DebugShowMode  int32 // 0..6 as in shader
+	DebugFlipGreen bool
 }
 
 func NewRenderSystem(r *engine.Renderer, mm *engine.MeshManager, cs *CameraSystem) *RenderSystem {
@@ -31,6 +34,15 @@ func NewRenderSystem(r *engine.Renderer, mm *engine.MeshManager, cs *CameraSyste
 
 func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 	gl.UseProgram(rs.Renderer.Program)
+
+	//debug stuff
+	gl.Uniform1i(rs.Renderer.LocShowMode, rs.DebugShowMode)
+	if rs.DebugFlipGreen {
+		gl.Uniform1i(rs.Renderer.LocFlipNormalG, 1)
+	} else {
+		gl.Uniform1i(rs.Renderer.LocFlipNormalG, 0)
+	}
+	//back to normal
 	view := rs.CameraSystem.View
 	proj := rs.CameraSystem.Projection
 
@@ -104,7 +116,20 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 		} else {
 			gl.Uniform1i(rs.Renderer.LocUseTexture, 0)
 		}
+		// bind normal map if present ----debug code until Draw
+		var normalMapComp *NormalMap
+		if nm, ok := e.GetComponent((*NormalMap)(nil)).(*NormalMap); ok && nm != nil && nm.ID != 0 {
+			normalMapComp = nm
+		}
 
+		if normalMapComp != nil {
+			gl.ActiveTexture(gl.TEXTURE1)
+			gl.BindTexture(gl.TEXTURE_2D, normalMapComp.ID)
+			gl.Uniform1i(rs.Renderer.LocNormalMap, 1) // sampler unit 1
+			gl.Uniform1i(rs.Renderer.LocUseNormalMap, 1)
+		} else {
+			gl.Uniform1i(rs.Renderer.LocUseNormalMap, 0)
+		}
 		// Draw
 		vao := rs.MeshManager.GetVAO(mesh.ID)
 		gl.BindVertexArray(vao)

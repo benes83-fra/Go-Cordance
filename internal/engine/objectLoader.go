@@ -3,7 +3,6 @@ package engine
 import (
 	"bufio"
 	"fmt"
-	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -175,7 +174,12 @@ func (mm *MeshManager) RegisterOBJ(id, path string) error {
 					nx, ny, nz = n[0], n[1], n[2]
 				}
 				// append interleaved vertex: pos(3), normal(3), uv(2)
-				vertices = append(vertices, px, py, pz, nx, ny, nz, tx, ty)
+				// previously: vertices = append(vertices, px, py, pz, nx, ny, nz, tx, ty)
+				// now append tangent placeholder:
+				// pos(3), normal(3), uv(2), tangent(4 placeholder: x,y,z,w)
+				vertices = append(vertices, px, py, pz, nx, ny, nz, tx, ty, 0.0, 0.0, 0.0, 1.0)
+
+				//vertices = append(vertices, px, py, pz, nx, ny, nz, tx, ty)
 				idx = nextIndex
 				vertMap[key] = idx
 				nextIndex++
@@ -189,6 +193,7 @@ func (mm *MeshManager) RegisterOBJ(id, path string) error {
 		computeNormals(vertices, indices)
 		// after computeNormals, vertices' normal slots are filled
 	}
+	computeTangents(vertices, indices)
 
 	// create GL buffers
 	var vao, vbo, ebo uint32
@@ -204,14 +209,15 @@ func (mm *MeshManager) RegisterOBJ(id, path string) error {
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
 
-	stride := int32(8 * 4)
+	stride := int32(12 * 4)
 	gl.EnableVertexAttribArray(0)
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, stride, gl.PtrOffset(0))
 	gl.EnableVertexAttribArray(1)
 	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, stride, gl.PtrOffset(3*4))
 	gl.EnableVertexAttribArray(2)
 	gl.VertexAttribPointer(2, 2, gl.FLOAT, false, stride, gl.PtrOffset(6*4))
-
+	gl.EnableVertexAttribArray(3)
+	gl.VertexAttribPointer(3, 4, gl.FLOAT, false, stride, gl.PtrOffset(8*4))
 	gl.BindVertexArray(0)
 
 	mm.vaos[id] = vao
@@ -220,153 +226,4 @@ func (mm *MeshManager) RegisterOBJ(id, path string) error {
 	mm.counts[id] = int32(len(indices))
 
 	return nil
-}
-
-func computeTangents(vertices []float32, indices []uint32) {
-	const stride = 12
-	vertCount := len(vertices) / stride
-	if vertCount == 0 {
-		return
-	}
-
-	// accumulators for tangent and bitangent
-	tanX := make([]float32, vertCount)
-	tanY := make([]float32, vertCount)
-	tanZ := make([]float32, vertCount)
-
-	bitX := make([]float32, vertCount)
-	bitY := make([]float32, vertCount)
-	bitZ := make([]float32, vertCount)
-
-	// iterate triangles
-	for i := 0; i < len(indices); i += 3 {
-		i0 := int(indices[i+0])
-		i1 := int(indices[i+1])
-		i2 := int(indices[i+2])
-
-		// positions
-		p0x := vertices[i0*stride+0]
-		p0y := vertices[i0*stride+1]
-		p0z := vertices[i0*stride+2]
-
-		p1x := vertices[i1*stride+0]
-		p1y := vertices[i1*stride+1]
-		p1z := vertices[i1*stride+2]
-
-		p2x := vertices[i2*stride+0]
-		p2y := vertices[i2*stride+1]
-		p2z := vertices[i2*stride+2]
-
-		// uvs
-		u0 := vertices[i0*stride+6]
-		v0 := vertices[i0*stride+7]
-		u1 := vertices[i1*stride+6]
-		v1 := vertices[i1*stride+7]
-		u2 := vertices[i2*stride+6]
-		v2 := vertices[i2*stride+7]
-
-		// edges
-		ex1 := p1x - p0x
-		ey1 := p1y - p0y
-		ez1 := p1z - p0z
-
-		ex2 := p2x - p0x
-		ey2 := p2y - p0y
-		ez2 := p2z - p0z
-
-		// uv deltas
-		du1 := u1 - u0
-		dv1 := v1 - v0
-		du2 := u2 - u0
-		dv2 := v2 - v0
-
-		denom := du1*dv2 - du2*dv1
-		var r float32 = 0.0
-		if denom != 0.0 {
-			r = 1.0 / denom
-		}
-
-		// tangent
-		tx := (dv2*ex1 - dv1*ex2) * r
-		ty := (dv2*ey1 - dv1*ey2) * r
-		tz := (dv2*ez1 - dv1*ez2) * r
-
-		// bitangent
-		bx := (-du2*ex1 + du1*ex2) * r
-		by := (-du2*ey1 + du1*ey2) * r
-		bz := (-du2*ez1 + du1*ez2) * r
-
-		// accumulate
-		tanX[i0] += tx
-		tanY[i0] += ty
-		tanZ[i0] += tz
-		tanX[i1] += tx
-		tanY[i1] += ty
-		tanZ[i1] += tz
-		tanX[i2] += tx
-		tanY[i2] += ty
-		tanZ[i2] += tz
-
-		bitX[i0] += bx
-		bitY[i0] += by
-		bitZ[i0] += bz
-		bitX[i1] += bx
-		bitY[i1] += by
-		bitZ[i1] += bz
-		bitX[i2] += bx
-		bitY[i2] += by
-		bitZ[i2] += bz
-	}
-
-	// orthonormalize tangent against normal and compute handedness
-	for i := 0; i < vertCount; i++ {
-		nx := vertices[i*stride+3]
-		ny := vertices[i*stride+4]
-		nz := vertices[i*stride+5]
-
-		// Gram-Schmidt orthogonalize tangent with normal
-		tx := tanX[i]
-		ty := tanY[i]
-		tz := tanZ[i]
-
-		// t = normalize( t - n * dot(n, t) )
-		dotNT := nx*tx + ny*ty + nz*tz
-		tx = tx - nx*dotNT
-		ty = ty - ny*dotNT
-		tz = tz - nz*dotNT
-
-		// normalize t
-		magT := tx*tx + ty*ty + tz*tz
-		if magT > 0.0 {
-			inv := float32(1.0 / math.Sqrt(float64(magT)))
-			tx *= inv
-			ty *= inv
-			tz *= inv
-		} else {
-			// fallback tangent if degenerate
-			tx, ty, tz = 1.0, 0.0, 0.0
-		}
-
-		// compute handedness: w = sign( dot( cross(n, t), bitangent ) )
-		// cross(n, t)
-		cx := ny*tz - nz*ty
-		cy := nz*tx - nx*tz
-		cz := nx*ty - ny*tx
-
-		bx := bitX[i]
-		by := bitY[i]
-		bz := bitZ[i]
-
-		handed := cx*bx + cy*by + cz*bz
-		w := float32(1.0)
-		if handed < 0.0 {
-			w = -1.0
-		}
-
-		// write tangent vec4 into vertices (offset 8..11)
-		vertices[i*stride+8] = tx
-		vertices[i*stride+9] = ty
-		vertices[i*stride+10] = tz
-		vertices[i*stride+11] = w
-	}
 }

@@ -21,6 +21,12 @@ type Renderer struct {
 	LocShininess  int32
 	LocDiffuseTex int32
 	LocUseTexture int32
+
+	// new debug / normal map uniforms
+	LocNormalMap    int32
+	LocUseNormalMap int32
+	LocFlipNormalG  int32
+	LocShowMode     int32
 }
 
 func (r *Renderer) InitUniforms() {
@@ -36,6 +42,13 @@ func (r *Renderer) InitUniforms() {
 	r.LocShininess = gl.GetUniformLocation(r.Program, gl.Str("matShininess\x00"))
 	r.LocDiffuseTex = gl.GetUniformLocation(r.Program, gl.Str("diffuseTex\x00"))
 	r.LocUseTexture = gl.GetUniformLocation(r.Program, gl.Str("useTexture\x00"))
+
+	//for debugging purpose
+	// renderer.InitUniforms (add these lines)
+	r.LocNormalMap = gl.GetUniformLocation(r.Program, gl.Str("normalMap\x00"))
+	r.LocUseNormalMap = gl.GetUniformLocation(r.Program, gl.Str("useNormalMap\x00"))
+	r.LocFlipNormalG = gl.GetUniformLocation(r.Program, gl.Str("flipNormalGreen\x00"))
+	r.LocShowMode = gl.GetUniformLocation(r.Program, gl.Str("showMode\x00"))
 
 	names := map[string]int32{
 		"model": r.LocModel, "view": r.LocView, "projection": r.LocProj,

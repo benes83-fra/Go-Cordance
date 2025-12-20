@@ -120,7 +120,25 @@ func main() {
 				log.Printf("Light Debug rendering: %v", lightDebug.Enabled)
 			case glfw.KeyEscape:
 				os.Exit(0)
+				//further debug options
+			case glfw.Key1:
+				renderSys.DebugShowMode = 0 // final
+			case glfw.Key2:
+				renderSys.DebugShowMode = 1 // normal map raw
+			case glfw.Key3:
+				renderSys.DebugShowMode = 2 // tangent
+			case glfw.Key4:
+				renderSys.DebugShowMode = 3 // bitangent
+			case glfw.Key5:
+				renderSys.DebugShowMode = 4 // normal
+			case glfw.Key6:
+				renderSys.DebugShowMode = 5 // tangentW
+			case glfw.Key7:
+				renderSys.DebugShowMode = 6 // uv
+			case glfw.KeyG:
+				renderSys.DebugFlipGreen = !renderSys.DebugFlipGreen
 			}
+
 		}
 	})
 	// Camera entity
@@ -187,6 +205,8 @@ func main() {
 	teapot := scene.AddEntity()
 
 	teapot.AddComponent(teaTex)
+	//teapot.AddComponent(ecs.NewNormalMap(texID2))
+
 	teapot.AddComponent(ecs.NewTransform([3]float32{0, 2, 0}))
 	teapot.AddComponent(ecs.NewMesh("teapot"))
 	// optional texture

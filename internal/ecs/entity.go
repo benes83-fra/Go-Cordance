@@ -48,3 +48,14 @@ func (e *Entity) Update(dt float32) {
 		c.Update(dt)
 	}
 }
+
+// ecs/components.go or similar
+type NormalMap struct {
+	ID uint32
+}
+
+func NewNormalMap(id uint32) *NormalMap { return &NormalMap{ID: id} }
+
+func (n *NormalMap) Update(dt float32) {
+	_ = dt
+}
