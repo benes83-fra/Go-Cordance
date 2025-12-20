@@ -8,35 +8,40 @@ import (
 )
 
 type Renderer struct {
-	Program      uint32
-	LocModel     int32
-	LocView      int32
-	LocProj      int32
-	LocBaseCol   int32
-	LocLightDir  int32
-	LocViewPos   int32
-	LocAmbient   int32
-	LocDiffuse   int32
-	LocSpecular  int32
-	LocShininess int32
+	Program       uint32
+	LocModel      int32
+	LocView       int32
+	LocProj       int32
+	LocBaseCol    int32
+	LocLightDir   int32
+	LocViewPos    int32
+	LocAmbient    int32
+	LocDiffuse    int32
+	LocSpecular   int32
+	LocShininess  int32
+	LocDiffuseTex int32
+	LocUseTexture int32
 }
 
 func (r *Renderer) InitUniforms() {
 	r.LocModel = gl.GetUniformLocation(r.Program, gl.Str("model\x00"))
 	r.LocView = gl.GetUniformLocation(r.Program, gl.Str("view\x00"))
 	r.LocProj = gl.GetUniformLocation(r.Program, gl.Str("projection\x00"))
-	r.LocBaseCol = gl.GetUniformLocation(r.Program, gl.Str("baseColor\x00"))
-	r.LocLightDir = gl.GetUniformLocation(r.Program, gl.Str("lightDir\x00")) // NEW
-	r.LocViewPos = gl.GetUniformLocation(r.Program, gl.Str("viewPos\x00"))   // NEW
+	r.LocBaseCol = gl.GetUniformLocation(r.Program, gl.Str("BaseColor\x00"))
+	r.LocLightDir = gl.GetUniformLocation(r.Program, gl.Str("lightDir\x00"))
+	r.LocViewPos = gl.GetUniformLocation(r.Program, gl.Str("viewPos\x00"))
 	r.LocAmbient = gl.GetUniformLocation(r.Program, gl.Str("matAmbient\x00"))
 	r.LocDiffuse = gl.GetUniformLocation(r.Program, gl.Str("matDiffuse\x00"))
 	r.LocSpecular = gl.GetUniformLocation(r.Program, gl.Str("matSpecular\x00"))
 	r.LocShininess = gl.GetUniformLocation(r.Program, gl.Str("matShininess\x00"))
+	r.LocDiffuseTex = gl.GetUniformLocation(r.Program, gl.Str("diffuseTex\x00"))
+	r.LocUseTexture = gl.GetUniformLocation(r.Program, gl.Str("useTexture\x00"))
+
 	names := map[string]int32{
 		"model": r.LocModel, "view": r.LocView, "projection": r.LocProj,
 		"baseColor": r.LocBaseCol, "lightDir": r.LocLightDir, "viewPos": r.LocViewPos,
 		"matAmbient": r.LocAmbient, "matDiffuse": r.LocDiffuse,
-		"matSpecular": r.LocSpecular, "matShininess": r.LocShininess,
+		"matSpecular": r.LocSpecular, "matShininess": r.LocShininess, "diffuseTex": r.LocDiffuseTex, "useTexture": r.LocUseTexture,
 	}
 	for n, loc := range names {
 		if loc == -1 {

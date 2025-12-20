@@ -90,41 +90,42 @@ func (mm *MeshManager) RegisterLine(id string) {
 func (mm *MeshManager) RegisterCube(id string) {
 	// 24 vertices: 6 faces * 4 verts, each with position+normal
 	vertices := []float32{
+		// pos           normal        uv
 		// Front (+Z)
-		-0.5, -0.5, 0.5, 0, 0, 1,
-		0.5, -0.5, 0.5, 0, 0, 1,
-		0.5, 0.5, 0.5, 0, 0, 1,
-		-0.5, 0.5, 0.5, 0, 0, 1,
+		-0.5, -0.5, 0.5, 0, 0, 1, 0, 0,
+		0.5, -0.5, 0.5, 0, 0, 1, 1, 0,
+		0.5, 0.5, 0.5, 0, 0, 1, 1, 1,
+		-0.5, 0.5, 0.5, 0, 0, 1, 0, 1,
 
 		// Back (-Z)
-		0.5, -0.5, -0.5, 0, 0, -1,
-		-0.5, -0.5, -0.5, 0, 0, -1,
-		-0.5, 0.5, -0.5, 0, 0, -1,
-		0.5, 0.5, -0.5, 0, 0, -1,
+		0.5, -0.5, -0.5, 0, 0, -1, 0, 0,
+		-0.5, -0.5, -0.5, 0, 0, -1, 1, 0,
+		-0.5, 0.5, -0.5, 0, 0, -1, 1, 1,
+		0.5, 0.5, -0.5, 0, 0, -1, 0, 1,
 
 		// Left (-X)
-		-0.5, -0.5, -0.5, -1, 0, 0,
-		-0.5, -0.5, 0.5, -1, 0, 0,
-		-0.5, 0.5, 0.5, -1, 0, 0,
-		-0.5, 0.5, -0.5, -1, 0, 0,
+		-0.5, -0.5, -0.5, -1, 0, 0, 0, 0,
+		-0.5, -0.5, 0.5, -1, 0, 0, 1, 0,
+		-0.5, 0.5, 0.5, -1, 0, 0, 1, 1,
+		-0.5, 0.5, -0.5, -1, 0, 0, 0, 1,
 
 		// Right (+X)
-		0.5, -0.5, 0.5, 1, 0, 0,
-		0.5, -0.5, -0.5, 1, 0, 0,
-		0.5, 0.5, -0.5, 1, 0, 0,
-		0.5, 0.5, 0.5, 1, 0, 0,
+		0.5, -0.5, 0.5, 1, 0, 0, 0, 0,
+		0.5, -0.5, -0.5, 1, 0, 0, 1, 0,
+		0.5, 0.5, -0.5, 1, 0, 0, 1, 1,
+		0.5, 0.5, 0.5, 1, 0, 0, 0, 1,
 
 		// Top (+Y)
-		-0.5, 0.5, 0.5, 0, 1, 0,
-		0.5, 0.5, 0.5, 0, 1, 0,
-		0.5, 0.5, -0.5, 0, 1, 0,
-		-0.5, 0.5, -0.5, 0, 1, 0,
+		-0.5, 0.5, 0.5, 0, 1, 0, 0, 0,
+		0.5, 0.5, 0.5, 0, 1, 0, 1, 0,
+		0.5, 0.5, -0.5, 0, 1, 0, 1, 1,
+		-0.5, 0.5, -0.5, 0, 1, 0, 0, 1,
 
 		// Bottom (-Y)
-		-0.5, -0.5, -0.5, 0, -1, 0,
-		0.5, -0.5, -0.5, 0, -1, 0,
-		0.5, -0.5, 0.5, 0, -1, 0,
-		-0.5, -0.5, 0.5, 0, -1, 0,
+		-0.5, -0.5, -0.5, 0, -1, 0, 0, 0,
+		0.5, -0.5, -0.5, 0, -1, 0, 1, 0,
+		0.5, -0.5, 0.5, 0, -1, 0, 1, 1,
+		-0.5, -0.5, 0.5, 0, -1, 0, 0, 1,
 	}
 
 	indices := []uint32{
@@ -155,11 +156,19 @@ func (mm *MeshManager) RegisterCube(id string) {
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
 
-	gl.EnableVertexAttribArray(0)
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(0))
+	stride := int32(8 * 4) // 8 floats per vertex
 
+	// position
+	gl.EnableVertexAttribArray(0)
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, stride, gl.PtrOffset(0))
+
+	// normal
 	gl.EnableVertexAttribArray(1)
-	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(3*4))
+	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, stride, gl.PtrOffset(3*4))
+
+	// uv
+	gl.EnableVertexAttribArray(2)
+	gl.VertexAttribPointer(2, 2, gl.FLOAT, false, stride, gl.PtrOffset(6*4))
 
 	gl.BindVertexArray(0)
 

@@ -33,6 +33,7 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 	gl.UseProgram(rs.Renderer.Program)
 	view := rs.CameraSystem.View
 	proj := rs.CameraSystem.Projection
+
 	if rs.OrbitalEnabled {
 		angle := float32(glfw.GetTime()) // seconds since start
 		rs.LightDir[0] = float32(math.Cos(float64(angle)))
@@ -43,6 +44,7 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 		var t *Transform
 		var mesh *Mesh
 		var mat *Material
+		var tex *Texture
 		if rs.LightEntity != nil {
 			if t, ok := rs.LightEntity.GetComponent((*Transform)(nil)).(*Transform); ok {
 				t.Position[0] = rs.LightDir[0] * 5
@@ -64,6 +66,8 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 				mesh = v
 			case *Material:
 				mat = v
+			case *Texture:
+				tex = v
 			}
 		}
 		if t == nil || mesh == nil || mat == nil {
@@ -91,6 +95,14 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 			gl.Uniform1f(rs.Renderer.LocDiffuse, mat.Diffuse)
 			gl.Uniform1f(rs.Renderer.LocSpecular, mat.Specular)
 			gl.Uniform1f(rs.Renderer.LocShininess, mat.Shininess)
+		}
+		if tex != nil {
+			gl.ActiveTexture(gl.TEXTURE0)
+			gl.BindTexture(gl.TEXTURE_2D, tex.ID)
+			gl.Uniform1i(rs.Renderer.LocDiffuseTex, 0)
+			gl.Uniform1i(rs.Renderer.LocUseTexture, 1)
+		} else {
+			gl.Uniform1i(rs.Renderer.LocUseTexture, 0)
 		}
 
 		// Draw

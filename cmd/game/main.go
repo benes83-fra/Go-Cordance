@@ -69,6 +69,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	texID, err := engine.LoadTexture("assets/textures/crate.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	crateTex := ecs.NewTexture(texID)
 
 	debugRenderer := engine.NewDebugRenderer(debugVertexSrc, debugFragmentSrc)
 	debugSys := ecs.NewDebugRenderSystem(debugRenderer, meshMgr, camSys)
@@ -118,8 +124,9 @@ func main() {
 	ground.AddComponent(ecs.NewColliderPlane(-2.0)) // y=0 plane
 
 	cube1 := scene.AddEntity()
+	cube1.AddComponent(crateTex)
 	cube1.AddComponent(ecs.NewTransform([3]float32{0.0, 4.0, 0.0}))
-	cube1.AddComponent(ecs.NewMesh("cube"))
+	cube1.AddComponent(ecs.NewMesh("cube24"))
 	cube1.AddComponent(ecs.NewMaterial([4]float32{1.0, 0.0, 0.0, 1.0}))
 	cube1.AddComponent(ecs.NewRigidBody(1.0))
 	cube1.AddComponent(ecs.NewColliderAABB([3]float32{0.5, 0.5, 0.5}))
