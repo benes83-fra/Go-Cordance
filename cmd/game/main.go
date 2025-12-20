@@ -53,6 +53,9 @@ func main() {
 	meshMgr.RegisterSphere("sphere", 32, 16) // slices, stacks
 	meshMgr.RegisterLine("line")
 
+	if err := meshMgr.RegisterOBJ("teapot", "assets/models/teapot.obj"); err != nil {
+		log.Fatal("Failed to load OBJ:", err)
+	}
 	// optionally: meshMgr.RegisterWireSphere("wire_sphere")
 
 	scene := scene.New()
@@ -172,6 +175,11 @@ func main() {
 	})
 	plasticCube.AddComponent(ecs.NewRigidBody(1.0))
 	plasticCube.AddComponent(ecs.NewColliderAABB([3]float32{0.5, 0.5, 0.5}))
+	teapot := scene.AddEntity()
+	teapot.AddComponent(ecs.NewTransform([3]float32{0, 2, 0}))
+	teapot.AddComponent(ecs.NewMesh("teapot"))
+	teapot.AddComponent(ecs.NewMaterial([4]float32{1, 1, 1, 1}))
+	// optional texture
 
 	lightGizmo := scene.AddEntity()
 	lightGizmo.AddComponent(ecs.NewTransform([3]float32{5, 5, 0}))
@@ -204,5 +212,6 @@ func main() {
 		window.SwapBuffers()
 		engine.PollEvents()
 	}
+	meshMgr.Delete()
 	engine.TerminateGLFW()
 }

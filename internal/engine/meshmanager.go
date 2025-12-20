@@ -7,19 +7,27 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
+// internal/engine/meshmanager.go (add fields)
 type MeshManager struct {
 	vaos   map[string]uint32
 	counts map[string]int32
+
+	// new: track buffers so we can delete them
+	vbos map[string]uint32
+	ebos map[string]uint32
 }
 
-func (mm *MeshManager) GetCount(MeshID string) int32 {
-	return mm.counts[MeshID]
-}
 func NewMeshManager() *MeshManager {
 	return &MeshManager{
 		vaos:   make(map[string]uint32),
 		counts: make(map[string]int32),
+		vbos:   make(map[string]uint32),
+		ebos:   make(map[string]uint32),
 	}
+}
+
+func (mm *MeshManager) GetCount(MeshID string) int32 {
+	return mm.counts[MeshID]
 }
 
 // Triangle with only positions (layout location 0)
@@ -55,6 +63,8 @@ func (mm *MeshManager) RegisterTriangle(id string) {
 	gl.BindVertexArray(0)
 
 	mm.vaos[id] = vao
+	mm.vbos[id] = vbo
+	mm.ebos[id] = ebo
 	mm.counts[id] = int32(len(indices))
 }
 func (mm *MeshManager) RegisterLine(id string) {
@@ -84,6 +94,8 @@ func (mm *MeshManager) RegisterLine(id string) {
 	gl.BindVertexArray(0)
 
 	mm.vaos[id] = vao
+	mm.vbos[id] = vbo
+	mm.ebos[id] = ebo
 	mm.counts[id] = int32(len(indices))
 }
 
@@ -173,6 +185,8 @@ func (mm *MeshManager) RegisterCube(id string) {
 	gl.BindVertexArray(0)
 
 	mm.vaos[id] = vao
+	mm.vbos[id] = vbo
+	mm.ebos[id] = ebo
 	mm.counts[id] = int32(len(indices))
 }
 
@@ -215,6 +229,8 @@ func (mm *MeshManager) RegisterWireCube(id string) {
 	gl.BindVertexArray(0)
 
 	mm.vaos[id] = vao
+	mm.vbos[id] = vbo
+	mm.ebos[id] = ebo
 	mm.counts[id] = int32(len(indices))
 }
 func (mm *MeshManager) RegisterWireSphere(id string, slices, stacks int) {
@@ -266,6 +282,8 @@ func (mm *MeshManager) RegisterWireSphere(id string, slices, stacks int) {
 	gl.BindVertexArray(0)
 
 	mm.vaos[id] = vao
+	mm.vbos[id] = vbo
+	mm.ebos[id] = ebo
 	mm.counts[id] = int32(len(indices))
 }
 
@@ -325,7 +343,29 @@ func (mm *MeshManager) RegisterSphere(id string, slices, stacks int) {
 	gl.BindVertexArray(0)
 
 	mm.vaos[id] = vao
+	mm.vbos[id] = vbo
+	mm.ebos[id] = ebo
 	mm.counts[id] = int32(len(indices))
 }
 
 func (mm *MeshManager) GetVAO(id string) uint32 { return mm.vaos[id] }
+
+func (mm *MeshManager) Delete() {
+	// delete VAOs
+	for _, vao := range mm.vaos {
+		gl.DeleteVertexArrays(1, &vao)
+	}
+	// delete VBOs
+	for _, vbo := range mm.vbos {
+		gl.DeleteBuffers(1, &vbo)
+	}
+	// delete EBOs
+	for _, ebo := range mm.ebos {
+		gl.DeleteBuffers(1, &ebo)
+	}
+	// clear maps
+	mm.vaos = nil
+	mm.vbos = nil
+	mm.ebos = nil
+	mm.counts = nil
+}

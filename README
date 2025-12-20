@@ -30,17 +30,18 @@ It explores how far Go can be pushed for real‑time graphics, physics, and enti
   - Toggleable debug rendering system
   - Separate shader for collider visualization
   - Empirical validation of material/shader differences
-
+- **Textures**
+  - Simple texture system introduced
 ---
 
 ## 📂 Project Structure
 
 cmd/game/ # Entry point demo binary 
-internal/ # Core engine packages 
-camera/ # Camera component/system 
-physics/ # Physics system and colliders 
-mesh/ # Mesh generation and handling 
-material/ # Material component and shader integration 
+internal/engine # Core engine packages 
+internal/esc # Camera component/system 
+             # Physics system and colliders 
+             # Mesh generation and handling 
+             # Material component and shader integration 
 assets/shaders/ # GLSL shader files
 go.mod, go.sum # Go module definitions
 
