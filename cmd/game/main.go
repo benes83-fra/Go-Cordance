@@ -55,7 +55,7 @@ func main() {
 	meshMgr.RegisterLine("line")
 
 	if err := meshMgr.RegisterGLTF("teapot", "assets/models/teapot/teapot.gltf"); err != nil {
-		log.Fatal("Failed to load OBJ:", err)
+		log.Fatal("Failed to load glTF:", err)
 	}
 	// optionally: meshMgr.RegisterWireSphere("wire_sphere")
 
