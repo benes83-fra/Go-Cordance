@@ -102,6 +102,8 @@ func main() {
 	scene.Systems().AddSystem(ecs.NewForceSystem(0, -9.8, 0)) // gravity
 	scene.Systems().AddSystem(ecs.NewPhysicsSystem())
 	scene.Systems().AddSystem(ecs.NewCollisionSystem())
+	scene.Systems().AddSystem(ecs.NewTransformSystem())
+
 	scene.Systems().AddSystem(camCtrl) // updates Camera component
 	scene.Systems().AddSystem(camSys)  // computes view/projection from Camera
 	scene.Systems().AddSystem(renderSys)

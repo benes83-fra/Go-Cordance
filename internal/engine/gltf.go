@@ -493,7 +493,6 @@ func loadGLTFMaterialsInternal(id, path string, multi bool) ([]LoadedMeshMateria
 	return results, nil
 }
 func composeNodeTransform(n gltfNode) [16]float32 {
-
 	// If matrix is provided, it overrides everything
 	if len(n.Matrix) == 16 {
 		var out [16]float32
@@ -519,8 +518,6 @@ func composeNodeTransform(n gltfNode) [16]float32 {
 		qx, qy, qz, qw = n.Rotation[0], n.Rotation[1], n.Rotation[2], n.Rotation[3]
 	}
 
-	// Build TRS matrix
-	// Rotation → matrix
 	xx := qx * qx
 	yy := qy * qy
 	zz := qz * qz
@@ -531,31 +528,37 @@ func composeNodeTransform(n gltfNode) [16]float32 {
 	wy := qw * qy
 	wz := qw * qz
 
-	R := [16]float32{
+	m := [16]float32{
 		1 - 2*(yy+zz), 2 * (xy - wz), 2 * (xz + wy), 0,
 		2 * (xy + wz), 1 - 2*(xx+zz), 2 * (yz - wx), 0,
 		2 * (xz - wy), 2 * (yz + wx), 1 - 2*(xx+yy), 0,
 		0, 0, 0, 1,
 	}
 
-	// Apply scale
-	R[0] *= sx
-	R[1] *= sx
-	R[2] *= sx
-	R[4] *= sy
-	R[5] *= sy
-	R[6] *= sy
-	R[8] *= sz
-	R[9] *= sz
-	R[10] *= sz
+	// Scale
+	m[0] *= sx
+	m[1] *= sx
+	m[2] *= sx
+	m[4] *= sy
+	m[5] *= sy
+	m[6] *= sy
+	m[8] *= sz
+	m[9] *= sz
+	m[10] *= sz
 
-	// Apply translation
-	R[12] = tx
-	R[13] = ty
-	R[14] = tz
+	// Translation
+	m[12] = tx
+	m[13] = ty
+	m[14] = tz
 
-	return R
+	return m
 }
+
+// Public wrapper so scene package can use it
+func ComposeNodeTransform(n gltfNode) [16]float32 {
+	return composeNodeTransform(n)
+}
+
 func LoadGLTFRoot(path string) (*gltfRoot, error) {
 	raw, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -566,8 +569,4 @@ func LoadGLTFRoot(path string) (*gltfRoot, error) {
 		return nil, err
 	}
 	return &g, nil
-}
-
-func ComposeNodeTransform(n gltfNode) [16]float32 {
-	return composeNodeTransform(n)
 }

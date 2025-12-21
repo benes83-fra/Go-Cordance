@@ -4,14 +4,28 @@ import "math"
 
 // Transform is a simple component that holds position/rotation/scale.
 // It implements Component so it can be updated if needed (e.g., animations).
+
 type Transform struct {
 	Position [3]float32
-	Rotation [4]float32 // Euler angles in radians
+	Rotation [4]float32 // quaternion (x, y, z, w)
 	Scale    [3]float32
+
+	LocalMatrix [16]float32
+	WorldMatrix [16]float32
+
+	Dirty bool
 }
 
 func NewTransform(pos [3]float32) *Transform {
-	return &Transform{Position: pos}
+	t := &Transform{
+		Position: pos,
+		Rotation: [4]float32{0, 0, 0, 1},
+		Scale:    [3]float32{1, 1, 1},
+		Dirty:    true,
+	}
+	t.RecalculateLocal()
+	t.WorldMatrix = t.LocalMatrix
+	return t
 }
 
 // Update is a no-op by default. You can embed or extend Transform to animate it.
