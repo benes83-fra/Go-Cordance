@@ -10,7 +10,9 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
-// Basic glTF 2.0 structs (only what we need)
+// ---------------------------
+// glTF 2.0 minimal structs
+// ---------------------------
 
 type gltfBuffer struct {
 	ByteLength int    `json:"byteLength"`
@@ -26,20 +28,17 @@ type gltfBufferView struct {
 }
 
 type gltfAccessor struct {
-	BufferView    int       `json:"bufferView"`
-	ByteOffset    int       `json:"byteOffset"`
-	ComponentType int       `json:"componentType"`
-	Count         int       `json:"count"`
-	Type          string    `json:"type"`
-	Max           []float32 `json:"max"`
-	Min           []float32 `json:"min"`
+	BufferView    int    `json:"bufferView"`
+	ByteOffset    int    `json:"byteOffset"`
+	ComponentType int    `json:"componentType"`
+	Count         int    `json:"count"`
+	Type          string `json:"type"`
 }
 
 type gltfPrimitive struct {
 	Attributes map[string]int `json:"attributes"`
 	Indices    int            `json:"indices"`
 	Material   int            `json:"material"`
-	Mode       int            `json:"mode"`
 }
 
 type gltfMesh struct {
@@ -47,14 +46,42 @@ type gltfMesh struct {
 	Primitives []gltfPrimitive `json:"primitives"`
 }
 
+type gltfTextureInfo struct {
+	Index int `json:"index"`
+}
+
+type gltfPBR struct {
+	BaseColorFactor  []float32        `json:"baseColorFactor"`
+	BaseColorTexture *gltfTextureInfo `json:"baseColorTexture"`
+}
+
+type gltfMaterial struct {
+	Name          string           `json:"name"`
+	PBR           gltfPBR          `json:"pbrMetallicRoughness"`
+	NormalTexture *gltfTextureInfo `json:"normalTexture"`
+}
+
+type gltfImage struct {
+	URI string `json:"uri"`
+}
+
+type gltfTexture struct {
+	Source int `json:"source"`
+}
+
 type gltfRoot struct {
 	Buffers     []gltfBuffer     `json:"buffers"`
 	BufferViews []gltfBufferView `json:"bufferViews"`
 	Accessors   []gltfAccessor   `json:"accessors"`
 	Meshes      []gltfMesh       `json:"meshes"`
+	Materials   []gltfMaterial   `json:"materials"`
+	Images      []gltfImage      `json:"images"`
+	Textures    []gltfTexture    `json:"textures"`
 }
 
+// ---------------------------
 // Helpers
+// ---------------------------
 
 func componentByteSize(typ string, comp int) int {
 	var csize int
@@ -71,7 +98,7 @@ func componentByteSize(typ string, comp int) int {
 
 	switch typ {
 	case "SCALAR":
-		return csize * 1
+		return csize
 	case "VEC2":
 		return csize * 2
 	case "VEC3":
@@ -91,223 +118,54 @@ func bytesToFloat32(b []byte) float32 {
 			uint32(b[3])<<24)
 }
 
-// RegisterGLTF loads a single-mesh, single-primitive glTF 2.0 file
-// and registers an interleaved mesh: pos(3), normal(3), uv(2), tangent(4).
-func (mm *MeshManager) RegisterGLTF(id, path string) error {
-	baseDir := filepath.Dir(path)
+// ---------------------------
+// Core accessor reader
+// ---------------------------
 
-	// Load JSON
-	raw, err := ioutil.ReadFile(path)
-	if err != nil {
-		return fmt.Errorf("read glTF: %w", err)
-	}
+type accessorData struct {
+	acc    gltfAccessor
+	bv     gltfBufferView
+	buf    []byte
+	base   int
+	stride int
+}
 
-	var g gltfRoot
-	if err := json.Unmarshal(raw, &g); err != nil {
-		return fmt.Errorf("unmarshal glTF: %w", err)
+func getAccessor(g *gltfRoot, buffers [][]byte, idx int) (accessorData, error) {
+	if idx < 0 || idx >= len(g.Accessors) {
+		return accessorData{}, fmt.Errorf("accessor index out of range: %d", idx)
 	}
+	acc := g.Accessors[idx]
 
-	if len(g.Meshes) == 0 {
-		return fmt.Errorf("glTF: no meshes")
+	if acc.BufferView < 0 || acc.BufferView >= len(g.BufferViews) {
+		return accessorData{}, fmt.Errorf("bufferView index out of range: %d", acc.BufferView)
 	}
-	mesh := g.Meshes[0]
-	if len(mesh.Primitives) == 0 {
-		return fmt.Errorf("glTF: mesh has no primitives")
-	}
-	prim := mesh.Primitives[0]
+	bv := g.BufferViews[acc.BufferView]
 
-	// Load all buffers into memory once
-	buffers := make([][]byte, len(g.Buffers))
-	for i, b := range g.Buffers {
-		binPath := filepath.Join(baseDir, b.URI)
-		data, err := ioutil.ReadFile(binPath)
-		if err != nil {
-			return fmt.Errorf("read buffer %d (%s): %w", i, binPath, err)
-		}
-		if len(data) < b.ByteLength {
-			return fmt.Errorf("buffer %d length mismatch: have %d, expected %d", i, len(data), b.ByteLength)
-		}
-		buffers[i] = data
+	if bv.Buffer < 0 || bv.Buffer >= len(buffers) {
+		return accessorData{}, fmt.Errorf("buffer index out of range: %d", bv.Buffer)
+	}
+	buf := buffers[bv.Buffer]
+
+	elemSize := componentByteSize(acc.Type, acc.ComponentType)
+	stride := bv.ByteStride
+	if stride == 0 {
+		stride = elemSize
 	}
 
-	// Helper to get accessor + bufferView + base pointer
-	getAccessor := func(idx int) (acc gltfAccessor, bv gltfBufferView, buf []byte, base int, stride int, err error) {
-		if idx < 0 || idx >= len(g.Accessors) {
-			err = fmt.Errorf("accessor index out of range: %d", idx)
-			return
-		}
-		acc = g.Accessors[idx]
-		if acc.BufferView < 0 || acc.BufferView >= len(g.BufferViews) {
-			err = fmt.Errorf("bufferView index out of range: %d", acc.BufferView)
-			return
-		}
-		bv = g.BufferViews[acc.BufferView]
-		if bv.Buffer < 0 || bv.Buffer >= len(buffers) {
-			err = fmt.Errorf("buffer index out of range: %d", bv.Buffer)
-			return
-		}
-		buf = buffers[bv.Buffer]
-		elemSize := componentByteSize(acc.Type, acc.ComponentType)
-		stride = bv.ByteStride
-		if stride == 0 {
-			stride = elemSize
-		}
-		base = bv.ByteOffset + acc.ByteOffset
-		end := base + acc.Count*stride
-		if end > len(buf) {
-			err = fmt.Errorf("accessor %d range out of buffer: end=%d len=%d", idx, end, len(buf))
-			return
-		}
-		return
+	base := bv.ByteOffset + acc.ByteOffset
+	end := base + acc.Count*stride
+	if end > len(buf) {
+		return accessorData{}, fmt.Errorf("accessor out of range: end=%d len=%d", end, len(buf))
 	}
 
-	// POSITION (required)
-	posIndex, ok := prim.Attributes["POSITION"]
-	if !ok {
-		return fmt.Errorf("glTF: primitive missing POSITION")
-	}
-	posAcc, _, posBuf, posBase, posStride, err := getAccessor(posIndex)
-	if err != nil {
-		return err
-	}
-	if posAcc.Type != "VEC3" || posAcc.ComponentType != 5126 {
-		return fmt.Errorf("POSITION must be VEC3 float")
-	}
-	vertexCount := posAcc.Count
+	return accessorData{acc, bv, buf, base, stride}, nil
+}
 
-	// NORMAL (required for your lighting)
-	norIndex, ok := prim.Attributes["NORMAL"]
-	if !ok {
-		return fmt.Errorf("glTF: primitive missing NORMAL")
-	}
-	norAcc, _, norBuf, norBase, norStride, err := getAccessor(norIndex)
-	if err != nil {
-		return err
-	}
-	if norAcc.Type != "VEC3" || norAcc.ComponentType != 5126 {
-		return fmt.Errorf("NORMAL must be VEC3 float")
-	}
-	if norAcc.Count != vertexCount {
-		return fmt.Errorf("NORMAL count %d != POSITION count %d", norAcc.Count, vertexCount)
-	}
+// ---------------------------
+// Upload to OpenGL
+// ---------------------------
 
-	// TEXCOORD_0 (optional)
-	var uvBuf []byte
-	var uvBase, uvStride int
-	hasUV := false
-	if uvIndex, ok := prim.Attributes["TEXCOORD_0"]; ok {
-		uvAcc, _, buf, base, stride, err := getAccessor(uvIndex)
-		if err != nil {
-			return err
-		}
-		if uvAcc.Type != "VEC2" || uvAcc.ComponentType != 5126 {
-			return fmt.Errorf("TEXCOORD_0 must be VEC2 float")
-		}
-		if uvAcc.Count != vertexCount {
-			return fmt.Errorf("TEXCOORD_0 count %d != POSITION count %d", uvAcc.Count, vertexCount)
-		}
-		uvBuf, uvBase, uvStride = buf, base, stride
-		hasUV = true
-	}
-
-	// TANGENT (optional)
-	var tanBuf []byte
-	var tanBase, tanStride int
-	hasTan := false
-	if tanIndex, ok := prim.Attributes["TANGENT"]; ok {
-		tanAcc, _, buf, base, stride, err := getAccessor(tanIndex)
-		if err != nil {
-			return err
-		}
-		if tanAcc.Type != "VEC4" || tanAcc.ComponentType != 5126 {
-			return fmt.Errorf("TANGENT must be VEC4 float")
-		}
-		if tanAcc.Count != vertexCount {
-			return fmt.Errorf("TANGENT count %d != POSITION count %d", tanAcc.Count, vertexCount)
-		}
-		tanBuf, tanBase, tanStride = buf, base, stride
-		hasTan = true
-	}
-
-	// INDICES
-	idxAcc, idxBV, idxBuf, idxBase, idxStride, err := getAccessor(prim.Indices)
-	if err != nil {
-		return err
-	}
-	if idxAcc.Type != "SCALAR" {
-		return fmt.Errorf("indices accessor must be SCALAR")
-	}
-	if idxAcc.ComponentType != 5123 && idxAcc.ComponentType != 5125 {
-		return fmt.Errorf("indices must be UNSIGNED_SHORT (5123) or UNSIGNED_INT (5125)")
-	}
-	_ = idxBV // currently unused, but kept for completeness
-
-	indexCount := idxAcc.Count
-	indices := make([]uint32, indexCount)
-
-	switch idxAcc.ComponentType {
-	case 5123: // UNSIGNED_SHORT (2 bytes)
-		for i := 0; i < indexCount; i++ {
-			off := idxBase + i*idxStride
-			b := idxBuf[off : off+2]
-			indices[i] = uint32(b[0]) | uint32(b[1])<<8
-		}
-	case 5125: // UNSIGNED_INT (4 bytes)
-		for i := 0; i < indexCount; i++ {
-			off := idxBase + i*idxStride
-			b := idxBuf[off : off+4]
-			indices[i] = uint32(b[0]) |
-				uint32(b[1])<<8 |
-				uint32(b[2])<<16 |
-				uint32(b[3])<<24
-		}
-	}
-
-	// Build interleaved vertex buffer: pos(3), normal(3), uv(2), tangent(4)
-	vertices := make([]float32, 0, vertexCount*12)
-
-	for i := 0; i < vertexCount; i++ {
-		// POSITION
-		pOff := posBase + i*posStride
-		px := bytesToFloat32(posBuf[pOff+0:])
-		py := bytesToFloat32(posBuf[pOff+4:])
-		pz := bytesToFloat32(posBuf[pOff+8:])
-
-		// NORMAL
-		nOff := norBase + i*norStride
-		nx := bytesToFloat32(norBuf[nOff+0:])
-		ny := bytesToFloat32(norBuf[nOff+4:])
-		nz := bytesToFloat32(norBuf[nOff+8:])
-
-		// UV
-		var u, v float32
-		if hasUV {
-			uvOff := uvBase + i*uvStride
-			u = bytesToFloat32(uvBuf[uvOff+0:])
-			v = bytesToFloat32(uvBuf[uvOff+4:])
-		} else {
-			u, v = 0, 0
-		}
-
-		// TANGENT
-		tx, ty, tz, tw := float32(1), float32(0), float32(0), float32(1)
-		if hasTan {
-			tOff := tanBase + i*tanStride
-			tx = bytesToFloat32(tanBuf[tOff+0:])
-			ty = bytesToFloat32(tanBuf[tOff+4:])
-			tz = bytesToFloat32(tanBuf[tOff+8:])
-			tw = bytesToFloat32(tanBuf[tOff+12:])
-		}
-
-		vertices = append(vertices,
-			px, py, pz,
-			nx, ny, nz,
-			u, v,
-			tx, ty, tz, tw,
-		)
-	}
-
-	// Upload to GL
+func uploadMeshToGL(mm *MeshManager, id string, vertices []float32, indices []uint32) {
 	var vao, vbo, ebo uint32
 	gl.GenVertexArrays(1, &vao)
 	gl.GenBuffers(1, &vbo)
@@ -337,6 +195,282 @@ func (mm *MeshManager) RegisterGLTF(id, path string) error {
 	mm.vbos[id] = vbo
 	mm.ebos[id] = ebo
 	mm.counts[id] = int32(len(indices))
+}
+
+// ---------------------------
+// Single-mesh loader (default)
+// ---------------------------
+
+func (mm *MeshManager) RegisterGLTF(id, path string) error {
+	return mm.loadGLTFInternal(id, path, false)
+}
+
+// ---------------------------
+// Multi-mesh loader (optional)
+// ---------------------------
+
+func (mm *MeshManager) RegisterGLTFMulti(path string) error {
+	return mm.loadGLTFInternal("", path, true)
+}
+
+// ---------------------------
+// Shared geometry loader
+// ---------------------------
+
+func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) error {
+	baseDir := filepath.Dir(path)
+
+	raw, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	var g gltfRoot
+	if err := json.Unmarshal(raw, &g); err != nil {
+		return err
+	}
+
+	// Load buffers
+	buffers := make([][]byte, len(g.Buffers))
+	for i, b := range g.Buffers {
+		data, err := ioutil.ReadFile(filepath.Join(baseDir, b.URI))
+		if err != nil {
+			return err
+		}
+		buffers[i] = data
+	}
+
+	// Loop meshes
+	for mi, mesh := range g.Meshes {
+		meshName := mesh.Name
+		if meshName == "" {
+			meshName = fmt.Sprintf("mesh_%d", mi)
+		}
+
+		// Loop primitives
+		for pi, prim := range mesh.Primitives {
+
+			// If single-mesh mode: only load first primitive
+			if !multi && (mi != 0 || pi != 0) {
+				continue
+			}
+
+			// Build ID
+			meshID := id
+			if multi {
+				meshID = fmt.Sprintf("%s/%d", meshName, pi)
+			}
+
+			// POSITION
+			posA, err := getAccessor(&g, buffers, prim.Attributes["POSITION"])
+			if err != nil {
+				return err
+			}
+			count := posA.acc.Count
+
+			// NORMAL
+			norA, err := getAccessor(&g, buffers, prim.Attributes["NORMAL"])
+			if err != nil {
+				return err
+			}
+
+			// UV (optional)
+			var uvA accessorData
+			hasUV := false
+			if uvIdx, ok := prim.Attributes["TEXCOORD_0"]; ok {
+				uvA, err = getAccessor(&g, buffers, uvIdx)
+				if err != nil {
+					return err
+				}
+				hasUV = true
+			}
+
+			// TANGENT (optional)
+			var tanA accessorData
+			hasTan := false
+			if tanIdx, ok := prim.Attributes["TANGENT"]; ok {
+				tanA, err = getAccessor(&g, buffers, tanIdx)
+				if err != nil {
+					return err
+				}
+				hasTan = true
+			}
+
+			// INDICES
+			idxA, err := getAccessor(&g, buffers, prim.Indices)
+			if err != nil {
+				return err
+			}
+
+			// Decode indices
+			indices := make([]uint32, idxA.acc.Count)
+			switch idxA.acc.ComponentType {
+			case 5123: // UNSIGNED_SHORT
+				for i := 0; i < idxA.acc.Count; i++ {
+					off := idxA.base + i*idxA.stride
+					b := idxA.buf[off : off+2]
+					indices[i] = uint32(b[0]) | uint32(b[1])<<8
+				}
+			case 5125: // UNSIGNED_INT
+				for i := 0; i < idxA.acc.Count; i++ {
+					off := idxA.base + i*idxA.stride
+					b := idxA.buf[off : off+4]
+					indices[i] = uint32(b[0]) |
+						uint32(b[1])<<8 |
+						uint32(b[2])<<16 |
+						uint32(b[3])<<24
+				}
+			default:
+				return fmt.Errorf("unsupported index type: %d", idxA.acc.ComponentType)
+			}
+
+			// Build interleaved vertices
+			vertices := make([]float32, 0, count*12)
+
+			for i := 0; i < count; i++ {
+				// POSITION
+				pOff := posA.base + i*posA.stride
+				px := bytesToFloat32(posA.buf[pOff+0:])
+				py := bytesToFloat32(posA.buf[pOff+4:])
+				pz := bytesToFloat32(posA.buf[pOff+8:])
+
+				// NORMAL
+				nOff := norA.base + i*norA.stride
+				nx := bytesToFloat32(norA.buf[nOff+0:])
+				ny := bytesToFloat32(norA.buf[nOff+4:])
+				nz := bytesToFloat32(norA.buf[nOff+8:])
+
+				// UV
+				var u, v float32
+				if hasUV {
+					uvOff := uvA.base + i*uvA.stride
+					u = bytesToFloat32(uvA.buf[uvOff+0:])
+					v = bytesToFloat32(uvA.buf[uvOff+4:])
+				}
+
+				// TANGENT
+				tx, ty, tz, tw := float32(1), float32(0), float32(0), float32(1)
+				if hasTan {
+					tOff := tanA.base + i*tanA.stride
+					tx = bytesToFloat32(tanA.buf[tOff+0:])
+					ty = bytesToFloat32(tanA.buf[tOff+4:])
+					tz = bytesToFloat32(tanA.buf[tOff+8:])
+					tw = bytesToFloat32(tanA.buf[tOff+12:])
+				}
+
+				vertices = append(vertices,
+					px, py, pz,
+					nx, ny, nz,
+					u, v,
+					tx, ty, tz, tw,
+				)
+			}
+
+			// Upload
+			uploadMeshToGL(mm, meshID, vertices, indices)
+		}
+	}
 
 	return nil
+}
+
+// ---------------------------
+// Material metadata helpers
+// ---------------------------
+
+// LoadedMeshMaterial holds material info per meshID,
+// to be mapped onto ecs.Material + texture components by the caller.
+type LoadedMeshMaterial struct {
+	MeshID             string
+	BaseColor          [4]float32
+	DiffuseTexturePath string
+	NormalTexturePath  string
+}
+
+// LoadGLTFMaterials returns material info for the first mesh/primitive,
+// matching RegisterGLTF(id, path).
+func LoadGLTFMaterials(id, path string) ([]LoadedMeshMaterial, error) {
+	return loadGLTFMaterialsInternal(id, path, false)
+}
+
+// LoadGLTFMaterialsMulti returns material info for all meshes/primitives,
+// matching RegisterGLTFMulti(path).
+func LoadGLTFMaterialsMulti(path string) ([]LoadedMeshMaterial, error) {
+	return loadGLTFMaterialsInternal("", path, true)
+}
+
+func loadGLTFMaterialsInternal(id, path string, multi bool) ([]LoadedMeshMaterial, error) {
+	baseDir := filepath.Dir(path)
+
+	raw, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var g gltfRoot
+	if err := json.Unmarshal(raw, &g); err != nil {
+		return nil, err
+	}
+
+	var results []LoadedMeshMaterial
+
+	for mi, mesh := range g.Meshes {
+		meshName := mesh.Name
+		if meshName == "" {
+			meshName = fmt.Sprintf("mesh_%d", mi)
+		}
+
+		for pi, prim := range mesh.Primitives {
+			if !multi && (mi != 0 || pi != 0) {
+				continue
+			}
+
+			meshID := id
+			if multi {
+				meshID = fmt.Sprintf("%s/%d", meshName, pi)
+			}
+
+			m := LoadedMeshMaterial{
+				MeshID:    meshID,
+				BaseColor: [4]float32{1, 1, 1, 1},
+			}
+
+			if prim.Material >= 0 && prim.Material < len(g.Materials) {
+				gm := g.Materials[prim.Material]
+
+				if len(gm.PBR.BaseColorFactor) == 4 {
+					m.BaseColor = [4]float32{
+						gm.PBR.BaseColorFactor[0],
+						gm.PBR.BaseColorFactor[1],
+						gm.PBR.BaseColorFactor[2],
+						gm.PBR.BaseColorFactor[3],
+					}
+				}
+
+				if gm.PBR.BaseColorTexture != nil {
+					ti := gm.PBR.BaseColorTexture
+					if ti.Index >= 0 && ti.Index < len(g.Textures) {
+						imgIndex := g.Textures[ti.Index].Source
+						if imgIndex >= 0 && imgIndex < len(g.Images) {
+							m.DiffuseTexturePath = filepath.Join(baseDir, g.Images[imgIndex].URI)
+						}
+					}
+				}
+
+				if gm.NormalTexture != nil {
+					ti := gm.NormalTexture
+					if ti.Index >= 0 && ti.Index < len(g.Textures) {
+						imgIndex := g.Textures[ti.Index].Source
+						if imgIndex >= 0 && imgIndex < len(g.Images) {
+							m.NormalTexturePath = filepath.Join(baseDir, g.Images[imgIndex].URI)
+						}
+					}
+				}
+			}
+
+			results = append(results, m)
+		}
+	}
+
+	return results, nil
 }
