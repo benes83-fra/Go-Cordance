@@ -54,7 +54,7 @@ func main() {
 	meshMgr.RegisterSphere("sphere", 32, 16) // slices, stacks
 	meshMgr.RegisterLine("line")
 
-	if err := meshMgr.RegisterOBJ("teapot", "assets/models/teapot.obj"); err != nil {
+	if err := meshMgr.RegisterGLTF("teapot", "assets/models/teapot/teapot.gltf"); err != nil {
 		log.Fatal("Failed to load OBJ:", err)
 	}
 	// optionally: meshMgr.RegisterWireSphere("wire_sphere")
