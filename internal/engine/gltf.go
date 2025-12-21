@@ -69,6 +69,20 @@ type gltfTexture struct {
 	Source int `json:"source"`
 }
 
+type gltfNode struct {
+	Name        string    `json:"name"`
+	Mesh        int       `json:"mesh"`
+	Children    []int     `json:"children"`
+	Translation []float32 `json:"translation"`
+	Rotation    []float32 `json:"rotation"` // quaternion
+	Scale       []float32 `json:"scale"`
+	Matrix      []float32 `json:"matrix"` // 16 floats
+}
+
+type gltfScene struct {
+	Nodes []int `json:"nodes"`
+}
+
 type gltfRoot struct {
 	Buffers     []gltfBuffer     `json:"buffers"`
 	BufferViews []gltfBufferView `json:"bufferViews"`
@@ -77,6 +91,10 @@ type gltfRoot struct {
 	Materials   []gltfMaterial   `json:"materials"`
 	Images      []gltfImage      `json:"images"`
 	Textures    []gltfTexture    `json:"textures"`
+
+	Nodes  []gltfNode  `json:"nodes"`
+	Scenes []gltfScene `json:"scenes"`
+	Scene  int         `json:"scene"` // default scene index
 }
 
 // ---------------------------
@@ -473,4 +491,83 @@ func loadGLTFMaterialsInternal(id, path string, multi bool) ([]LoadedMeshMateria
 	}
 
 	return results, nil
+}
+func composeNodeTransform(n gltfNode) [16]float32 {
+
+	// If matrix is provided, it overrides everything
+	if len(n.Matrix) == 16 {
+		var out [16]float32
+		copy(out[:], n.Matrix)
+		return out
+	}
+
+	// Translation
+	tx, ty, tz := float32(0), float32(0), float32(0)
+	if len(n.Translation) == 3 {
+		tx, ty, tz = n.Translation[0], n.Translation[1], n.Translation[2]
+	}
+
+	// Scale
+	sx, sy, sz := float32(1), float32(1), float32(1)
+	if len(n.Scale) == 3 {
+		sx, sy, sz = n.Scale[0], n.Scale[1], n.Scale[2]
+	}
+
+	// Rotation (quaternion)
+	qx, qy, qz, qw := float32(0), float32(0), float32(0), float32(1)
+	if len(n.Rotation) == 4 {
+		qx, qy, qz, qw = n.Rotation[0], n.Rotation[1], n.Rotation[2], n.Rotation[3]
+	}
+
+	// Build TRS matrix
+	// Rotation → matrix
+	xx := qx * qx
+	yy := qy * qy
+	zz := qz * qz
+	xy := qx * qy
+	xz := qx * qz
+	yz := qy * qz
+	wx := qw * qx
+	wy := qw * qy
+	wz := qw * qz
+
+	R := [16]float32{
+		1 - 2*(yy+zz), 2 * (xy - wz), 2 * (xz + wy), 0,
+		2 * (xy + wz), 1 - 2*(xx+zz), 2 * (yz - wx), 0,
+		2 * (xz - wy), 2 * (yz + wx), 1 - 2*(xx+yy), 0,
+		0, 0, 0, 1,
+	}
+
+	// Apply scale
+	R[0] *= sx
+	R[1] *= sx
+	R[2] *= sx
+	R[4] *= sy
+	R[5] *= sy
+	R[6] *= sy
+	R[8] *= sz
+	R[9] *= sz
+	R[10] *= sz
+
+	// Apply translation
+	R[12] = tx
+	R[13] = ty
+	R[14] = tz
+
+	return R
+}
+func LoadGLTFRoot(path string) (*gltfRoot, error) {
+	raw, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var g gltfRoot
+	if err := json.Unmarshal(raw, &g); err != nil {
+		return nil, err
+	}
+	return &g, nil
+}
+
+func ComposeNodeTransform(n gltfNode) [16]float32 {
+	return composeNodeTransform(n)
 }

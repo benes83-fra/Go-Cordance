@@ -6,18 +6,10 @@ import "math"
 // It implements Component so it can be updated if needed (e.g., animations).
 type Transform struct {
 	Position [3]float32
-	Rotation [3]float32 // Euler angles in radians
+	Rotation [4]float32 // Euler angles in radians
 	Scale    [3]float32
 }
 
-/*// NewTransform returns a default transform.
-func NewTransform() *Transform {
-	return &Transform{
-		Position: [3]float32{0, 0, 0},
-		Rotation: [3]float32{0, 0, 0},
-		Scale:    [3]float32{1, 1, 1},
-	}
-}*/
 func NewTransform(pos [3]float32) *Transform {
 	return &Transform{Position: pos}
 }
