@@ -1,9 +1,8 @@
 package scene
 
 import (
-	"sync/atomic"
-
 	"go-engine/Go-Cordance/internal/ecs"
+	"sync/atomic"
 )
 
 // Camera is a minimal camera placeholder for the prototype.

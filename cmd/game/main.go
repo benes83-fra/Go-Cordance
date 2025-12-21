@@ -83,6 +83,16 @@ func main() {
 		log.Fatal(err)
 	}
 
+	err = meshMgr.RegisterGLTFMulti("assets/models/sofa/sofa.gltf")
+	if err != nil {
+		log.Fatal(err)
+	}
+	mats, err := engine.LoadGLTFMaterials("sofa", "assets/models/sofa/sofa.gltf")
+	if err != nil {
+		log.Fatal(err)
+	}
+	matInfo := mats[0]
+
 	crateTex := ecs.NewTexture(texID)
 	teaTex := ecs.NewTexture(texID2)
 	debugRenderer := engine.NewDebugRenderer(debugVertexSrc, debugFragmentSrc)
@@ -219,6 +229,20 @@ func main() {
 		Shininess: 2.0,  // broad, dull highlight
 	})
 
+	ent := scene.AddEntity()
+	ent.AddComponent(ecs.NewMesh("Frame/0"))
+	ent.AddComponent(ecs.NewTransform([3]float32{1, 1, 1}))
+	mat := ecs.NewMaterial(matInfo.BaseColor)
+	ent.AddComponent(mat)
+
+	if matInfo.DiffuseTexturePath != "" {
+		//texID, _ := engine.LoadTexture(matInfo.DiffuseTexturePath)
+		ent.AddComponent(ecs.NewDiffuseTexture(texID2))
+	}
+	if matInfo.NormalTexturePath != "" {
+		texID, _ := engine.LoadTexture(matInfo.NormalTexturePath)
+		ent.AddComponent(ecs.NewNormalMap(texID))
+	}
 	lightGizmo := scene.AddEntity()
 	lightGizmo.AddComponent(ecs.NewTransform([3]float32{5, 5, 0}))
 	lightGizmo.AddComponent(ecs.NewMesh("sphere"))
