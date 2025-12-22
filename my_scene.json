@@ -1,0 +1,317 @@
+{
+  "entities": [
+    {
+      "id": 2,
+      "components": {}
+    },
+    {
+      "id": 3,
+      "components": {
+        "Transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "id": 4,
+      "components": {
+        "Material": {
+          "ambient": 0.2,
+          "baseColor": [
+            1,
+            0,
+            0,
+            1
+          ],
+          "diffuse": 0.8,
+          "shininess": 32,
+          "specular": 0.5
+        },
+        "Mesh": {
+          "id": "cube24"
+        },
+        "Transform": {
+          "position": [
+            0,
+            4,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "id": 5,
+      "components": {
+        "Material": {
+          "ambient": 0.2,
+          "baseColor": [
+            0.8,
+            1,
+            0.8,
+            1
+          ],
+          "diffuse": 0.8,
+          "shininess": 32,
+          "specular": 0.5
+        },
+        "Mesh": {
+          "id": "cube"
+        },
+        "Transform": {
+          "position": [
+            0.2,
+            6,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "id": 6,
+      "components": {
+        "Material": {
+          "ambient": 0.05,
+          "baseColor": [
+            0.8,
+            0.8,
+            0.9,
+            1
+          ],
+          "diffuse": 0.5,
+          "shininess": 128,
+          "specular": 1
+        },
+        "Mesh": {
+          "id": "cube24"
+        },
+        "Transform": {
+          "position": [
+            1.5,
+            4,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "id": 7,
+      "components": {
+        "Material": {
+          "ambient": 0.4,
+          "baseColor": [
+            0.2,
+            0.7,
+            0.2,
+            1
+          ],
+          "diffuse": 0.6,
+          "shininess": 2,
+          "specular": 0.02
+        },
+        "Mesh": {
+          "id": "cube24"
+        },
+        "Transform": {
+          "position": [
+            -1.5,
+            4,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "id": 8,
+      "components": {
+        "Material": {
+          "ambient": 0.4,
+          "baseColor": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "diffuse": 0.6,
+          "shininess": 2,
+          "specular": 0.02
+        },
+        "Mesh": {
+          "id": "teapot"
+        },
+        "Transform": {
+          "position": [
+            0,
+            2,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "id": 9,
+      "components": {
+        "DiffuseTexture": {
+          "id": 2
+        },
+        "Material": {
+          "ambient": 0.2,
+          "baseColor": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "diffuse": 0.8,
+          "shininess": 32,
+          "specular": 0.5
+        },
+        "Mesh": {
+          "id": "Frame/0"
+        },
+        "NormalMap": {
+          "id": 0
+        },
+        "Transform": {
+          "position": [
+            1,
+            1,
+            1
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "id": 10,
+      "components": {
+        "Mesh": {
+          "id": "sphere"
+        },
+        "Transform": {
+          "position": [
+            5,
+            5,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "id": 11,
+      "components": {
+        "Mesh": {
+          "id": "line"
+        },
+        "Transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      }
+    }
+  ]
+}

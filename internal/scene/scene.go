@@ -25,7 +25,7 @@ type Scene struct {
 
 // New returns a basic scene with a default camera.
 func New() *Scene {
-	return &Scene{
+	s := &Scene{
 		entities: make([]*ecs.Entity, 0, 16),
 		camera: Camera{
 			Position: [3]float32{0, 0, 3},
@@ -38,6 +38,8 @@ func New() *Scene {
 		nextID: 1,
 		sysMgr: ecs.NewSystemManager(),
 	}
+	s.sysMgr.AddSystem(ecs.NewTransformSystem())
+	return s
 }
 
 func (s *Scene) Systems() *ecs.SystemManager {

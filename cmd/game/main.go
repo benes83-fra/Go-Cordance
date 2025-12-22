@@ -260,6 +260,7 @@ func main() {
 	lightDebug.SetColor(lightArrow, [4]float32{1.0, 0.5, 0.0, 1.0}) // orange arrow
 	renderSys.LightArrow = lightArrow
 	// Sphere–AABB collisions
+	scene.Save("my_scene.json")
 	last := glfw.GetTime()
 	for !window.ShouldClose() {
 		now := glfw.GetTime()
