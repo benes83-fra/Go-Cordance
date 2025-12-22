@@ -214,6 +214,7 @@ func main() {
 	})
 	plasticCube.AddComponent(ecs.NewRigidBody(1.0))
 	plasticCube.AddComponent(ecs.NewColliderAABB([3]float32{0.5, 0.5, 0.5}))
+	scene.SavePrefab("platiccube.json", plasticCube)
 	teapot := scene.AddEntity()
 
 	teapot.AddComponent(teaTex)
