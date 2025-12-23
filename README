@@ -36,6 +36,11 @@ It explores how far Go can be pushed for real‑time graphics, physics, and enti
 
 - **Mesh Loader**
   - A simple MeshLoader was introduced to load .obj files
+    glTF files with multiple meshes and materials. 
+    Scene loading and saving
+
+- **Editor**
+  - Currently working on an Editor to access components and edit the scene
 
 ---
 

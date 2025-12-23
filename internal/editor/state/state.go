@@ -1,9 +1,10 @@
-package editor
+package state
 
 import "go-engine/Go-Cordance/internal/editor/bridge"
 
 type EditorState struct {
 	Entities      []bridge.EntityInfo
+	SelectedID    int64
 	SelectedIndex int
 }
 
