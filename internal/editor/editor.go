@@ -1,6 +1,7 @@
 package editor
 
 import (
+	"go-engine/Go-Cordance/internal/ecs"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editor/ui"
 
@@ -10,19 +11,19 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func Run() {
+func Run(world *ecs.World) {
 	a := app.New()
-	w := a.NewWindow("Go-Cordance Editor")
-	w.Resize(fyne.NewSize(1000, 600))
+	win := a.NewWindow("Go-Cordance Editor")
+	win.Resize(fyne.NewSize(1000, 600))
 
 	st := state.New()
-	st.Entities = []string{"Camera", "Player", "Light", "Cube", "Enemy"}
+	st.Entities = world.ListEntityInfo()
 
 	inspector := widget.NewLabel("Select an entity")
 	viewport := widget.NewLabel("Viewport Placeholder")
 
 	hierarchy := ui.NewHierarchyPanel(st, func(id int) {
-		inspector.SetText("Selected: " + st.Entities[id])
+		inspector.SetText("Selected: " + st.Entities[id].Name)
 	})
 
 	left := container.NewMax(hierarchy)
@@ -35,6 +36,6 @@ func Run() {
 	)
 	split.Offset = 0.25
 
-	w.SetContent(split)
-	w.ShowAndRun()
+	win.SetContent(split)
+	win.ShowAndRun()
 }

@@ -8,16 +8,11 @@ import (
 )
 
 func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) *widget.List {
-
 	list := widget.NewList(
-		func() int {
-			return len(st.Entities)
-		},
-		func() fyne.CanvasObject {
-			return widget.NewLabel("entity")
-		},
+		func() int { return len(st.Entities) },
+		func() fyne.CanvasObject { return widget.NewLabel("entity") },
 		func(i int, o fyne.CanvasObject) {
-			o.(*widget.Label).SetText(st.Entities[i])
+			o.(*widget.Label).SetText(st.Entities[i].Name)
 		},
 	)
 

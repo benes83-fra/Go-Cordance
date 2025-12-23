@@ -22,13 +22,16 @@ func NewDebugRenderSystem(r *engine.DebugRenderer, mm *engine.MeshManager, cs *C
 		Enabled:      true,
 	}
 }
+func (s *DebugRenderSystem) SetCameraSystem(cam *CameraSystem) { s.CameraSystem = cam }
 
 // DebugRenderSystem for colliders
 func (ds *DebugRenderSystem) Update(_ float32, entities []*Entity) {
 	if !ds.Enabled {
 		return
 	}
-
+	if ds.CameraSystem == nil {
+		return
+	}
 	gl.UseProgram(ds.Renderer.Program)
 	view := ds.CameraSystem.View
 	proj := ds.CameraSystem.Projection

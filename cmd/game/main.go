@@ -19,12 +19,13 @@ const (
 )
 
 func main() {
-
+	// Initialize window / GL context (game runtime only)
 	window, err := engine.InitGLFW(width, height, "Go Cordance")
 	if err != nil {
 		log.Fatal(err)
 	}
-	// Compile shaders and set viewport
+
+	// Compile shaders and create renderer (runtime)
 	vertexSrc, err := engine.LoadShaderSource("assets/shaders/vertex.glsl")
 	if err != nil {
 		log.Fatal(err)
@@ -35,8 +36,8 @@ func main() {
 	}
 	renderer := engine.NewRenderer(vertexSrc, fragmentSrc, width, height)
 	renderer.InitUniforms()
-	// Resize callback updates viewport
 
+	// Resize callback updates viewport
 	window.SetFramebufferSizeCallback(func(_ *glfw.Window, w, h int) {
 		if h == 0 {
 			h = 1
@@ -45,26 +46,25 @@ func main() {
 	})
 	window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 
+	// Mesh manager and registrations (runtime)
 	meshMgr := engine.NewMeshManager()
 	meshMgr.RegisterTriangle("triangle")
 	meshMgr.RegisterCube("cube")
 	meshMgr.RegisterCube("cube24")
 	meshMgr.RegisterWireCube("wire_cube")
 	meshMgr.RegisterWireSphere("wire_sphere", 16, 16)
-	meshMgr.RegisterSphere("sphere", 32, 16) // slices, stacks
+	meshMgr.RegisterSphere("sphere", 32, 16)
 	meshMgr.RegisterLine("line")
 
+	// Load GLTF meshes that require runtime resources
 	if err := meshMgr.RegisterGLTF("teapot", "assets/models/teapot/teapot.gltf"); err != nil {
 		log.Fatal("Failed to load glTF:", err)
 	}
-	// optionally: meshMgr.RegisterWireSphere("wire_sphere")
+	if err := meshMgr.RegisterGLTFMulti("assets/models/sofa/sofa.gltf"); err != nil {
+		log.Fatal(err)
+	}
 
-	scene := scene.New()
-
-	camSys := ecs.NewCameraSystem(window)
-	renderSys := ecs.NewRenderSystem(renderer, meshMgr, camSys)
-
-	camCtrl := ecs.NewCameraControllerSystem(window)
+	// Load shader sources for debug renderer
 	debugVertexSrc, err := engine.LoadShaderSource("assets/shaders/debug_vertex.glsl")
 	if err != nil {
 		log.Fatal(err)
@@ -73,6 +73,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Load textures (runtime GPU resources)
 	texID, err := engine.LoadTexture("assets/textures/crate.png")
 	if err != nil {
 		log.Fatal(err)
@@ -83,32 +85,48 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = meshMgr.RegisterGLTFMulti("assets/models/sofa/sofa.gltf")
-	if err != nil {
-		log.Fatal(err)
-	}
+	// Load GLTF materials info (runtime)
 	mats, err := engine.LoadGLTFMaterials("sofa", "assets/models/sofa/sofa.gltf")
 	if err != nil {
 		log.Fatal(err)
 	}
 	matInfo := mats[0]
 
+	// Create runtime wrappers for textures (ecs.Texture holds GPU id)
 	crateTex := ecs.NewTexture(texID)
 	teaTex := ecs.NewTexture(texID2)
-	debugRenderer := engine.NewDebugRenderer(debugVertexSrc, debugFragmentSrc)
-	debugSys := ecs.NewDebugRenderSystem(debugRenderer, meshMgr, camSys)
-	lightDebug := ecs.NewLightDebugRenderSystem(debugRenderer, meshMgr, camSys) // for gizmo
-	lightDebug.Enabled = true
-	scene.Systems().AddSystem(ecs.NewForceSystem(0, -9.8, 0)) // gravity
-	scene.Systems().AddSystem(ecs.NewPhysicsSystem())
-	scene.Systems().AddSystem(ecs.NewCollisionSystem())
-	scene.Systems().AddSystem(ecs.NewTransformSystem())
 
-	scene.Systems().AddSystem(camCtrl) // updates Camera component
-	scene.Systems().AddSystem(camSys)  // computes view/projection from Camera
-	scene.Systems().AddSystem(renderSys)
-	scene.Systems().AddSystem(debugSys)
-	scene.Systems().AddSystem(lightDebug)
+	// Create renderers / debug systems that require runtime resources
+	debugRenderer := engine.NewDebugRenderer(debugVertexSrc, debugFragmentSrc)
+	debugSys := ecs.NewDebugRenderSystem(debugRenderer, meshMgr, nil) // camSys set later
+	lightDebug := ecs.NewLightDebugRenderSystem(debugRenderer, meshMgr, nil)
+	lightDebug.Enabled = true
+
+	// Build the logical scene (entities + components) only.
+	// BootstrapScene returns the Scene and a map of named entities so we can
+	// bind runtime-only resources (textures, set LightEntity, etc).
+	sc, named := scene.BootstrapScene()
+
+	// Create runtime systems that need the window/renderer/meshMgr
+	camSys := ecs.NewCameraSystem(window)
+	renderSys := ecs.NewRenderSystem(renderer, meshMgr, camSys)
+	camCtrl := ecs.NewCameraControllerSystem(window)
+
+	// Now that we have camSys, set it on debug systems that need it
+	debugSys.SetCameraSystem(camSys)
+	lightDebug.SetCameraSystem(camSys)
+
+	// Register systems on the scene
+	sc.Systems().AddSystem(ecs.NewForceSystem(0, -9.8, 0))
+	sc.Systems().AddSystem(ecs.NewPhysicsSystem())
+	sc.Systems().AddSystem(ecs.NewCollisionSystem())
+	sc.Systems().AddSystem(ecs.NewTransformSystem())
+
+	sc.Systems().AddSystem(camCtrl)
+	sc.Systems().AddSystem(camSys)
+	sc.Systems().AddSystem(renderSys)
+	sc.Systems().AddSystem(debugSys)
+	sc.Systems().AddSystem(lightDebug)
 
 	window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if action == glfw.Press {
@@ -153,116 +171,44 @@ func main() {
 
 		}
 	})
-	// Camera entity
-	cam := scene.AddEntity()
-	cam.AddComponent(ecs.NewCamera()) // default at (0,0,3) looking at origin
-
-	// Ground entity
-	ground := scene.AddEntity()
-	ground.AddComponent(ecs.NewTransform([3]float32{0, 0, 0}))
-	ground.AddComponent(ecs.NewColliderPlane(-2.0)) // y=0 plane
-
-	cube1 := scene.AddEntity()
-	cube1.AddComponent(crateTex)
-	cube1.AddComponent(ecs.NewTransform([3]float32{0.0, 4.0, 0.0}))
-	cube1.AddComponent(ecs.NewMesh("cube24"))
-	cube1.AddComponent(ecs.NewMaterial([4]float32{1.0, 0.0, 0.0, 1.0}))
-	cube1.AddComponent(ecs.NewRigidBody(1.0))
-	cube1.AddComponent(ecs.NewColliderAABB([3]float32{0.5, 0.5, 0.5}))
-
-	cube2 := scene.AddEntity()
-	cube2.AddComponent(teaTex)
-	cube2.AddComponent(ecs.NewTransform([3]float32{0.2, 6.0, 0.0}))
-	cube2.AddComponent(ecs.NewMesh("cube"))
-	cube2.AddComponent(ecs.NewMaterial([4]float32{.8, 1.0, 0.8, 1.0}))
-	cube2.AddComponent(ecs.NewRigidBody(1.0))
-	cube2.AddComponent(ecs.NewColliderAABB([3]float32{0.5, 0.5, 0.5}))
-	/*
-		sphere := scene.AddEntity()
-		sphere.AddComponent(ecs.NewTransform([3]float32{0.0, 4.0, 0.0}))
-		sphere.AddComponent(ecs.NewMesh("sphere"))
-		sphere.AddComponent(ecs.NewMaterial([4]float32{0.0, 1.0, 0.0, 1.0}))
-		sphere.AddComponent(ecs.NewRigidBody(1.0))
-		sphere.AddComponent(ecs.NewColliderSphere(0.5))
-	*/
-	// Shiny metal cube
-	metalCube := scene.AddEntity()
-	metalCube.AddComponent(crateTex)
-	metalCube.AddComponent(ecs.NewTransform([3]float32{1.5, 4.0, 0.0}))
-	metalCube.AddComponent(ecs.NewMesh("cube24"))
-	metalCube.AddComponent(&ecs.Material{
-		BaseColor: [4]float32{0.8, 0.8, 0.9, 1.0}, // light gray
-		Ambient:   0.05,
-		Diffuse:   0.5,
-		Specular:  1.0,   // strong specular
-		Shininess: 128.0, // tight highlight
-	})
-	metalCube.AddComponent(ecs.NewRigidBody(1.0))
-	metalCube.AddComponent(ecs.NewColliderAABB([3]float32{0.5, 0.5, 0.5}))
-
-	// Matte plastic cube
-	plasticCube := scene.AddEntity()
-	plasticCube.AddComponent(crateTex)
-	plasticCube.AddComponent(ecs.NewTransform([3]float32{-1.5, 4.0, 0.0}))
-	plasticCube.AddComponent(ecs.NewMesh("cube24"))
-	plasticCube.AddComponent(&ecs.Material{
-		BaseColor: [4]float32{0.2, 0.7, 0.2, 1.0}, // green
-		Ambient:   0.4,
-		Diffuse:   0.6,
-		Specular:  0.02, // weak specular
-		Shininess: 2.0,  // broad, dull highlight
-	})
-	plasticCube.AddComponent(ecs.NewRigidBody(1.0))
-	plasticCube.AddComponent(ecs.NewColliderAABB([3]float32{0.5, 0.5, 0.5}))
-	scene.SavePrefab("platiccube.json", plasticCube)
-	teapot := scene.AddEntity()
-
-	teapot.AddComponent(teaTex)
-	//teapot.AddComponent(ecs.NewNormalMap(texID2))
-
-	teapot.AddComponent(ecs.NewTransform([3]float32{0, 2, 0}))
-	teapot.AddComponent(ecs.NewMesh("teapot"))
-	// optional texture
-
-	teapot.AddComponent(&ecs.Material{
-		BaseColor: [4]float32{1, 1, 1, 1.0}, // green
-		Ambient:   0.4,
-		Diffuse:   0.6,
-		Specular:  0.02, // weak specular
-		Shininess: 2.0,  // broad, dull highlight
-	})
-
-	ent := scene.AddEntity()
-	ent.AddComponent(ecs.NewMesh("Frame/0"))
-	ent.AddComponent(ecs.NewTransform([3]float32{1, 1, 1}))
-	mat := ecs.NewMaterial(matInfo.BaseColor)
-	ent.AddComponent(mat)
-
-	if matInfo.DiffuseTexturePath != "" {
-		//texID, _ := engine.LoadTexture(matInfo.DiffuseTexturePath)
-		ent.AddComponent(ecs.NewDiffuseTexture(texID2))
+	// Bind runtime-only resources to entities created by the bootstrap.
+	// We look up entities by name in the map returned by BootstrapScene.
+	if e, ok := named["cube1"]; ok {
+		e.AddComponent(crateTex)
 	}
-	if matInfo.NormalTexturePath != "" {
-		texID, _ := engine.LoadTexture(matInfo.NormalTexturePath)
-		ent.AddComponent(ecs.NewNormalMap(texID))
+	if e, ok := named["cube2"]; ok {
+		e.AddComponent(teaTex)
 	}
-	lightGizmo := scene.AddEntity()
-	lightGizmo.AddComponent(ecs.NewTransform([3]float32{5, 5, 0}))
-	lightGizmo.AddComponent(ecs.NewMesh("sphere"))
+	if _, ok := named["metalCube"]; ok {
+		// metalCube used a material already in bootstrap; optionally add textures
+		if matInfo.DiffuseTexturePath != "" {
+			// load and attach diffuse texture if desired (example)
+			// texID3, _ := engine.LoadTexture(matInfo.DiffuseTexturePath)
+			// e.AddComponent(ecs.NewDiffuseTexture(texID3))
+		}
+	}
+	// Attach textures to teapot if present
+	if e, ok := named["teapot"]; ok {
+		e.AddComponent(teaTex)
+		// optionally add normal map later if available
+	}
 
-	renderSys.LightEntity = lightGizmo
-	lightDebug.Track(lightGizmo)
-	lightDebug.SetColor(lightGizmo, [4]float32{1.0, 1.0, 0.2, 1.0}) // bright yellow
+	// Set render system light entity and light debug tracking if present
+	if light, ok := named["lightGizmo"]; ok {
+		renderSys.LightEntity = light
+		lightDebug.Track(light)
+		lightDebug.SetColor(light, [4]float32{1.0, 1.0, 0.2, 1.0})
+	}
+	if arrow, ok := named["lightArrow"]; ok {
+		lightDebug.Track(arrow)
+		lightDebug.SetColor(arrow, [4]float32{1.0, 0.5, 0.0, 1.0})
+		renderSys.LightArrow = arrow
+	}
 
-	lightArrow := scene.AddEntity()
-	lightArrow.AddComponent(ecs.NewTransform([3]float32{0, 0, 0})) // starts at origin
-	lightArrow.AddComponent(ecs.NewMesh("line"))
-	lightDebug.Track(lightArrow)
-	lightDebug.SetColor(lightArrow, [4]float32{1.0, 0.5, 0.0, 1.0}) // orange arrow
-	renderSys.LightArrow = lightArrow
-	// Sphere–AABB collisions
-	scene.Save("my_scene.json")
+	// Optionally save the scene (pure data) to disk
+	sc.Save("my_scene.json")
 
+	// Main loop
 	last := glfw.GetTime()
 	for !window.ShouldClose() {
 		now := glfw.GetTime()
@@ -270,16 +216,18 @@ func main() {
 		last = now
 		if dt > 0.05 {
 			dt = 0.05
-		} // clamp to ~20 FPS max step
+		}
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-		scene.Update(dt)
+		sc.Update(dt)
 
-		// Draw editor panels editor.Draw() // Render ImGui imgui.Render() renderer.RenderImGui()
+		// Swap buffers / poll events
 		window.SwapBuffers()
 		engine.PollEvents()
 	}
+
+	// Cleanup
 	meshMgr.Delete()
 	engine.TerminateGLFW()
 }

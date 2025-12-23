@@ -28,6 +28,10 @@ func NewLightDebugRenderSystem(r *engine.DebugRenderer, mm *engine.MeshManager, 
 	}
 }
 
+func (lds *LightDebugRenderSystem) SetCameraSystem(cam *CameraSystem) {
+	lds.CameraSystem = cam
+}
+
 // Register an entity for gizmo rendering
 func (lds *LightDebugRenderSystem) Track(e *Entity) {
 	lds.tracked = append(lds.tracked, e)
@@ -40,6 +44,9 @@ func (lds *LightDebugRenderSystem) SetColor(e *Entity, col [4]float32) {
 
 func (lds *LightDebugRenderSystem) Update(_ float32, _ []*Entity) {
 	if !lds.Enabled {
+		return
+	}
+	if lds.CameraSystem == nil {
 		return
 	}
 

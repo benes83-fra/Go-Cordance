@@ -18,6 +18,7 @@ type Camera struct {
 // Scene holds entities and a camera.
 type Scene struct {
 	entities []*ecs.Entity
+	world    *ecs.World
 	camera   Camera
 	nextID   int64
 	sysMgr   *ecs.SystemManager
@@ -28,6 +29,7 @@ type Scene struct {
 func New() *Scene {
 	s := &Scene{
 		entities: make([]*ecs.Entity, 0, 16),
+		world:    ecs.NewWorld(),
 		camera: Camera{
 			Position: [3]float32{0, 0, 3},
 			Target:   [3]float32{0, 0, 0},
@@ -43,6 +45,9 @@ func New() *Scene {
 	return s
 }
 
+func (s *Scene) World() *ecs.World {
+	return s.world
+}
 func (s *Scene) Systems() *ecs.SystemManager {
 	return s.sysMgr
 }
@@ -52,12 +57,18 @@ func (s *Scene) AddEntity() *ecs.Entity {
 	id := atomic.AddInt64(&s.nextID, 1)
 	e := ecs.NewEntity(id)
 	s.entities = append(s.entities, e)
+	if s.world != nil {
+		s.world.AddEntity(e)
+	}
 	return e
 }
 
 // AddExisting adds an already-created entity to the scene.
 func (s *Scene) AddExisting(e *ecs.Entity) {
 	s.entities = append(s.entities, e)
+	if s.world != nil {
+		s.world.AddEntity(e)
+	}
 }
 
 // Entities returns a snapshot slice of entities.
@@ -78,4 +89,12 @@ func (s *Scene) Update(dt float32) {
 	}
 	// Run global systems
 	s.sysMgr.Update(dt, s.entities)
+}
+func (s *Scene) contains(e *ecs.Entity) bool {
+	for _, ex := range s.entities {
+		if ex == e {
+			return true
+		}
+	}
+	return false
 }

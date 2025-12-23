@@ -1,7 +1,7 @@
 package bridge
 
 type EntityInfo struct {
-	ID   int
+	ID   int64
 	Name string
 }
 

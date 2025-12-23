@@ -220,9 +220,6 @@
     {
       "id": 9,
       "components": {
-        "DiffuseTexture": {
-          "id": 2
-        },
         "Material": {
           "ambient": 0.2,
           "baseColor": [
@@ -237,9 +234,6 @@
         },
         "Mesh": {
           "id": "Frame/0"
-        },
-        "NormalMap": {
-          "id": 0
         },
         "Transform": {
           "position": [
