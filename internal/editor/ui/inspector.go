@@ -2,9 +2,11 @@ package ui
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 
 	"go-engine/Go-Cordance/internal/ecs"
+	"go-engine/Go-Cordance/internal/editor/registry"
 	state "go-engine/Go-Cordance/internal/editor/state"
 
 	"fyne.io/fyne/v2"
@@ -16,8 +18,6 @@ import (
 // The rebuild function signature is:
 //
 //	func(world *ecs.World, st *state.EditorState, hierarchy *widget.List)
-//
-// Call rebuild on the UI goroutine (Fyne ensures callbacks run on the UI thread).
 func NewInspectorPanel() (*fyne.Container, func(world *ecs.World, st *state.EditorState, hierarchy *widget.List)) {
 	cont := container.NewVBox()
 	cont.Add(widget.NewLabel("Select an entity"))
@@ -25,8 +25,7 @@ func NewInspectorPanel() (*fyne.Container, func(world *ecs.World, st *state.Edit
 	var rebuild func(world *ecs.World, st *state.EditorState, hierarchy *widget.List)
 
 	rebuild = func(world *ecs.World, st *state.EditorState, hierarchy *widget.List) {
-		// Caller must ensure this runs on the UI/main goroutine.
-		cont.Objects = nil // clear
+		cont.Objects = nil
 		cont.Refresh()
 
 		// No selection
@@ -47,39 +46,79 @@ func NewInspectorPanel() (*fyne.Container, func(world *ecs.World, st *state.Edit
 		// Header
 		cont.Add(widget.NewLabel(fmt.Sprintf("Entity %d", e.ID)))
 
-		// Name editor (if Name component exists)
-		if nComp := e.GetComponent(&ecs.Name{}); nComp != nil {
-			if nameComp, ok := nComp.(*ecs.Name); ok {
-				nameEntry := widget.NewEntry()
-				nameEntry.SetText(nameComp.Value)
-				nameEntry.OnChanged = func(val string) {
-					nameComp.Value = val
-					// update state list and refresh hierarchy
-					st.Entities = world.ListEntityInfo()
-					if hierarchy != nil {
-						hierarchy.Refresh()
-					}
-				}
-				cont.Add(widget.NewLabel("Name"))
-				cont.Add(nameEntry)
+		// -------------------------
+		// ADD COMPONENT SECTION
+		// -------------------------
+		cont.Add(widget.NewSeparator())
+		cont.Add(widget.NewLabel("Add Component"))
+
+		componentNames := make([]string, 0, len(registry.Components))
+		for name := range registry.Components {
+			componentNames = append(componentNames, name)
+		}
+		sort.Strings(componentNames)
+
+		addSelect := widget.NewSelect(componentNames, nil)
+		addButton := widget.NewButton("Add", func() {
+			if addSelect.Selected == "" {
+				return
 			}
-		} else {
-			// Offer to add a Name component
-			addBtn := widget.NewButton("Add Name", func() {
-				e.AddComponent(ecs.NewName(fmt.Sprintf("Entity %d", e.ID)))
+			factory := registry.Components[addSelect.Selected]
+			if factory != nil {
+				e.AddComponent(factory())
 				st.Entities = world.ListEntityInfo()
 				if hierarchy != nil {
 					hierarchy.Refresh()
 				}
-				// Rebuild to show the new name field
 				rebuild(world, st, hierarchy)
-			})
-			cont.Add(addBtn)
+			}
+		})
+
+		cont.Add(container.NewHBox(addSelect, addButton))
+
+		// -------------------------
+		// NAME COMPONENT
+		// -------------------------
+		if nComp := e.GetComponent(&ecs.Name{}); nComp != nil {
+			nameComp := nComp.(*ecs.Name)
+
+			header := container.NewHBox(
+				widget.NewLabel("Name"),
+				widget.NewButton("Remove", func() {
+					e.RemoveComponent(&ecs.Name{})
+					st.Entities = world.ListEntityInfo()
+					if hierarchy != nil {
+						hierarchy.Refresh()
+					}
+					rebuild(world, st, hierarchy)
+				}),
+			)
+			cont.Add(header)
+
+			nameEntry := widget.NewEntry()
+			nameEntry.SetText(nameComp.Value)
+			nameEntry.OnChanged = func(val string) {
+				nameComp.Value = val
+				st.Entities = world.ListEntityInfo()
+				if hierarchy != nil {
+					hierarchy.Refresh()
+				}
+			}
+			cont.Add(nameEntry)
 		}
 
-		// Transform editor (position only)
+		// -------------------------
+		// TRANSFORM COMPONENT
+		// -------------------------
 		if t := e.GetTransform(); t != nil {
-			cont.Add(widget.NewLabel("Transform Position"))
+			header := container.NewHBox(
+				widget.NewLabel("Transform"),
+				widget.NewButton("Remove", func() {
+					e.RemoveComponent(&ecs.Transform{})
+					rebuild(world, st, hierarchy)
+				}),
+			)
+			cont.Add(header)
 
 			x := widget.NewEntry()
 			y := widget.NewEntry()
@@ -88,7 +127,7 @@ func NewInspectorPanel() (*fyne.Container, func(world *ecs.World, st *state.Edit
 			y.SetText(fmt.Sprintf("%g", t.Position[1]))
 			z.SetText(fmt.Sprintf("%g", t.Position[2]))
 
-			apply := widget.NewButton("Apply Position", func() {
+			apply := widget.NewButton("Apply", func() {
 				if fx, err := strconv.ParseFloat(x.Text, 32); err == nil {
 					t.Position[0] = float32(fx)
 				}
@@ -101,16 +140,17 @@ func NewInspectorPanel() (*fyne.Container, func(world *ecs.World, st *state.Edit
 				t.Dirty = true
 			})
 
-			form := container.NewVBox(
+			cont.Add(container.NewVBox(
 				container.NewHBox(widget.NewLabel("X:"), x),
 				container.NewHBox(widget.NewLabel("Y:"), y),
 				container.NewHBox(widget.NewLabel("Z:"), z),
 				apply,
-			)
-			cont.Add(form)
-		} else {
-			cont.Add(widget.NewLabel("No Transform component"))
+			))
 		}
+
+		// -------------------------
+		// TODO: Add more components here
+		// -------------------------
 
 		cont.Refresh()
 	}

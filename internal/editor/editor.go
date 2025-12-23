@@ -8,12 +8,14 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
 // Run starts the editor UI for the provided world.
 func Run(world *ecs.World) {
 	a := app.New()
+	a.Settings().SetTheme(theme.DarkTheme())
 	win := a.NewWindow("Go-Cordance Editor")
 	win.Resize(fyne.NewSize(1000, 600))
 

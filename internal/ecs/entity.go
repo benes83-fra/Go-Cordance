@@ -1,6 +1,8 @@
 package ecs
 
-import "reflect"
+import (
+	"reflect"
+)
 
 // Component is a minimal interface for components that need per-frame updates.
 type Component interface {
@@ -52,6 +54,16 @@ func (e *Entity) Update(dt float32) {
 // ecs/components.go or similar
 type NormalMap struct {
 	ID uint32
+}
+
+func (e *Entity) RemoveComponent(target Component) {
+	t := reflect.TypeOf(target)
+	for i, c := range e.Components {
+		if reflect.TypeOf(c) == t {
+			e.Components = append(e.Components[:i], e.Components[i+1:]...)
+			return
+		}
+	}
 }
 
 func NewNormalMap(id uint32) *NormalMap { return &NormalMap{ID: id} }
