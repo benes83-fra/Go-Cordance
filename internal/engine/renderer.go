@@ -27,6 +27,8 @@ type Renderer struct {
 	LocUseNormalMap int32
 	LocFlipNormalG  int32
 	LocShowMode     int32
+
+	//imgui support
 }
 
 func (r *Renderer) InitUniforms() {
@@ -65,12 +67,17 @@ func (r *Renderer) InitUniforms() {
 }
 
 func NewRenderer(vertexSrc, fragmentSrc string, width, height int) *Renderer {
-	prog := compileProgram(vertexSrc, fragmentSrc)
+	r := &Renderer{}
+
+	// Compile shader program
+	r.Program = compileProgram(vertexSrc, fragmentSrc)
+
+	// GL state
 	gl.Enable(gl.DEPTH_TEST)
 	gl.ClearColor(0.1, 0.1, 0.1, 1.0)
-	gl.Viewport(0, 0, int32(width), int32(height)) // critical
+	gl.Viewport(0, 0, int32(width), int32(height))
 
-	return &Renderer{Program: prog}
+	return r
 }
 
 func compileShader(src string, t uint32) uint32 {

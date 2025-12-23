@@ -262,6 +262,7 @@ func main() {
 	renderSys.LightArrow = lightArrow
 	// Sphere–AABB collisions
 	scene.Save("my_scene.json")
+
 	last := glfw.GetTime()
 	for !window.ShouldClose() {
 		now := glfw.GetTime()
@@ -275,6 +276,7 @@ func main() {
 
 		scene.Update(dt)
 
+		// Draw editor panels editor.Draw() // Render ImGui imgui.Render() renderer.RenderImGui()
 		window.SwapBuffers()
 		engine.PollEvents()
 	}

@@ -21,6 +21,7 @@ type Scene struct {
 	camera   Camera
 	nextID   int64
 	sysMgr   *ecs.SystemManager
+	Selected *ecs.Entity
 }
 
 // New returns a basic scene with a default camera.
