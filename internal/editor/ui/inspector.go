@@ -8,6 +8,7 @@ import (
 	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/editor/registry"
 	state "go-engine/Go-Cordance/internal/editor/state"
+	"go-engine/Go-Cordance/internal/editorlink"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -126,6 +127,47 @@ func NewInspectorPanel() (*fyne.Container, func(world *ecs.World, st *state.Edit
 			x.SetText(fmt.Sprintf("%g", t.Position[0]))
 			y.SetText(fmt.Sprintf("%g", t.Position[1]))
 			z.SetText(fmt.Sprintf("%g", t.Position[2]))
+			x.OnChanged = func(val string) {
+				f, _ := strconv.ParseFloat(val, 32)
+				st.Entities[st.SelectedIndex].Position[0] = float32(f)
+
+				if editorlink.EditorConn != nil {
+					go editorlink.WriteSetTransform(editorlink.EditorConn, editorlink.MsgSetTransform{
+						ID:       uint64(st.Entities[st.SelectedIndex].ID), // cast to uint64
+						Position: [3]float32(st.Entities[st.SelectedIndex].Position),
+						Rotation: [4]float32(st.Entities[st.SelectedIndex].Rotation),
+						Scale:    [3]float32(st.Entities[st.SelectedIndex].Scale),
+					})
+				}
+			}
+
+			y.OnChanged = func(val string) {
+				f, _ := strconv.ParseFloat(val, 32)
+				st.Entities[st.SelectedIndex].Position[1] = float32(f)
+
+				if editorlink.EditorConn != nil {
+					go editorlink.WriteSetTransform(editorlink.EditorConn, editorlink.MsgSetTransform{
+						ID:       uint64(st.Entities[st.SelectedIndex].ID), // cast to uint64
+						Position: [3]float32(st.Entities[st.SelectedIndex].Position),
+						Rotation: [4]float32(st.Entities[st.SelectedIndex].Rotation),
+						Scale:    [3]float32(st.Entities[st.SelectedIndex].Scale),
+					})
+				}
+			}
+
+			z.OnChanged = func(val string) {
+				f, _ := strconv.ParseFloat(val, 32)
+				st.Entities[st.SelectedIndex].Position[2] = float32(f)
+
+				if editorlink.EditorConn != nil {
+					go editorlink.WriteSetTransform(editorlink.EditorConn, editorlink.MsgSetTransform{
+						ID:       uint64(st.Entities[st.SelectedIndex].ID), // cast to uint64
+						Position: [3]float32(st.Entities[st.SelectedIndex].Position),
+						Rotation: [4]float32(st.Entities[st.SelectedIndex].Rotation),
+						Scale:    [3]float32(st.Entities[st.SelectedIndex].Scale),
+					})
+				}
+			}
 
 			apply := widget.NewButton("Apply", func() {
 				if fx, err := strconv.ParseFloat(x.Text, 32); err == nil {

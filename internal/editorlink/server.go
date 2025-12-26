@@ -49,6 +49,28 @@ func handleConn(conn net.Conn, sc *scene.Scene) {
 				log.Printf("editorlink: write SceneSnapshot: %v", err)
 				return
 			}
+		case "SetTransform":
+			var msgST MsgSetTransform
+			if err := json.Unmarshal(msg.Data, &msgST); err != nil {
+				log.Printf("editorlink: bad SetTransform: %v", err)
+				continue
+			}
+
+			// Find entity
+			ent := sc.World().FindByID(int64(msgST.ID))
+			if ent == nil {
+				log.Printf("editorlink: SetTransform: entity %d not found", msgST.ID)
+				continue
+			}
+
+			// Update transform component
+			if tr, ok := ent.GetComponent((*ecs.Transform)(nil)).(*ecs.Transform); ok {
+				tr.Position = msgST.Position
+				tr.Rotation = msgST.Rotation
+				tr.Scale = msgST.Scale
+			}
+
+			log.Printf("editorlink: updated transform for %d", msgST.ID)
 
 		case "SelectEntity":
 			var sel MsgSelectEntity

@@ -45,6 +45,13 @@ type MsgSceneSnapshot struct {
 	Snapshot SceneSnapshot `json:"snapshot"`
 }
 
+type MsgSetTransform struct {
+	ID       uint64     `json:"id"`
+	Position [3]float32 `json:"position"`
+	Rotation [4]float32 `json:"rotation"`
+	Scale    [3]float32 `json:"scale"`
+}
+
 func readMsg(conn net.Conn) (Msg, error) {
 	var m Msg
 	r := bufio.NewReader(conn)
@@ -89,4 +96,8 @@ func ReadMsg(conn net.Conn) (Msg, error) { return readMsg(conn) }
 
 func WriteRequestSceneSnapshot(conn net.Conn) error {
 	return writeMsg(conn, "RequestSceneSnapshot", MsgRequestSceneSnapshot{})
+}
+
+func WriteSetTransform(conn net.Conn, msg MsgSetTransform) error {
+	return writeMsg(conn, "SetTransform", msg)
 }
