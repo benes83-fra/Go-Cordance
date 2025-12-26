@@ -12,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
 // Run starts the editor UI for the provided world.
@@ -23,24 +22,22 @@ func Run(world *ecs.World) {
 	win.Resize(fyne.NewSize(1000, 600))
 
 	// state
-	st := state.New()
-	st.Entities = state.Global.Entities
+	st := state.Global
 
 	var hierarchyWidget *widget.List
 	// Create inspector first so we have the rebuild function available.
 	inspectorContainer, inspectorRebuild := ui.NewInspectorPanel()
-
+	state.Global.RefreshUI = func() {
+		hierarchyWidget.Refresh()
+		inspectorRebuild(world, st, hierarchyWidget)
+		log.Println("editor: hierarchy refresh")
+	}
 	// Now create the hierarchy and pass a callback that calls inspectorRebuild.
 	hierarchyWidget = ui.NewHierarchyPanel(st, func(id int) {
 		// This callback runs on the UI goroutine (Fyne), so it's safe to call rebuild directly.
 		st.SelectedIndex = id
 		inspectorRebuild(world, st, hierarchyWidget)
 	})
-	state.Global.RefreshUI = func() {
-		hierarchyWidget.Refresh()
-		inspectorRebuild(world, st, hierarchyWidget)
-		log.Println("editor: hierarchy refresh")
-	}
 
 	// viewport placeholder
 	viewport := widget.NewLabel("Viewport Placeholder")
@@ -59,7 +56,6 @@ func Run(world *ecs.World) {
 	// initial build (no selection)
 	inspectorRebuild(world, st, hierarchyWidget)
 	win.SetCloseIntercept(func() {
-		glfw.Terminate()
 		win.Close()
 	})
 
@@ -68,7 +64,9 @@ func Run(world *ecs.World) {
 
 func UpdateEntities(ents []bridge.EntityInfo) {
 	log.Printf("editor: UpdateEntities called with %d entities", len(ents))
-
+	for i, e := range ents {
+		log.Printf("  Entity %d: ID=%d, Name=%s", i, e.ID, e.Name)
+	}
 	state.Global.Entities = ents
 
 	if state.Global.RefreshUI != nil {

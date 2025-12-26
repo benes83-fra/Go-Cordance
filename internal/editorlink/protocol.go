@@ -77,6 +77,12 @@ func writeMsg(conn net.Conn, msgType string, payload any) error {
 	return err
 }
 
+func WriteSelectEntity(conn net.Conn, id int64) error {
+	sel := MsgSelectEntity{ID: uint64(id)}
+	fmt.Printf("Writinge selection %s", sel)
+	return writeMsg(conn, "SelectEntity", sel)
+}
+
 // Public client helpers:
 
 func ReadMsg(conn net.Conn) (Msg, error) { return readMsg(conn) }

@@ -66,7 +66,7 @@ func NewInspectorPanel() (*fyne.Container, func(world *ecs.World, st *state.Edit
 			factory := registry.Components[addSelect.Selected]
 			if factory != nil {
 				e.AddComponent(factory())
-				st.Entities = world.ListEntityInfo()
+				st.Entities = state.Global.Entities
 				if hierarchy != nil {
 					hierarchy.Refresh()
 				}

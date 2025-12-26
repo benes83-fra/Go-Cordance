@@ -9,6 +9,8 @@ import (
 	"go-engine/Go-Cordance/internal/scene"
 )
 
+var EditorConn net.Conn
+
 // StartServer exposes the given Scene to a single editor client.
 func StartServer(addr string, sc *scene.Scene) {
 	ln, err := net.Listen("tcp", addr)

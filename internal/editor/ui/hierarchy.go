@@ -2,6 +2,7 @@ package ui
 
 import (
 	state "go-engine/Go-Cordance/internal/editor/state"
+	"go-engine/Go-Cordance/internal/editorlink"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
@@ -26,6 +27,9 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) *widget.List {
 	list.OnSelected = func(id widget.ListItemID) {
 		st.SelectedIndex = id
 		onSelect(int(id))
+		if editorlink.EditorConn != nil {
+			go editorlink.WriteSelectEntity(editorlink.EditorConn, st.Entities[id].ID)
+		}
 	}
 
 	return list

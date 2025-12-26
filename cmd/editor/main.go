@@ -16,6 +16,7 @@ func main() {
 			log.Printf("editor: IPC error: %v", err)
 		}
 	}()
+
 	sc, _ := scene.BootstrapScene()
 	world := sc.World() // or sc.Entities if you expose them directly
 	editor.Run(world)
@@ -23,17 +24,17 @@ func main() {
 }
 
 func connectAndRequestSnapshot() error {
-	conn, err := net.Dial("tcp", "localhost:7777")
+	var err error
+	editorlink.EditorConn, err = net.Dial("tcp", "localhost:7777")
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
 
-	if err := editorlink.WriteRequestSceneSnapshot(conn); err != nil {
+	if err := editorlink.WriteRequestSceneSnapshot(editorlink.EditorConn); err != nil {
 		return err
 	}
 
-	msg, err := editorlink.ReadMsg(conn)
+	msg, err := editorlink.ReadMsg(editorlink.EditorConn)
 	if err != nil {
 		return err
 	}
