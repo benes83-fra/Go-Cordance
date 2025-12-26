@@ -5,6 +5,7 @@ import (
 	"go-engine/Go-Cordance/internal/editor/bridge"
 )
 
+
 type World struct {
 	Entities []*Entity
 }

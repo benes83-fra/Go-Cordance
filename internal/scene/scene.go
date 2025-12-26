@@ -17,12 +17,13 @@ type Camera struct {
 
 // Scene holds entities and a camera.
 type Scene struct {
-	entities []*ecs.Entity
-	world    *ecs.World
-	camera   Camera
-	nextID   int64
-	sysMgr   *ecs.SystemManager
-	Selected *ecs.Entity
+	entities       []*ecs.Entity
+	world          *ecs.World
+	camera         Camera
+	nextID         int64
+	sysMgr         *ecs.SystemManager
+	Selected       *ecs.Entity
+	SelectedEntity uint64
 }
 
 // New returns a basic scene with a default camera.

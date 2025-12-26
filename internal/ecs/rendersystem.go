@@ -17,6 +17,7 @@ type RenderSystem struct {
 	LightEntity    *Entity
 	LightArrow     *Entity
 	OrbitalEnabled bool
+	SelectedEntity uint64
 
 	DebugShowMode  int32 // 0..6 as in shader
 	DebugFlipGreen bool
@@ -102,12 +103,21 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 		// Upload material color
 
 		if mat != nil {
+			// normal material
 			gl.Uniform4fv(rs.Renderer.LocBaseCol, 1, &mat.BaseColor[0])
+
+			// highlight override
+			if uint64(e.ID) == rs.SelectedEntity {
+				highlight := [4]float32{1, 1, 0, 1} // bright yellow
+				gl.Uniform4fv(rs.Renderer.LocBaseCol, 1, &highlight[0])
+			}
+
 			gl.Uniform1f(rs.Renderer.LocAmbient, mat.Ambient)
 			gl.Uniform1f(rs.Renderer.LocDiffuse, mat.Diffuse)
 			gl.Uniform1f(rs.Renderer.LocSpecular, mat.Specular)
 			gl.Uniform1f(rs.Renderer.LocShininess, mat.Shininess)
 		}
+
 		if tex != nil {
 			gl.ActiveTexture(gl.TEXTURE0)
 			gl.BindTexture(gl.TEXTURE_2D, tex.ID)

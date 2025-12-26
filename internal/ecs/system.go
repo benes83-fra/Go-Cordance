@@ -26,3 +26,4 @@ func (sm *SystemManager) Update(dt float32, entities []*Entity) {
 		sys.Update(dt, entities)
 	}
 }
+func (sm *SystemManager) Systems() []System { return sm.systems }

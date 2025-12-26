@@ -56,8 +56,12 @@ func handleConn(conn net.Conn, sc *scene.Scene) {
 				log.Printf("editorlink: bad SelectEntity: %v", err)
 				continue
 			}
-			// later: update sc.Selected or similar
-			log.Printf("editorlink: SelectEntity %d (TODO: implement)", sel.ID)
+			for _, sys := range sc.Systems().Systems() {
+				if rs, ok := sys.(*ecs.RenderSystem); ok {
+					rs.SelectedEntity = sel.ID
+				}
+			}
+			log.Printf("editorlink: SelectEntity %d ", sel.ID)
 
 		default:
 			log.Printf("editorlink: unknown msg type %q", msg.Type)
