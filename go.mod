@@ -8,8 +8,10 @@ require (
 	github.com/go-gl/mathgl v1.2.0
 )
 
+require github.com/kr/text v0.2.0 // indirect
+
 require (
-	fyne.io/fyne/v2 v2.7.1 // indirect
+	fyne.io/fyne/v2 v2.7.1
 	fyne.io/systray v1.11.1-0.20250603113521-ca66a66d8b58 // indirect
 	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -40,3 +42,5 @@ require (
 	golang.org/x/text v0.22.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/AllenDang/cimgui-go => github.com/AllenDang/cimgui-go v1.3.0

@@ -6,6 +6,7 @@ type EditorState struct {
 	Entities      []bridge.EntityInfo
 	SelectedID    int64
 	SelectedIndex int
+	RefreshUI     func() // <-- add this
 }
 
 func NewEditorState() *EditorState {
@@ -20,3 +21,5 @@ func New() *EditorState {
 		SelectedIndex: -1,
 	}
 }
+
+var Global = New()

@@ -2,14 +2,17 @@ package editor
 
 import (
 	"go-engine/Go-Cordance/internal/ecs"
+	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editor/ui"
+	"log"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
 // Run starts the editor UI for the provided world.
@@ -21,7 +24,8 @@ func Run(world *ecs.World) {
 
 	// state
 	st := state.New()
-	st.Entities = world.ListEntityInfo()
+	st.Entities = state.Global.Entities
+
 	var hierarchyWidget *widget.List
 	// Create inspector first so we have the rebuild function available.
 	inspectorContainer, inspectorRebuild := ui.NewInspectorPanel()
@@ -32,6 +36,11 @@ func Run(world *ecs.World) {
 		st.SelectedIndex = id
 		inspectorRebuild(world, st, hierarchyWidget)
 	})
+	state.Global.RefreshUI = func() {
+		hierarchyWidget.Refresh()
+		inspectorRebuild(world, st, hierarchyWidget)
+		log.Println("editor: hierarchy refresh")
+	}
 
 	// viewport placeholder
 	viewport := widget.NewLabel("Viewport Placeholder")
@@ -49,6 +58,21 @@ func Run(world *ecs.World) {
 
 	// initial build (no selection)
 	inspectorRebuild(world, st, hierarchyWidget)
+	win.SetCloseIntercept(func() {
+		glfw.Terminate()
+		win.Close()
+	})
 
 	win.ShowAndRun()
+}
+
+func UpdateEntities(ents []bridge.EntityInfo) {
+	log.Printf("editor: UpdateEntities called with %d entities", len(ents))
+
+	state.Global.Entities = ents
+
+	if state.Global.RefreshUI != nil {
+		log.Printf("editor: RefreshUI triggered")
+		state.Global.RefreshUI()
+	}
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 
 	"go-engine/Go-Cordance/internal/ecs"
+	"go-engine/Go-Cordance/internal/editorlink"
 	"go-engine/Go-Cordance/internal/engine"
 	"go-engine/Go-Cordance/internal/scene"
 )
@@ -207,7 +208,7 @@ func main() {
 
 	// Optionally save the scene (pure data) to disk
 	sc.Save("my_scene.json")
-
+	go editorlink.StartServer(":7777", sc)
 	// Main loop
 	last := glfw.GetTime()
 	for !window.ShouldClose() {
