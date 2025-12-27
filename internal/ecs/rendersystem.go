@@ -88,7 +88,33 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 		}
 
 		// Build MVP
+		// Build model matrix from Position, Rotation (quat) and Scale
+		// Translation
 		model := mgl32.Translate3D(t.Position[0], t.Position[1], t.Position[2])
+
+		// Rotation (assuming t.Rotation is [4]float32{w, x, y, z})
+		// Only apply if it’s non-zero to avoid producing NaNs for an uninitialized quaternion.
+		if t.Rotation != [4]float32{0, 0, 0, 0} {
+			q := mgl32.Quat{
+				W: t.Rotation[0],
+				V: mgl32.Vec3{t.Rotation[1], t.Rotation[2], t.Rotation[3]},
+			}
+			model = model.Mul4(q.Mat4())
+		}
+
+		// Scale (default to 1 if zero to avoid collapsing the mesh)
+		sx, sy, sz := t.Scale[0], t.Scale[1], t.Scale[2]
+		if sx == 0 {
+			sx = 1
+		}
+		if sy == 0 {
+			sy = 1
+		}
+		if sz == 0 {
+			sz = 1
+		}
+		model = model.Mul4(mgl32.Scale3D(sx, sy, sz))
+
 		//lightDir := [3]float32{1.0, -0.7, -0.3}
 
 		gl.Uniform3fv(rs.Renderer.LocLightDir, 1, &rs.LightDir[0])
