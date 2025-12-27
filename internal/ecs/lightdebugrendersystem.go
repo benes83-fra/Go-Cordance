@@ -72,6 +72,21 @@ func (lds *LightDebugRenderSystem) Update(_ float32, _ []*Entity) {
 		// Base model from position
 		model := mgl32.Translate3D(t.Position[0], t.Position[1], t.Position[2])
 
+		// Apply rotation if quaternion is non-zero
+		// IMPORTANT:
+		// Do NOT apply entity rotation to the light arrow.
+		// The arrow must align ONLY to the light direction, not the entity's rotation.
+		if mesh.ID != "line" {
+			// For non-arrow gizmos, apply entity rotation normally
+			if t.Rotation != ([4]float32{0, 0, 0, 0}) {
+				q := mgl32.Quat{
+					W: t.Rotation[0],
+					V: mgl32.Vec3{t.Rotation[1], t.Rotation[2], t.Rotation[3]},
+				}
+				model = model.Mul4(q.Mat4())
+			}
+		}
+
 		// If it's the light arrow, align unit Z to the desired direction
 		if mesh.ID == "line" {
 			// Expect t.Scale to carry the endpoint vector (dir * length)
@@ -99,10 +114,19 @@ func (lds *LightDebugRenderSystem) Update(_ float32, _ []*Entity) {
 			gl.LineWidth(2)
 		} else {
 			// Optional: apply regular scale if you use t.Scale elsewhere
-			if t.Scale != ([3]float32{0, 0, 0}) {
-				s := mgl32.Scale3D(t.Scale[0], t.Scale[1], t.Scale[2])
-				model = model.Mul4(s)
+			// Apply scale (default to 1 if zero)
+			sx, sy, sz := t.Scale[0], t.Scale[1], t.Scale[2]
+			if sx == 0 {
+				sx = 1
 			}
+			if sy == 0 {
+				sy = 1
+			}
+			if sz == 0 {
+				sz = 1
+			}
+			model = model.Mul4(mgl32.Scale3D(sx, sy, sz))
+
 		}
 
 		gl.UniformMatrix4fv(lds.Renderer.LocModel, 1, false, &model[0])
