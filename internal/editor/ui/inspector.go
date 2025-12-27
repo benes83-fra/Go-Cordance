@@ -2,6 +2,7 @@ package ui
 
 import (
 	state "go-engine/Go-Cordance/internal/editor/state"
+
 	"go-engine/Go-Cordance/internal/editorlink"
 	"math"
 	"strconv"
@@ -11,6 +12,15 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/go-gl/mathgl/mgl32"
 )
+
+func parse32(s string) float32 {
+	f, err := strconv.ParseFloat(s, 32)
+	if err != nil {
+		return 0
+	}
+
+	return float32(f)
+}
 
 // NewInspectorPanel returns the inspector container and a rebuild function.
 func NewInspectorPanel() (fyne.CanvasObject, func(world interface{}, st *state.EditorState, hierarchy *widget.List)) {
@@ -33,9 +43,38 @@ func NewInspectorPanel() (fyne.CanvasObject, func(world interface{}, st *state.E
 
 	rotBox := container.NewVBox(
 		widget.NewLabel("Rotation (Euler degrees)"),
-		container.NewHBox(widget.NewLabel("X°"), rotX),
-		container.NewHBox(widget.NewLabel("Y°"), rotY),
-		container.NewHBox(widget.NewLabel("Z°"), rotZ),
+		container.NewHBox(
+			NewDragLabel("X°", func(dx float32) {
+				// dx is pixels dragged horizontally
+				step := dx * 0.2 // sensitivity
+				val := parse32(rotX.Text)
+				val += step
+				rotX.SetText(strconv.FormatFloat(float64(val), 'f', 3, 32))
+				rotX.OnChanged(rotX.Text) // trigger update
+			}),
+			rotX,
+		),
+
+		container.NewHBox(
+			NewDragLabel("Y°", func(dx float32) {
+				step := dx * 0.2
+				val := parse32(rotY.Text)
+				val += step
+				rotY.SetText(strconv.FormatFloat(float64(val), 'f', 3, 32))
+				rotY.OnChanged(rotY.Text)
+			}),
+			rotY,
+		),
+		container.NewHBox(
+			NewDragLabel("Z°", func(dx float32) {
+				step := dx * 0.2
+				val := parse32(rotZ.Text)
+				val += step
+				rotZ.SetText(strconv.FormatFloat(float64(val), 'f', 3, 32))
+				rotZ.OnChanged(rotZ.Text)
+			}),
+			rotZ,
+		),
 	)
 
 	// Scale entries
@@ -52,16 +91,16 @@ func NewInspectorPanel() (fyne.CanvasObject, func(world interface{}, st *state.E
 
 	// Layout
 
-	containerObj := container.NewVBox(posBox, rotBox, scaleBox)
+	containerObj := container.NewVBox(
+		NewFoldout("Position", posBox, true),
+		NewFoldout("Rotation", rotBox, true),
+		NewFoldout("Scale", scaleBox, true),
+	)
 
 	// Rebuild function will be filled by the caller to capture world/st/hierarchy.
 	var rebuild func(world interface{}, st *state.EditorState, hierarchy *widget.List)
 
 	// Helper to parse float safely
-	parse32 := func(s string) float32 {
-		f, _ := strconv.ParseFloat(s, 32)
-		return float32(f)
-	}
 
 	// OnChanged handlers will be set inside rebuild so they capture st.SelectedIndex correctly.
 	rebuild = func(world interface{}, st *state.EditorState, hierarchy *widget.List) {
