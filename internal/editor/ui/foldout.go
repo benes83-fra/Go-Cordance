@@ -14,13 +14,15 @@ type Foldout struct {
 	Content  fyne.CanvasObject
 	Expanded bool
 	onToggle func(bool)
+	Icon     fyne.Resource
 }
 
-func NewFoldout(title string, content fyne.CanvasObject, expanded bool) *Foldout {
+func NewFoldout(title string, content fyne.CanvasObject, expanded bool, icon fyne.Resource) *Foldout {
 	f := &Foldout{
 		Title:    title,
 		Content:  content,
 		Expanded: expanded,
+		Icon:     icon,
 	}
 	f.ExtendBaseWidget(f)
 	return f
@@ -72,8 +74,15 @@ func (r *foldoutRenderer) Refresh() {
 	}
 	r.arrow.Refresh()
 
-	// Header row
-	header := container.NewHBox(r.arrow, r.title)
+	// Build header (WITH ICON SUPPORT)
+	var header fyne.CanvasObject
+	if r.foldout.Icon != nil {
+		img := canvas.NewImageFromResource(r.foldout.Icon)
+		img.SetMinSize(fyne.NewSize(16, 16))
+		header = container.NewHBox(r.arrow, img, r.title)
+	} else {
+		header = container.NewHBox(r.arrow, r.title)
+	}
 
 	// Clickable overlay
 	tap := widget.NewButton("", func() {

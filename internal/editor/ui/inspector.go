@@ -8,6 +8,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -108,9 +109,9 @@ func NewInspectorPanel() (fyne.CanvasObject, func(world interface{}, st *state.E
 				"Scale":    true,
 			}
 		}
-		posFoldout := NewFoldout("Position", posBox, st.Foldout["Position"])
-		rotFoldout := NewFoldout("Rotation", rotBox, st.Foldout["Rotation"])
-		scaleFoldout := NewFoldout("Scale", scaleBox, st.Foldout["Scale"])
+		posFoldout := NewFoldout("Position", posBox, st.Foldout["Position"], theme.ZoomInIcon())
+		rotFoldout := NewFoldout("Rotation", rotBox, st.Foldout["Rotation"], theme.VisibilityIcon())
+		scaleFoldout := NewFoldout("Scale", scaleBox, st.Foldout["Scale"], theme.ZoomOutIcon())
 
 		posFoldout.SetOnToggle(func(expanded bool) {
 			st.Foldout["Position"] = expanded
