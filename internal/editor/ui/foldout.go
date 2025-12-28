@@ -13,6 +13,7 @@ type Foldout struct {
 	Title    string
 	Content  fyne.CanvasObject
 	Expanded bool
+	onToggle func(bool)
 }
 
 func NewFoldout(title string, content fyne.CanvasObject, expanded bool) *Foldout {
@@ -25,36 +26,25 @@ func NewFoldout(title string, content fyne.CanvasObject, expanded bool) *Foldout
 	return f
 }
 
+func (f *Foldout) SetOnToggle(fn func(bool)) {
+	f.onToggle = fn
+}
+
 func (f *Foldout) CreateRenderer() fyne.WidgetRenderer {
 	arrow := canvas.NewText("", theme.ForegroundColor())
 	title := canvas.NewText(f.Title, theme.ForegroundColor())
 	title.TextStyle.Bold = true
 
-	header := container.NewHBox(arrow, title)
+	box := container.NewVBox()
 
-	// Make header clickable
-	tap := widget.NewButton("", func() {
-		f.Expanded = !f.Expanded
-		f.Refresh()
-	})
-	tap.Importance = widget.LowImportance
-	tapContainer := container.NewMax(header, tap)
-
-	// Build layout
-	var objects []fyne.CanvasObject
-	objects = append(objects, tapContainer)
-	if f.Expanded {
-		objects = append(objects, f.Content)
-	}
-
-	// Renderer
 	r := &foldoutRenderer{
 		foldout: f,
 		arrow:   arrow,
 		title:   title,
-		objects: objects,
-		box:     container.NewVBox(objects...),
+		box:     box,
 	}
+
+	r.Refresh()
 	return r
 }
 
@@ -62,7 +52,6 @@ type foldoutRenderer struct {
 	foldout *Foldout
 	arrow   *canvas.Text
 	title   *canvas.Text
-	objects []fyne.CanvasObject
 	box     *fyne.Container
 }
 
@@ -75,6 +64,7 @@ func (r *foldoutRenderer) MinSize() fyne.Size {
 }
 
 func (r *foldoutRenderer) Refresh() {
+	// Update arrow
 	if r.foldout.Expanded {
 		r.arrow.Text = "▼"
 	} else {
@@ -82,16 +72,23 @@ func (r *foldoutRenderer) Refresh() {
 	}
 	r.arrow.Refresh()
 
-	// Rebuild children
-	r.box.Objects = nil
+	// Header row
 	header := container.NewHBox(r.arrow, r.title)
+
+	// Clickable overlay
 	tap := widget.NewButton("", func() {
 		r.foldout.Expanded = !r.foldout.Expanded
+		if r.foldout.onToggle != nil {
+			r.foldout.onToggle(r.foldout.Expanded)
+		}
 		r.foldout.Refresh()
 	})
 	tap.Importance = widget.LowImportance
-	tapContainer := container.NewMax(header, tap)
-	r.box.Add(tapContainer)
+
+	headerClickable := container.NewMax(header, tap)
+
+	// Rebuild layout
+	r.box.Objects = []fyne.CanvasObject{headerClickable}
 
 	if r.foldout.Expanded {
 		r.box.Add(r.foldout.Content)

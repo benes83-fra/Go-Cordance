@@ -5,6 +5,7 @@ import (
 	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editor/ui"
+
 	"log"
 
 	"fyne.io/fyne/v2"
@@ -23,7 +24,7 @@ func Run(world *ecs.World) {
 
 	// state
 	st := state.Global
-
+	st.Foldout = map[string]bool{"Position": true, "Rotation": true, "Scale": true}
 	var hierarchyWidget *widget.List
 	// Create inspector first so we have the rebuild function available.
 	inspectorContainer, inspectorRebuild := ui.NewInspectorPanel()

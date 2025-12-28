@@ -2,7 +2,6 @@ package ui
 
 import (
 	state "go-engine/Go-Cordance/internal/editor/state"
-
 	"go-engine/Go-Cordance/internal/editorlink"
 	"math"
 	"strconv"
@@ -91,11 +90,7 @@ func NewInspectorPanel() (fyne.CanvasObject, func(world interface{}, st *state.E
 
 	// Layout
 
-	containerObj := container.NewVBox(
-		NewFoldout("Position", posBox, true),
-		NewFoldout("Rotation", rotBox, true),
-		NewFoldout("Scale", scaleBox, true),
-	)
+	root := container.NewVBox()
 
 	// Rebuild function will be filled by the caller to capture world/st/hierarchy.
 	var rebuild func(world interface{}, st *state.EditorState, hierarchy *widget.List)
@@ -104,6 +99,32 @@ func NewInspectorPanel() (fyne.CanvasObject, func(world interface{}, st *state.E
 
 	// OnChanged handlers will be set inside rebuild so they capture st.SelectedIndex correctly.
 	rebuild = func(world interface{}, st *state.EditorState, hierarchy *widget.List) {
+		root.Objects = nil
+
+		if st.Foldout == nil {
+			st.Foldout = map[string]bool{
+				"Position": true,
+				"Rotation": true,
+				"Scale":    true,
+			}
+		}
+		posFoldout := NewFoldout("Position", posBox, st.Foldout["Position"])
+		rotFoldout := NewFoldout("Rotation", rotBox, st.Foldout["Rotation"])
+		scaleFoldout := NewFoldout("Scale", scaleBox, st.Foldout["Scale"])
+
+		posFoldout.SetOnToggle(func(expanded bool) {
+			st.Foldout["Position"] = expanded
+		})
+		rotFoldout.SetOnToggle(func(expanded bool) {
+			st.Foldout["Rotation"] = expanded
+		})
+		scaleFoldout.SetOnToggle(func(expanded bool) {
+			st.Foldout["Scale"] = expanded
+		})
+		root.Add(posFoldout)
+		root.Add(rotFoldout)
+		root.Add(scaleFoldout)
+		root.Refresh()
 		// Defensive: no selection
 		if st.SelectedIndex < 0 || st.SelectedIndex >= len(st.Entities) {
 			posX.SetText("")
@@ -215,7 +236,7 @@ func NewInspectorPanel() (fyne.CanvasObject, func(world interface{}, st *state.E
 	}
 
 	// Return the UI and the rebuild function
-	return containerObj, func(world interface{}, st *state.EditorState, hierarchy *widget.List) {
+	return root, func(world interface{}, st *state.EditorState, hierarchy *widget.List) {
 		rebuild(world, st, hierarchy)
 	}
 }
