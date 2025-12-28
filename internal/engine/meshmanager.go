@@ -369,3 +369,66 @@ func (mm *MeshManager) Delete() {
 	mm.ebos = nil
 	mm.counts = nil
 }
+
+// RegisterGizmoArrow creates a simple arrow mesh pointing +Z (shaft + cone tip).
+func (mm *MeshManager) RegisterGizmoArrow(id string) {
+	// Simple low-poly arrow: shaft (two triangles as a thin quad) + cone tip (4 triangles)
+	// Layout: position only (location 0) — matches RegisterTriangle/RegisterLine style.
+	vertices := []float32{
+		// shaft (a thin rectangular prism approximated as two triangles per face, but keep it minimal)
+		// We'll use a very simple shaft: two triangles forming a thin quad in X-Y at z=0 and z=0.6 for the shaft end
+		-0.02, -0.02, 0.0,
+		0.02, -0.02, 0.0,
+		0.02, 0.02, 0.0,
+		-0.02, 0.02, 0.0,
+		-0.02, -0.02, 0.6,
+		0.02, -0.02, 0.6,
+		0.02, 0.02, 0.6,
+		-0.02, 0.02, 0.6,
+		// tip vertex (cone tip at z=1.0)
+		0.0, 0.0, 1.0,
+	}
+
+	// indices: shaft as 12 triangles (two quads per side) is overkill; keep a minimal set:
+	indices := []uint32{
+		// front face quad (0,1,2,3) -> two triangles
+		0, 1, 2, 2, 3, 0,
+		// top face connecting to shaft end (3,2,6,7)
+		3, 2, 6, 6, 7, 3,
+		// bottom face (0,4,5,1)
+		0, 4, 5, 5, 1, 0,
+		// left face (0,3,7,4)
+		0, 3, 7, 7, 4, 0,
+		// right face (1,5,6,2)
+		1, 5, 6, 6, 2, 1,
+		// tip faces: connect shaft end ring (4,5,6,7) to tip vertex 8
+		4, 5, 8,
+		5, 6, 8,
+		6, 7, 8,
+		7, 4, 8,
+	}
+
+	var vao, vbo, ebo uint32
+	gl.GenVertexArrays(1, &vao)
+	gl.GenBuffers(1, &vbo)
+	gl.GenBuffers(1, &ebo)
+
+	gl.BindVertexArray(vao)
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
+
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
+
+	// position attribute only (location 0)
+	gl.EnableVertexAttribArray(0)
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
+
+	gl.BindVertexArray(0)
+
+	mm.vaos[id] = vao
+	mm.vbos[id] = vbo
+	mm.ebos[id] = ebo
+	mm.counts[id] = int32(len(indices))
+}

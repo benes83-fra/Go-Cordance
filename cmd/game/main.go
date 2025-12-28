@@ -56,6 +56,7 @@ func main() {
 	meshMgr.RegisterWireSphere("wire_sphere", 16, 16)
 	meshMgr.RegisterSphere("sphere", 32, 16)
 	meshMgr.RegisterLine("line")
+	meshMgr.RegisterGizmoArrow("gizmo_arrow")
 
 	// Load GLTF meshes that require runtime resources
 	if err := meshMgr.RegisterGLTF("teapot", "assets/models/teapot/teapot.gltf"); err != nil {
@@ -101,6 +102,9 @@ func main() {
 	debugRenderer := engine.NewDebugRenderer(debugVertexSrc, debugFragmentSrc)
 	debugSys := ecs.NewDebugRenderSystem(debugRenderer, meshMgr, nil) // camSys set later
 	lightDebug := ecs.NewLightDebugRenderSystem(debugRenderer, meshMgr, nil)
+	gizmoSys := ecs.NewGizmoRenderSystem(debugRenderer, meshMgr, nil)
+	// later, after camera system exists, call gizmoSys.SetCameraSystem(camSys)
+
 	lightDebug.Enabled = true
 
 	// Build the logical scene (entities + components) only.
@@ -116,6 +120,7 @@ func main() {
 	// Now that we have camSys, set it on debug systems that need it
 	debugSys.SetCameraSystem(camSys)
 	lightDebug.SetCameraSystem(camSys)
+	gizmoSys.SetCameraSystem(camSys)
 
 	// Register systems on the scene
 	sc.Systems().AddSystem(ecs.NewForceSystem(0, -9.8, 0))
@@ -205,6 +210,10 @@ func main() {
 		lightDebug.SetColor(arrow, [4]float32{1.0, 0.5, 0.0, 1.0})
 		renderSys.LightArrow = arrow
 	}
+	var selected *ecs.Entity
+	if e, ok := named["selectedEntityName"]; ok {
+		selected = e
+	}
 
 	// Optionally save the scene (pure data) to disk
 	sc.Save("my_scene.json")
@@ -220,8 +229,12 @@ func main() {
 		}
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+		// determine selected entity pointer as you already do for other editor features
+
+		// ... set selected appropriately ...
 
 		sc.Update(dt)
+		gizmoSys.Update(dt, sc.Entities(), selected)
 
 		// Swap buffers / poll events
 		window.SwapBuffers()
