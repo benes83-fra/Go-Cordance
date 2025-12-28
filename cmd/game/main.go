@@ -210,10 +210,17 @@ func main() {
 		lightDebug.SetColor(arrow, [4]float32{1.0, 0.5, 0.0, 1.0})
 		renderSys.LightArrow = arrow
 	}
+	// Force select cube1 for debugging (do this once after named map is available)
 	var selected *ecs.Entity
-	if e, ok := named["selectedEntityName"]; ok {
+	if e, ok := named["cube1"]; ok {
+		selected = e
+	} else if e, ok := named["teapot"]; ok {
 		selected = e
 	}
+
+	vao := meshMgr.GetVAO("gizmo_arrow")
+	count := meshMgr.GetCount("gizmo_arrow")
+	log.Printf("gizmo VAO=%d count=%d", vao, count)
 
 	// Optionally save the scene (pure data) to disk
 	sc.Save("my_scene.json")
@@ -234,7 +241,15 @@ func main() {
 		// ... set selected appropriately ...
 
 		sc.Update(dt)
+
+		// debug: draw gizmo on top (disable depth to rule out occlusion)
+		gl.Disable(gl.DEPTH_TEST)
 		gizmoSys.Update(dt, sc.Entities(), selected)
+		gl.Enable(gl.DEPTH_TEST)
+		err := gl.GetError()
+		if err != gl.NO_ERROR {
+			log.Printf("GL error after gizmo draw: 0x%X", err)
+		}
 
 		// Swap buffers / poll events
 		window.SwapBuffers()
