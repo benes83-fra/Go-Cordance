@@ -6,14 +6,18 @@ import (
 	"go-engine/Go-Cordance/internal/engine"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
 type GizmoRenderSystem struct {
-	Renderer     *engine.DebugRenderer
-	MeshManager  *engine.MeshManager
-	CameraSystem *CameraSystem
-	Enabled      bool
+	Renderer           *engine.DebugRenderer
+	MeshManager        *engine.MeshManager
+	CameraSystem       *CameraSystem
+	Enabled            bool
+	dragStartRayOrigin mgl32.Vec3
+	dragStartRayDir    mgl32.Vec3
+	dragStartEntityPos mgl32.Vec3
 
 	HoverAxis  string
 	ActiveAxis string
@@ -122,6 +126,44 @@ func (gs *GizmoRenderSystem) Update(_ float32, _ []*Entity, selected *Entity) {
 			col = [4]float32{1, 1, 0, 1} // active = yellow
 		} else if gs.HoverAxis == a.name {
 			col = [4]float32{1, 1, 1, 1} // hover = white
+		}
+		// --- Drag start ---
+		if !gs.IsDragging && gs.HoverAxis != "" && gs.CameraSystem.Window().GetMouseButton(glfw.MouseButtonLeft) == glfw.Press {
+			gs.ActiveAxis = gs.HoverAxis
+			gs.IsDragging = true
+			gs.dragStartRayOrigin = origin
+			gs.dragStartRayDir = dir
+			gs.dragStartEntityPos = entityPos
+		}
+
+		// --- Drag end ---
+		if gs.IsDragging && gs.CameraSystem.Window().GetMouseButton(glfw.MouseButtonLeft) == glfw.Release {
+			gs.IsDragging = false
+			gs.ActiveAxis = ""
+		}
+
+		if gs.IsDragging && gs.ActiveAxis != "" {
+			axis := mgl32.Vec3{}
+			switch gs.ActiveAxis {
+			case "x":
+				axis = mgl32.Vec3{1, 0, 0}
+			case "y":
+				axis = mgl32.Vec3{0, 1, 0}
+			case "z":
+				axis = mgl32.Vec3{0, 0, 1}
+			}
+
+			// Project current ray onto axis
+			t0 := projectRayOntoAxis(gs.dragStartRayOrigin, gs.dragStartRayDir, gs.dragStartEntityPos, axis)
+			t1 := projectRayOntoAxis(origin, dir, gs.dragStartEntityPos, axis)
+
+			delta := t1 - t0
+			newPos := gs.dragStartEntityPos.Add(axis.Mul(delta))
+
+			// Apply to entity transform
+			t.Position[0] = newPos.X()
+			t.Position[1] = newPos.Y()
+			t.Position[2] = newPos.Z()
 		}
 
 		gl.UniformMatrix4fv(gs.Renderer.LocModel, 1, false, &model[0])

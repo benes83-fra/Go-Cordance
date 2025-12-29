@@ -71,3 +71,12 @@ func RayFromMouse(window *glfw.Window, cam *CameraSystem) (origin, dir mgl32.Vec
 
 	return
 }
+func projectRayOntoAxis(rayOrigin, rayDir, axisOrigin, axisDir mgl32.Vec3) float32 {
+	// Solve for t where ray intersects axis direction
+	// t = dot((rayOrigin - axisOrigin), axisDir) / dot(rayDir, axisDir)
+	denom := rayDir.Dot(axisDir)
+	if float32(math.Abs(float64(denom))) < 1e-6 {
+		return 0
+	}
+	return (rayOrigin.Sub(axisOrigin)).Dot(axisDir) / denom
+}
