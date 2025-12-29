@@ -212,12 +212,8 @@ func main() {
 	}
 	// Force select cube1 for debugging (do this once after named map is available)
 	var selected *ecs.Entity
-	if e, ok := named["cube1"]; ok {
-		selected = e
-	} else if e, ok := named["teapot"]; ok {
-		selected = e
-	}
-
+	selected = sc.Selected
+	fmt.Printf("Initial selected entity: %v\n", selected)
 	vao := meshMgr.GetVAO("gizmo_arrow")
 	count := meshMgr.GetCount("gizmo_arrow")
 	log.Printf("gizmo VAO=%d count=%d", vao, count)
@@ -244,6 +240,7 @@ func main() {
 
 		// debug: draw gizmo on top (disable depth to rule out occlusion)
 		gl.Disable(gl.DEPTH_TEST)
+		selected = sc.Selected
 		gizmoSys.Update(dt, sc.Entities(), selected)
 		gl.Enable(gl.DEPTH_TEST)
 		err := gl.GetError()

@@ -73,6 +73,7 @@ func (lds *LightDebugRenderSystem) Update(_ float32, _ []*Entity) {
 		model := mgl32.Translate3D(t.Position[0], t.Position[1], t.Position[2])
 
 		// Apply rotation if quaternion is non-zero
+
 		// IMPORTANT:
 		// Do NOT apply entity rotation to the light arrow.
 		// The arrow must align ONLY to the light direction, not the entity's rotation.

@@ -78,10 +78,10 @@ func handleConn(conn net.Conn, sc *scene.Scene) {
 				log.Printf("editorlink: bad SelectEntity: %v", err)
 				continue
 			}
-			for _, sys := range sc.Systems().Systems() {
-				if rs, ok := sys.(*ecs.RenderSystem); ok {
-					rs.SelectedEntity = sel.ID
-				}
+			ent := sc.World().FindByID(int64(sel.ID))
+			if ent != nil {
+				sc.Selected = ent
+				sc.SelectedEntity = sel.ID
 			}
 			log.Printf("editorlink: SelectEntity %d ", sel.ID)
 
