@@ -107,6 +107,7 @@ func (gs *GizmoRenderSystem) Update(_ float32, _ []*Entity, selected *Entity) {
 		model = model.Mul4(mgl32.Scale3D(gizmoScale, gizmoScale, gizmoScale))
 
 		var col [4]float32
+		// base axis colors
 		switch a.name {
 		case "x":
 			col = [4]float32{1, 0, 0, 1}
@@ -115,10 +116,12 @@ func (gs *GizmoRenderSystem) Update(_ float32, _ []*Entity, selected *Entity) {
 		case "z":
 			col = [4]float32{0, 0, 1, 1}
 		}
+
+		// highlight
 		if gs.ActiveAxis == a.name {
-			col = [4]float32{1, 1, 0, 1}
+			col = [4]float32{1, 1, 0, 1} // active = yellow
 		} else if gs.HoverAxis == a.name {
-			col = [4]float32{col[0] * 1.2, col[1] * 1.2, col[2] * 1.2, 1}
+			col = [4]float32{1, 1, 1, 1} // hover = white
 		}
 
 		gl.UniformMatrix4fv(gs.Renderer.LocModel, 1, false, &model[0])

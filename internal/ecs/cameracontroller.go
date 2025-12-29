@@ -28,6 +28,11 @@ func NewCameraControllerSystem(window *glfw.Window) *CameraControllerSystem {
 }
 
 func (cc *CameraControllerSystem) Update(dt float32, entities []*Entity) {
+	// Only rotate camera when cursor is disabled (camera mode)
+	if cc.window.GetInputMode(glfw.CursorMode) != glfw.CursorDisabled {
+		return
+	}
+
 	for _, e := range entities {
 		for _, c := range e.Components {
 			if cam, ok := c.(*Camera); ok && cam.Active {

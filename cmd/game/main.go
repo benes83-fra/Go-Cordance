@@ -45,7 +45,6 @@ func main() {
 		}
 		gl.Viewport(0, 0, int32(w), int32(h))
 	})
-	window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 
 	// Mesh manager and registrations (runtime)
 	meshMgr := engine.NewMeshManager()
@@ -133,6 +132,7 @@ func main() {
 	sc.Systems().AddSystem(renderSys)
 	sc.Systems().AddSystem(debugSys)
 	sc.Systems().AddSystem(lightDebug)
+	cursorDisabled := false
 
 	window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if action == glfw.Press {
@@ -173,6 +173,16 @@ func main() {
 				renderSys.DebugShowMode = 6 // uv
 			case glfw.KeyG:
 				renderSys.DebugFlipGreen = !renderSys.DebugFlipGreen
+			case glfw.KeyTab:
+				cursorDisabled = !cursorDisabled
+				if cursorDisabled {
+					window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
+					log.Println("Cursor disabled (camera mode)")
+				} else {
+					window.SetInputMode(glfw.CursorMode, glfw.CursorNormal)
+					log.Println("Cursor normal (editor mode)")
+				}
+
 			}
 
 		}
