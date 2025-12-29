@@ -48,3 +48,6 @@ func (cs *CameraSystem) Update(_ float32, entities []*Entity) {
 	cs.View = mgl32.Ident4()
 	cs.Projection = mgl32.Ident4()
 }
+func (cs *CameraSystem) Window() *glfw.Window {
+	return cs.window
+}
