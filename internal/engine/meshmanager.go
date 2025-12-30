@@ -469,3 +469,38 @@ func (mm *MeshManager) RegisterGizmoPlane(id string) {
 	mm.ebos[id] = ebo
 	mm.counts[id] = int32(len(indices))
 }
+func (mm *MeshManager) RegisterGizmoCircle(id string, segments int) {
+	var vertices []float32
+	var indices []uint32
+
+	for i := 0; i < segments; i++ {
+		angle := float32(i) * 2 * math.Pi / float32(segments)
+		x := float32(math.Cos(float64(angle)))
+		y := float32(math.Sin(float64(angle)))
+		vertices = append(vertices, x, y, 0)
+		indices = append(indices, uint32(i), uint32((i+1)%segments))
+	}
+
+	var vao, vbo, ebo uint32
+	gl.GenVertexArrays(1, &vao)
+	gl.GenBuffers(1, &vbo)
+	gl.GenBuffers(1, &ebo)
+
+	gl.BindVertexArray(vao)
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
+
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
+
+	gl.EnableVertexAttribArray(0)
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
+
+	gl.BindVertexArray(0)
+
+	mm.vaos[id] = vao
+	mm.vbos[id] = vbo
+	mm.ebos[id] = ebo
+	mm.counts[id] = int32(len(indices))
+}

@@ -193,6 +193,26 @@ func (gs *GizmoRenderSystem) Update(_ float32, _ []*Entity, selected *Entity) {
 			gs.HoverAxis = p.name
 		}
 	}
+	// --- Rotation ring hover detection ---
+	ringRadius := gizmoScale * 1.2
+	ringThickness := gizmoScale * 0.15
+
+	rotationAxes := []struct {
+		name   string
+		normal mgl32.Vec3
+	}{
+		{"rx", mgl32.Vec3{1, 0, 0}},
+		{"ry", mgl32.Vec3{0, 1, 0}},
+		{"rz", mgl32.Vec3{0, 0, 1}},
+	}
+
+	for _, r := range rotationAxes {
+		hit, dist := RayCircleIntersect(origin, dir, entityPos, r.normal, ringRadius, ringThickness)
+		if hit && dist < closest {
+			closest = dist
+			gs.HoverAxis = r.name
+		}
+	}
 
 	// --- Drag start / end handling ---
 	// Start drag when LMB pressed over a hover target
@@ -273,6 +293,48 @@ func (gs *GizmoRenderSystem) Update(_ float32, _ []*Entity, selected *Entity) {
 				t.Position[2] = newPos.Z()
 			}
 		}
+		// --- Rotation dragging ---
+		if gs.ActiveAxis == "rx" || gs.ActiveAxis == "ry" || gs.ActiveAxis == "rz" {
+			var axis mgl32.Vec3
+			switch gs.ActiveAxis {
+			case "rx":
+				axis = mgl32.Vec3{1, 0, 0}
+			case "ry":
+				axis = mgl32.Vec3{0, 1, 0}
+			case "rz":
+				axis = mgl32.Vec3{0, 0, 1}
+			}
+
+			// project start ray onto plane
+			hit0, t0 := RayPlaneIntersection(gs.dragStartRayOrigin, gs.dragStartRayDir, gs.dragStartEntityPos, axis)
+			hit1, t1 := RayPlaneIntersection(origin, dir, gs.dragStartEntityPos, axis)
+			if hit0 && hit1 {
+				p0 := gs.dragStartRayOrigin.Add(gs.dragStartRayDir.Mul(t0))
+				p1 := origin.Add(dir.Mul(t1))
+
+				v0 := p0.Sub(entityPos).Normalize()
+				v1 := p1.Sub(entityPos).Normalize()
+
+				angle := float32(math.Acos(float64(v0.Dot(v1))))
+				cross := v0.Cross(v1)
+				if cross.Dot(axis) < 0 {
+					angle = -angle
+				}
+
+				q := mgl32.QuatRotate(angle, axis)
+				current := mgl32.Quat{
+					W: t.Rotation[0],
+					V: mgl32.Vec3{t.Rotation[1], t.Rotation[2], t.Rotation[3]},
+				}
+				newQ := q.Mul(current).Normalize()
+
+				t.Rotation[0] = newQ.W
+				t.Rotation[1] = newQ.V[0]
+				t.Rotation[2] = newQ.V[1]
+				t.Rotation[3] = newQ.V[2]
+			}
+		}
+
 	}
 
 	// --- Rendering axes (no plane meshes here) ---
@@ -333,6 +395,44 @@ func (gs *GizmoRenderSystem) Update(_ float32, _ []*Entity, selected *Entity) {
 		gl.BindVertexArray(vao)
 		gl.DrawElements(gl.TRIANGLES, count, gl.UNSIGNED_INT, gl.PtrOffset(0))
 		gl.BindVertexArray(0)
+	}
+	// --- Render rotation rings ---
+	vao := gs.MeshManager.GetVAO("gizmo_circle")
+	count := gs.MeshManager.GetCount("gizmo_circle")
+
+	if vao != 0 && count != 0 {
+		rings := []struct {
+			name  string
+			axis  mgl32.Vec3
+			color [4]float32
+			rot   mgl32.Mat4
+		}{
+			{"rx", mgl32.Vec3{1, 0, 0}, [4]float32{1, 0, 0, 1}, mgl32.HomogRotate3DY(float32(math.Pi * 0.5))},
+			{"ry", mgl32.Vec3{0, 1, 0}, [4]float32{0, 1, 0, 1}, mgl32.HomogRotate3DX(float32(math.Pi * 0.5))},
+			{"rz", mgl32.Vec3{0, 0, 1}, [4]float32{0, 0, 1, 1}, mgl32.Ident4()},
+		}
+
+		for _, r := range rings {
+			model := mgl32.Translate3D(entityPos.X(), entityPos.Y(), entityPos.Z())
+			model = model.Mul4(r.rot)
+			model = model.Mul4(mgl32.Scale3D(gizmoScale*1.2, gizmoScale*1.2, gizmoScale*1.2))
+
+			col := r.color
+			if gs.ActiveAxis == r.name {
+				col = [4]float32{1, 1, 0, 1}
+			} else if gs.HoverAxis == r.name {
+				col = [4]float32{1, 1, 1, 1}
+			}
+
+			gl.UniformMatrix4fv(gs.Renderer.LocModel, 1, false, &model[0])
+			gl.UniformMatrix4fv(gs.Renderer.LocView, 1, false, &view[0])
+			gl.UniformMatrix4fv(gs.Renderer.LocProj, 1, false, &proj[0])
+			gl.Uniform4fv(gs.Renderer.LocColor, 1, &col[0])
+
+			gl.BindVertexArray(vao)
+			gl.DrawElements(gl.LINES, count, gl.UNSIGNED_INT, gl.PtrOffset(0))
+			gl.BindVertexArray(0)
+		}
 	}
 
 	// Optionally: draw a simple plane indicator if you later add a mesh for planes.

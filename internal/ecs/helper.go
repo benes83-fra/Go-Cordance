@@ -89,3 +89,22 @@ func RayPlaneIntersection(rayOrigin, rayDir, planePoint, planeNormal mgl32.Vec3)
 	t = planePoint.Sub(rayOrigin).Dot(planeNormal) / denom
 	return t >= 0, t
 }
+func RayCircleIntersect(rayOrigin, rayDir, center, normal mgl32.Vec3, radius, thickness float32) (bool, float32) {
+	denom := normal.Dot(rayDir)
+	if float32(math.Abs(float64(denom))) < 1e-6 {
+		return false, 0
+	}
+
+	t := center.Sub(rayOrigin).Dot(normal) / denom
+	if t < 0 {
+		return false, 0
+	}
+
+	hitPoint := rayOrigin.Add(rayDir.Mul(t))
+	dist := hitPoint.Sub(center).Len()
+
+	if float32(math.Abs(float64(dist-radius))) <= thickness {
+		return true, t
+	}
+	return false, 0
+}
