@@ -80,3 +80,12 @@ func projectRayOntoAxis(rayOrigin, rayDir, axisOrigin, axisDir mgl32.Vec3) float
 	}
 	return (rayOrigin.Sub(axisOrigin)).Dot(axisDir) / denom
 }
+
+func RayPlaneIntersection(rayOrigin, rayDir, planePoint, planeNormal mgl32.Vec3) (hit bool, t float32) {
+	denom := planeNormal.Dot(rayDir)
+	if float32(math.Abs(float64(denom))) < 1e-6 {
+		return false, 0
+	}
+	t = planePoint.Sub(rayOrigin).Dot(planeNormal) / denom
+	return t >= 0, t
+}
