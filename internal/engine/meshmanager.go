@@ -432,3 +432,40 @@ func (mm *MeshManager) RegisterGizmoArrow(id string) {
 	mm.ebos[id] = ebo
 	mm.counts[id] = int32(len(indices))
 }
+func (mm *MeshManager) RegisterGizmoPlane(id string) {
+	// Simple 1×1 square in XY plane, centered at origin
+	vertices := []float32{
+		-0.5, -0.5, 0,
+		0.5, -0.5, 0,
+		0.5, 0.5, 0,
+		-0.5, 0.5, 0,
+	}
+
+	indices := []uint32{
+		0, 1, 2,
+		2, 3, 0,
+	}
+
+	var vao, vbo, ebo uint32
+	gl.GenVertexArrays(1, &vao)
+	gl.GenBuffers(1, &vbo)
+	gl.GenBuffers(1, &ebo)
+
+	gl.BindVertexArray(vao)
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
+
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
+
+	gl.EnableVertexAttribArray(0)
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
+
+	gl.BindVertexArray(0)
+
+	mm.vaos[id] = vao
+	mm.vbos[id] = vbo
+	mm.ebos[id] = ebo
+	mm.counts[id] = int32(len(indices))
+}

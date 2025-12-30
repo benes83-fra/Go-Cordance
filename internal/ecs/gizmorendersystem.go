@@ -108,6 +108,55 @@ func (gs *GizmoRenderSystem) Update(_ float32, _ []*Entity, selected *Entity) {
 			gs.HoverAxis = a.name
 		}
 	}
+	// --- Render plane handles ---
+	vaoPlane := gs.MeshManager.GetVAO("gizmo_plane")
+	countPlane := gs.MeshManager.GetCount("gizmo_plane")
+
+	if vaoPlane != 0 && countPlane != 0 {
+
+		planesRender := []struct {
+			name  string
+			color [4]float32
+			rot   mgl32.Mat4
+		}{
+			// XY plane (facing +Z)
+			{"xy", [4]float32{1, 1, 0, 0.35}, mgl32.Ident4()},
+			// XZ plane (facing +Y)
+			{"xz", [4]float32{0, 1, 1, 0.35}, mgl32.HomogRotate3DX(float32(-math.Pi / 2))},
+			// YZ plane (facing +X)
+			{"yz", [4]float32{1, 0, 1, 0.35}, mgl32.HomogRotate3DY(float32(math.Pi / 2))},
+		}
+
+		for _, p := range planesRender {
+
+			model := mgl32.Translate3D(entityPos.X(), entityPos.Y(), entityPos.Z())
+			model = model.Mul4(p.rot)
+			model = model.Mul4(mgl32.Scale3D(gizmoScale, gizmoScale, gizmoScale))
+
+			col := p.color
+
+			// highlight
+			if gs.ActiveAxis == p.name {
+				col = [4]float32{1, 1, 0, 0.8} // active = yellow
+			} else if gs.HoverAxis == p.name {
+				col = [4]float32{1, 1, 1, 0.8} // hover = white
+			}
+
+			gl.UniformMatrix4fv(gs.Renderer.LocModel, 1, false, &model[0])
+			gl.UniformMatrix4fv(gs.Renderer.LocView, 1, false, &view[0])
+			gl.UniformMatrix4fv(gs.Renderer.LocProj, 1, false, &proj[0])
+			gl.Uniform4fv(gs.Renderer.LocColor, 1, &col[0])
+
+			gl.Enable(gl.BLEND)
+			gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+
+			gl.BindVertexArray(vaoPlane)
+			gl.DrawElements(gl.TRIANGLES, countPlane, gl.UNSIGNED_INT, gl.PtrOffset(0))
+			gl.BindVertexArray(0)
+
+			gl.Disable(gl.BLEND)
+		}
+	}
 
 	// --- Plane hover detection (square centered on entity) ---
 	// We compute plane intersection t and compare to closest to pick the nearest hit

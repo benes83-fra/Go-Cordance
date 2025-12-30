@@ -56,6 +56,7 @@ func main() {
 	meshMgr.RegisterSphere("sphere", 32, 16)
 	meshMgr.RegisterLine("line")
 	meshMgr.RegisterGizmoArrow("gizmo_arrow")
+	meshMgr.RegisterGizmoPlane("gizmo_plane")
 
 	// Load GLTF meshes that require runtime resources
 	if err := meshMgr.RegisterGLTF("teapot", "assets/models/teapot/teapot.gltf"); err != nil {
