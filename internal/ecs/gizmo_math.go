@@ -153,3 +153,40 @@ func rotationFromAxis(axis mgl32.Vec3) mgl32.Mat4 {
 	angle := float32(math.Acos(float64(dot)))
 	return mgl32.HomogRotate3D(angle, rotAxis)
 }
+func RaySphereIntersect(origin, dir, center mgl32.Vec3, radius float32) (bool, float32) {
+	oc := origin.Sub(center)
+	b := oc.Dot(dir)
+	c := oc.Dot(oc) - radius*radius
+	h := b*b - c
+	if h < 0 {
+		return false, 0
+	}
+	t := -b - float32(math.Sqrt(float64(h)))
+	return t > 0, t
+}
+
+func getTransform(e *Entity) *Transform {
+	for _, c := range e.Components {
+		if tr, ok := c.(*Transform); ok {
+			return tr
+		}
+	}
+	return nil
+}
+
+func computeLocalAxes(localMode bool, t *Transform) (mgl32.Vec3, mgl32.Vec3, mgl32.Vec3) {
+	x := mgl32.Vec3{1, 0, 0}
+	y := mgl32.Vec3{0, 1, 0}
+	z := mgl32.Vec3{0, 0, 1}
+
+	if localMode {
+		q := mgl32.Quat{
+			W: t.Rotation[0],
+			V: mgl32.Vec3{t.Rotation[1], t.Rotation[2], t.Rotation[3]},
+		}
+		x = q.Rotate(x)
+		y = q.Rotate(y)
+		z = q.Rotate(z)
+	}
+	return x, y, z
+}
