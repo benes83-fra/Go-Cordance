@@ -11,6 +11,8 @@ import (
 )
 
 const SnapIncrement = 0.25
+const RotationSensitivity = 0.4  // lower = slower rotation
+const RotationSnapDegrees = 15.0 // choose 5, 10, 15, 30, etc.
 
 type GizmoRenderSystem struct {
 	Renderer           *engine.DebugRenderer
@@ -21,17 +23,19 @@ type GizmoRenderSystem struct {
 	dragStartRayDir    mgl32.Vec3
 	dragStartEntityPos mgl32.Vec3
 
-	HoverAxis  string
-	ActiveAxis string
-	IsDragging bool
+	HoverAxis     string
+	ActiveAxis    string
+	IsDragging    bool
+	LocalRotation bool
 }
 
 func NewGizmoRenderSystem(r *engine.DebugRenderer, mm *engine.MeshManager, cs *CameraSystem) *GizmoRenderSystem {
 	return &GizmoRenderSystem{
-		Renderer:     r,
-		MeshManager:  mm,
-		CameraSystem: cs,
-		Enabled:      true,
+		Renderer:      r,
+		MeshManager:   mm,
+		CameraSystem:  cs,
+		Enabled:       true,
+		LocalRotation: false,
 	}
 }
 
@@ -62,6 +66,20 @@ func (gs *GizmoRenderSystem) Update(_ float32, _ []*Entity, selected *Entity) {
 	// camera and entity positions
 	camPos := mgl32.Vec3{gs.CameraSystem.Position[0], gs.CameraSystem.Position[1], gs.CameraSystem.Position[2]}
 	entityPos := mgl32.Vec3{t.Position[0], t.Position[1], t.Position[2]}
+	// --- Local vs World rotation axes ---
+	localX := mgl32.Vec3{1, 0, 0}
+	localY := mgl32.Vec3{0, 1, 0}
+	localZ := mgl32.Vec3{0, 0, 1}
+
+	if gs.LocalRotation {
+		q := mgl32.Quat{
+			W: t.Rotation[0],
+			V: mgl32.Vec3{t.Rotation[1], t.Rotation[2], t.Rotation[3]},
+		}
+		localX = q.Rotate(localX)
+		localY = q.Rotate(localY)
+		localZ = q.Rotate(localZ)
+	}
 
 	// scale gizmo with distance so it stays readable
 	dist := camPos.Sub(entityPos).Len()
@@ -201,9 +219,9 @@ func (gs *GizmoRenderSystem) Update(_ float32, _ []*Entity, selected *Entity) {
 		name   string
 		normal mgl32.Vec3
 	}{
-		{"rx", mgl32.Vec3{1, 0, 0}},
-		{"ry", mgl32.Vec3{0, 1, 0}},
-		{"rz", mgl32.Vec3{0, 0, 1}},
+		{"rx", localX},
+		{"ry", localY},
+		{"rz", localZ},
 	}
 
 	for _, r := range rotationAxes {
@@ -298,11 +316,11 @@ func (gs *GizmoRenderSystem) Update(_ float32, _ []*Entity, selected *Entity) {
 			var axis mgl32.Vec3
 			switch gs.ActiveAxis {
 			case "rx":
-				axis = mgl32.Vec3{1, 0, 0}
+				axis = localX
 			case "ry":
-				axis = mgl32.Vec3{0, 1, 0}
+				axis = localY
 			case "rz":
-				axis = mgl32.Vec3{0, 0, 1}
+				axis = localZ
 			}
 
 			// project start ray onto plane
@@ -316,10 +334,23 @@ func (gs *GizmoRenderSystem) Update(_ float32, _ []*Entity, selected *Entity) {
 				v1 := p1.Sub(entityPos).Normalize()
 
 				angle := float32(math.Acos(float64(v0.Dot(v1))))
+
+				// direction check (you already have this)
 				cross := v0.Cross(v1)
 				if cross.Dot(axis) < 0 {
 					angle = -angle
 				}
+
+				// --- Angle snapping ---
+				if gs.CameraSystem.Window().GetKey(glfw.KeyLeftControl) == glfw.Press ||
+					gs.CameraSystem.Window().GetKey(glfw.KeyRightControl) == glfw.Press {
+
+					snapRad := degToRad(RotationSnapDegrees)
+					angle = float32(math.Round(float64(angle/snapRad))) * snapRad
+				}
+
+				// --- Sensitivity (optional, from earlier) ---
+				angle *= RotationSensitivity
 
 				q := mgl32.QuatRotate(angle, axis)
 				current := mgl32.Quat{
@@ -407,9 +438,9 @@ func (gs *GizmoRenderSystem) Update(_ float32, _ []*Entity, selected *Entity) {
 			color [4]float32
 			rot   mgl32.Mat4
 		}{
-			{"rx", mgl32.Vec3{1, 0, 0}, [4]float32{1, 0, 0, 1}, mgl32.HomogRotate3DY(float32(math.Pi * 0.5))},
-			{"ry", mgl32.Vec3{0, 1, 0}, [4]float32{0, 1, 0, 1}, mgl32.HomogRotate3DX(float32(math.Pi * 0.5))},
-			{"rz", mgl32.Vec3{0, 0, 1}, [4]float32{0, 0, 1, 1}, mgl32.Ident4()},
+			{"rx", localX, [4]float32{1, 0, 0, 1}, rotationFromAxis(localX)},
+			{"ry", localY, [4]float32{0, 1, 0, 1}, rotationFromAxis(localY)},
+			{"rz", localZ, [4]float32{0, 0, 1, 1}, rotationFromAxis(localZ)},
 		}
 
 		for _, r := range rings {

@@ -108,3 +108,48 @@ func RayCircleIntersect(rayOrigin, rayDir, center, normal mgl32.Vec3, radius, th
 	}
 	return false, 0
 }
+
+func degToRad(d float32) float32 {
+	return d * (math.Pi / 180)
+}
+func radToDeg(r float32) float32 {
+	return r * (180 / math.Pi)
+}
+func SnapAngle(angle float32, increment float32) float32 {
+	return float32(math.Round(float64(angle)/float64(increment))) * increment
+}
+func SnapPosition(pos mgl32.Vec3, increment float32) mgl32.Vec3 {
+	return mgl32.Vec3{
+		float32(math.Round(float64(pos.X())/float64(increment))) * increment,
+		float32(math.Round(float64(pos.Y())/float64(increment))) * increment,
+		float32(math.Round(float64(pos.Z())/float64(increment))) * increment,
+	}
+}
+func MinFloat32(a, b float32) float32 {
+	if a < b {
+		return a
+	}
+	return b
+}
+func MaxFloat32(a, b float32) float32 {
+	if a > b {
+		return a
+	}
+	return b
+}
+func ClampFloat32(val, min, max float32) float32 {
+	return MaxFloat32(min, MinFloat32(max, val))
+}
+func rotationFromAxis(axis mgl32.Vec3) mgl32.Mat4 {
+	z := mgl32.Vec3{0, 0, 1}
+	dot := z.Dot(axis)
+	if dot > 0.9999 {
+		return mgl32.Ident4()
+	}
+	if dot < -0.9999 {
+		return mgl32.HomogRotate3D(float32(math.Pi), mgl32.Vec3{1, 0, 0})
+	}
+	rotAxis := z.Cross(axis).Normalize()
+	angle := float32(math.Acos(float64(dot)))
+	return mgl32.HomogRotate3D(angle, rotAxis)
+}

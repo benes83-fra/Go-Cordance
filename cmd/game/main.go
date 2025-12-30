@@ -184,6 +184,9 @@ func main() {
 					window.SetInputMode(glfw.CursorMode, glfw.CursorNormal)
 					log.Println("Cursor normal (editor mode)")
 				}
+			case glfw.KeyL:
+				gizmoSys.LocalRotation = !gizmoSys.LocalRotation
+				fmt.Println("Local rotation:", gizmoSys.LocalRotation)
 
 			}
 
