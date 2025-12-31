@@ -61,3 +61,11 @@ func (t *Transform) SetRotationDegrees(dx, dy, dz float32) {
 	t.Rotation[1] = dy * degToRad
 	t.Rotation[2] = dz * degToRad
 }
+func GetTransform(e *Entity) *Transform {
+	for _, c := range e.Components {
+		if tr, ok := c.(*Transform); ok {
+			return tr
+		}
+	}
+	return nil
+}

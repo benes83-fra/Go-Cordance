@@ -62,22 +62,20 @@ func (gs *GizmoRenderSystem) rotationDrag(
 ) {
 	// --- Free rotate (screen-space) ---
 	if gs.ActiveAxis == "rfree" {
+		// project start and current rays onto camera-facing plane at gizmoOrigin
 		camForward := gs.CameraSystem.Forward()
-
 		hit0, t0 := RayPlaneIntersection(gs.dragStartRayOrigin, gs.dragStartRayDir, gs.dragStartEntityPos, camForward)
 		hit1, t1 := RayPlaneIntersection(origin, dir, gs.dragStartEntityPos, camForward)
 		if !hit0 || !hit1 {
 			return
 		}
-
 		p0 := gs.dragStartRayOrigin.Add(gs.dragStartRayDir.Mul(t0))
 		p1 := origin.Add(dir.Mul(t1))
 
-		v0 := p0.Sub(entityPos).Normalize()
-		v1 := p1.Sub(entityPos).Normalize()
+		v0 := p0.Sub(gs.dragStartEntityPos).Normalize()
+		v1 := p1.Sub(gs.dragStartEntityPos).Normalize()
 
-		angle := float32(math.Acos(float64(v0.Dot(v1))))
-
+		angle := float32(math.Acos(float64(ClampFloat32(v0.Dot(v1), -1, 1))))
 		cross := v0.Cross(v1)
 		if cross.Dot(camForward) < 0 {
 			angle = -angle
@@ -86,25 +84,43 @@ func (gs *GizmoRenderSystem) rotationDrag(
 		// snapping
 		if gs.CameraSystem.Window().GetKey(glfw.KeyLeftControl) == glfw.Press ||
 			gs.CameraSystem.Window().GetKey(glfw.KeyRightControl) == glfw.Press {
-
 			snapRad := degToRad(RotationSnapDegrees)
 			angle = float32(math.Round(float64(angle/snapRad))) * snapRad
 		}
 
-		// sensitivity
 		angle *= RotationSensitivity
 
+		// apply rotation to selection around gizmoOrigin using camForward axis
 		q := mgl32.QuatRotate(angle, camForward)
-		current := mgl32.Quat{
-			W: t.Rotation[0],
-			V: mgl32.Vec3{t.Rotation[1], t.Rotation[2], t.Rotation[3]},
-		}
-		newQ := q.Mul(current).Normalize()
+		if len(gs.SelectionIDs) > 1 && gs.World != nil {
+			for _, id := range gs.SelectionIDs {
+				if e := gs.World.FindByID(id); e != nil {
+					if tr := ecs.GetTransform(e); tr != nil {
+						// rotate position around pivot
+						pos := mgl32.Vec3{tr.Position[0], tr.Position[1], tr.Position[2]}
+						rel := pos.Sub(gs.dragStartEntityPos)
+						newPos := gs.dragStartEntityPos.Add(q.Rotate(rel))
+						tr.Position[0], tr.Position[1], tr.Position[2] = newPos.X(), newPos.Y(), newPos.Z()
 
-		t.Rotation[0] = newQ.W
-		t.Rotation[1] = newQ.V[0]
-		t.Rotation[2] = newQ.V[1]
-		t.Rotation[3] = newQ.V[2]
+						// rotate orientation
+						curQ := mgl32.Quat{W: tr.Rotation[0], V: mgl32.Vec3{tr.Rotation[1], tr.Rotation[2], tr.Rotation[3]}}
+						newQ := q.Mul(curQ).Normalize()
+						tr.Rotation[0] = newQ.W
+						tr.Rotation[1] = newQ.V[0]
+						tr.Rotation[2] = newQ.V[1]
+						tr.Rotation[3] = newQ.V[2]
+					}
+				}
+			}
+		} else {
+			// single entity: existing behavior (rotate t)
+			current := mgl32.Quat{W: t.Rotation[0], V: mgl32.Vec3{t.Rotation[1], t.Rotation[2], t.Rotation[3]}}
+			newQ := q.Mul(current).Normalize()
+			t.Rotation[0] = newQ.W
+			t.Rotation[1] = newQ.V[0]
+			t.Rotation[2] = newQ.V[1]
+			t.Rotation[3] = newQ.V[2]
+		}
 		return
 	}
 

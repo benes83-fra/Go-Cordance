@@ -41,25 +41,51 @@ func (gs *GizmoRenderSystem) scaleHover(origin, dir, entityPos mgl32.Vec3, gizmo
 	return closest
 }
 
-func (gs *GizmoRenderSystem) scaleDrag(t *ecs.Transform, origin, dir mgl32.Vec3) {
+// scaleDrag scales either the active entity (t) or the whole selection around gizmoOrigin.
+// - t: transform of the active entity (kept for local axes / single-entity updates)
+// - origin, dir: current mouse ray
+// - gizmoOrigin: pivot to scale around (selection center or active pivot)
+func (gs *GizmoRenderSystem) scaleDrag(t *ecs.Transform, origin, dir, gizmoOrigin mgl32.Vec3) {
 	if gs.ActiveAxis == "" {
 		return
 	}
 
-	// uniform scale
+	// uniform scale (screen-space)
 	if gs.ActiveAxis == "su" {
 		delta := dir.Dot(gs.dragStartRayDir)
-		scale := float32(1.0) + delta
-		if scale < 0.01 {
-			scale = 0.01
+		scaleFactor := float32(1.0) + delta
+		if scaleFactor < 0.01 {
+			scaleFactor = 0.01
 		}
-		t.Scale[0] *= scale
-		t.Scale[1] *= scale
-		t.Scale[2] *= scale
+
+		// If multiple selected, apply uniform scale to all selection around gizmoOrigin
+		if len(gs.SelectionIDs) > 1 && gs.World != nil {
+			for _, id := range gs.SelectionIDs {
+				if e := gs.World.FindByID(id); e != nil {
+					if tr := ecs.GetTransform(e); tr != nil {
+						// position relative to pivot
+						pos := mgl32.Vec3{tr.Position[0], tr.Position[1], tr.Position[2]}
+						rel := pos.Sub(gizmoOrigin)
+						newPos := gizmoOrigin.Add(rel.Mul(scaleFactor))
+						tr.Position[0], tr.Position[1], tr.Position[2] = newPos.X(), newPos.Y(), newPos.Z()
+
+						// scale each entity uniformly
+						tr.Scale[0] *= scaleFactor
+						tr.Scale[1] *= scaleFactor
+						tr.Scale[2] *= scaleFactor
+					}
+				}
+			}
+		} else {
+			// single entity (existing behavior)
+			t.Scale[0] *= scaleFactor
+			t.Scale[1] *= scaleFactor
+			t.Scale[2] *= scaleFactor
+		}
 		return
 	}
 
-	// axis scale
+	// axis scale (world axes or local axes depending on other flags)
 	var axis mgl32.Vec3
 	switch gs.ActiveAxis {
 	case "sx":
@@ -72,28 +98,61 @@ func (gs *GizmoRenderSystem) scaleDrag(t *ecs.Transform, origin, dir mgl32.Vec3)
 		return
 	}
 
-	t0 := projectRayOntoAxis(gs.dragStartRayOrigin, gs.dragStartRayDir, gs.dragStartEntityPos, axis)
-	t1 := projectRayOntoAxis(origin, dir, gs.dragStartEntityPos, axis)
+	// Use gizmoOrigin as the axis origin for projection
+	t0 := projectRayOntoAxis(gs.dragStartRayOrigin, gs.dragStartRayDir, gizmoOrigin, axis)
+	t1 := projectRayOntoAxis(origin, dir, gizmoOrigin, axis)
 	delta := t1 - t0
 
+	// snapping
 	if gs.CameraSystem.Window().GetKey(glfw.KeyLeftControl) == glfw.Press ||
 		gs.CameraSystem.Window().GetKey(glfw.KeyRightControl) == glfw.Press {
 		snapped := float32(math.Round(float64(delta/SnapIncrement))) * SnapIncrement
 		delta = snapped
 	}
 
-	scale := float32(1.0) + delta
-	if scale < 0.01 {
-		scale = 0.01
+	scaleFactor := float32(1.0) + delta
+	if scaleFactor < 0.01 {
+		scaleFactor = 0.01
 	}
 
-	switch gs.ActiveAxis {
-	case "sx":
-		t.Scale[0] *= scale
-	case "sy":
-		t.Scale[1] *= scale
-	case "sz":
-		t.Scale[2] *= scale
+	// If multiple selected, scale each entity's position relative to gizmoOrigin
+	if len(gs.SelectionIDs) > 1 && gs.World != nil {
+		for _, id := range gs.SelectionIDs {
+			if e := gs.World.FindByID(id); e != nil {
+				if tr := ecs.GetTransform(e); tr != nil {
+					// position relative to pivot
+					pos := mgl32.Vec3{tr.Position[0], tr.Position[1], tr.Position[2]}
+					rel := pos.Sub(gizmoOrigin)
+
+					// scale only along the chosen axis
+					var scaledRel mgl32.Vec3
+					switch gs.ActiveAxis {
+					case "sx":
+						scaledRel = mgl32.Vec3{rel.X() * scaleFactor, rel.Y(), rel.Z()}
+						tr.Scale[0] *= scaleFactor
+					case "sy":
+						scaledRel = mgl32.Vec3{rel.X(), rel.Y() * scaleFactor, rel.Z()}
+						tr.Scale[1] *= scaleFactor
+					case "sz":
+						scaledRel = mgl32.Vec3{rel.X(), rel.Y(), rel.Z() * scaleFactor}
+						tr.Scale[2] *= scaleFactor
+					}
+
+					newPos := gizmoOrigin.Add(scaledRel)
+					tr.Position[0], tr.Position[1], tr.Position[2] = newPos.X(), newPos.Y(), newPos.Z()
+				}
+			}
+		}
+	} else {
+		// single entity: update scale on t (existing behavior)
+		switch gs.ActiveAxis {
+		case "sx":
+			t.Scale[0] *= scaleFactor
+		case "sy":
+			t.Scale[1] *= scaleFactor
+		case "sz":
+			t.Scale[2] *= scaleFactor
+		}
 	}
 }
 

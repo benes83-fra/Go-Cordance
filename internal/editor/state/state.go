@@ -1,6 +1,8 @@
 package state
 
-import "go-engine/Go-Cordance/internal/editor/bridge"
+import (
+	"go-engine/Go-Cordance/internal/editor/bridge"
+)
 
 type EditorState struct {
 	Entities      []bridge.EntityInfo
@@ -23,5 +25,18 @@ func New() *EditorState {
 	}
 
 }
+
+type Selection struct {
+	IDs      []int64
+	ActiveID int64
+	Mode     PivotMode
+}
+
+type PivotMode int
+
+const (
+	PivotModePivot PivotMode = iota
+	PivotModeCenter
+)
 
 var Global = New()

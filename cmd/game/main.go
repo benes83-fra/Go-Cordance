@@ -113,7 +113,7 @@ func main() {
 	// BootstrapScene returns the Scene and a map of named entities so we can
 	// bind runtime-only resources (textures, set LightEntity, etc).
 	sc, named := scene.BootstrapScene()
-
+	gizmoSys.SetWorld(sc.World())
 	// Create runtime systems that need the window/renderer/meshMgr
 	camSys := ecs.NewCameraSystem(window)
 	renderSys := ecs.NewRenderSystem(renderer, meshMgr, camSys)

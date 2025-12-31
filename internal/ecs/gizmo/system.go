@@ -1,6 +1,8 @@
 package gizmo
 
 import (
+	"go-engine/Go-Cordance/internal/editor/state"
+	"go-engine/Go-Cordance/internal/editor/undo"
 	"go-engine/Go-Cordance/internal/engine"
 
 	"go-engine/Go-Cordance/internal/ecs"
@@ -23,6 +25,11 @@ type GizmoRenderSystem struct {
 	ActiveAxis    string
 	IsDragging    bool
 	LocalRotation bool
+	SelectionIDs  []int64
+	PivotMode     state.PivotMode
+	Undo          *undo.UndoStack
+	World         *ecs.World
+	dragBefore    []undo.TransformSnapshot
 
 	dragStartRayOrigin mgl32.Vec3
 	dragStartRayDir    mgl32.Vec3
@@ -31,13 +38,13 @@ type GizmoRenderSystem struct {
 
 func NewGizmoRenderSystem(r *engine.DebugRenderer, mm *engine.MeshManager, cs *ecs.CameraSystem) *GizmoRenderSystem {
 	return &GizmoRenderSystem{
-		Renderer:     r,
-		MeshManager:  mm,
-		CameraSystem: cs,
-		Mode:         GizmoCombined,
-
+		Renderer:      r,
+		MeshManager:   mm,
+		CameraSystem:  cs,
+		Mode:          GizmoCombined,
 		Enabled:       true,
 		LocalRotation: false,
+		Undo:          undo.NewUndoStack(),
 	}
 }
 
@@ -53,45 +60,65 @@ func (gs *GizmoRenderSystem) Update(_ float32, _ []*ecs.Entity, selected *ecs.En
 		return
 	}
 
-	// compute shared values
+	// compute shared values for the active entity (used for local axes, etc.)
 	_, entityPos, gizmoScale := gs.computeFrameValues(t)
-	origin, dir := RayFromMouse(gs.CameraSystem.Window(), gs.CameraSystem)
 	localX, localY, localZ := computeLocalAxes(gs.LocalRotation, t)
+
+	// compute mouse ray once
+	mouseOrigin, mouseDir := RayFromMouse(gs.CameraSystem.Window(), gs.CameraSystem)
+
+	// resolve selection entities (IDs -> []*ecs.Entity)
+	selection := gs.selectedEntities()
+
+	// compute gizmo origin from selection pivot mode; fall back to active entity position
+	gizmoOrigin := entityPos
+	if len(selection) > 0 {
+		gizmoOrigin = computeGizmoOrigin(selection, gs.PivotMode)
+		// recompute gizmoScale from camera distance to pivot so size follows selection pivot
+		camPos := mgl32.Vec3{
+			gs.CameraSystem.Position[0],
+			gs.CameraSystem.Position[1],
+			gs.CameraSystem.Position[2],
+		}
+		gizmoScale = camPos.Sub(gizmoOrigin).Len() * 0.08
+	}
+
+	// use mouseOrigin/mouseDir as origin/dir for hover/drag math
+	origin, dir := mouseOrigin, mouseDir
 
 	gs.HoverAxis = ""
 	closest := float32(1e9)
-
 	// --- HOVER PHASE ---
 	if gs.Mode == GizmoMove || gs.Mode == GizmoCombined {
-		closest = gs.axisHover(origin, dir, entityPos, gizmoScale, closest)
-		closest = gs.planeHover(origin, dir, entityPos, gizmoScale, closest)
+		closest = gs.axisHover(origin, dir, gizmoOrigin, gizmoScale, closest)
+		closest = gs.planeHover(origin, dir, gizmoOrigin, gizmoScale, closest)
 	}
 
 	if gs.Mode == GizmoRotate || gs.Mode == GizmoCombined {
-		closest = gs.rotationHover(origin, dir, entityPos, gizmoScale, localX, localY, localZ, closest)
+		closest = gs.rotationHover(origin, dir, gizmoOrigin, gizmoScale, localX, localY, localZ, closest)
 	}
 
 	if gs.Mode == GizmoScale || gs.Mode == GizmoCombined {
-		closest = gs.scaleHover(origin, dir, entityPos, gizmoScale, closest)
+		closest = gs.scaleHover(origin, dir, gizmoOrigin, gizmoScale, closest)
 	}
 
 	// --- DRAG START / END ---
-	gs.handleDragStart(origin, dir, entityPos)
+	gs.handleDragStart(origin, dir, gizmoOrigin)
 	gs.handleDragEnd()
 
 	// --- DRAGGING ---
 	if gs.IsDragging {
 		if gs.Mode == GizmoMove || gs.Mode == GizmoCombined {
-			gs.axisDrag(t, origin, dir)
+			gs.axisDrag(t, origin, dir) // axisDrag still uses t for per-entity math
 			gs.planeDrag(t, origin, dir)
 		}
 
 		if gs.Mode == GizmoRotate || gs.Mode == GizmoCombined {
-			gs.rotationDrag(t, origin, dir, entityPos, localX, localY, localZ)
+			gs.rotationDrag(t, origin, dir, gizmoOrigin, localX, localY, localZ)
 		}
 
 		if gs.Mode == GizmoScale || gs.Mode == GizmoCombined {
-			gs.scaleDrag(t, origin, dir)
+			gs.scaleDrag(t, origin, dir, gizmoOrigin)
 		}
 	}
 
@@ -101,15 +128,15 @@ func (gs *GizmoRenderSystem) Update(_ float32, _ []*ecs.Entity, selected *ecs.En
 
 	if gs.Mode == GizmoMove || gs.Mode == GizmoCombined {
 		gs.renderAxes(t, gizmoScale, view, proj)
-		gs.renderPlaneHandles(entityPos, gizmoScale, view, proj)
+		gs.renderPlaneHandles(gizmoOrigin, gizmoScale, view, proj)
 	}
 
 	if gs.Mode == GizmoRotate || gs.Mode == GizmoCombined {
-		gs.renderRotationRings(entityPos, gizmoScale, view, proj, localX, localY, localZ)
+		gs.renderRotationRings(gizmoOrigin, gizmoScale, view, proj, localX, localY, localZ)
 	}
 
 	if gs.Mode == GizmoScale || gs.Mode == GizmoCombined {
-		gs.renderScaleHandles(entityPos, gizmoScale, view, proj)
+		gs.renderScaleHandles(gizmoOrigin, gizmoScale, view, proj)
 	}
 
 }
@@ -128,7 +155,7 @@ func (gs *GizmoRenderSystem) computeFrameValues(t *ecs.Transform) (camPos, entit
 	return
 }
 
-func (gs *GizmoRenderSystem) handleDragStart(origin, dir, entityPos mgl32.Vec3) {
+func (gs *GizmoRenderSystem) handleDragStart(origin, dir, gizmoOrigin mgl32.Vec3) {
 	if !gs.IsDragging &&
 		gs.HoverAxis != "" &&
 		gs.CameraSystem.Window().GetMouseButton(glfw.MouseButtonLeft) == glfw.Press {
@@ -137,7 +164,15 @@ func (gs *GizmoRenderSystem) handleDragStart(origin, dir, entityPos mgl32.Vec3) 
 		gs.IsDragging = true
 		gs.dragStartRayOrigin = origin
 		gs.dragStartRayDir = dir
-		gs.dragStartEntityPos = entityPos
+		// use gizmo pivot for plane/axis math
+		gs.dragStartEntityPos = gizmoOrigin
+
+		// capture before snapshots for undo (if world available)
+		if gs.World != nil && len(gs.SelectionIDs) > 0 {
+			gs.dragBefore = captureSnapshotsByID(gs.World, gs.SelectionIDs)
+		} else {
+			gs.dragBefore = nil
+		}
 	}
 }
 
@@ -146,6 +181,29 @@ func (gs *GizmoRenderSystem) handleDragEnd() {
 		gs.CameraSystem.Window().GetMouseButton(glfw.MouseButtonLeft) == glfw.Release {
 
 		gs.IsDragging = false
+
+		// capture after snapshots and push undo command
+		if gs.World != nil && len(gs.SelectionIDs) > 0 && len(gs.dragBefore) > 0 {
+			after := captureSnapshotsByID(gs.World, gs.SelectionIDs)
+			cmd := &undo.TransformCommand{Before: gs.dragBefore, After: after}
+			gs.Undo.Push(cmd)
+		}
+
 		gs.ActiveAxis = ""
 	}
 }
+
+func (gs *GizmoRenderSystem) selectedEntities() []*ecs.Entity {
+	if gs.World == nil || len(gs.SelectionIDs) == 0 {
+		return nil
+	}
+	out := make([]*ecs.Entity, 0, len(gs.SelectionIDs))
+	for _, id := range gs.SelectionIDs {
+		if e := gs.World.FindByID(id); e != nil {
+			out = append(out, e)
+		}
+	}
+	return out
+}
+
+func (gs *GizmoRenderSystem) SetWorld(w *ecs.World) { gs.World = w }

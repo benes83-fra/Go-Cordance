@@ -4,6 +4,8 @@ import (
 	"math"
 
 	"go-engine/Go-Cordance/internal/ecs"
+	"go-engine/Go-Cordance/internal/editor/state"
+	"go-engine/Go-Cordance/internal/editor/undo"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
@@ -127,20 +129,20 @@ func SnapPosition(pos mgl32.Vec3, increment float32) mgl32.Vec3 {
 		float32(math.Round(float64(pos.Z())/float64(increment))) * increment,
 	}
 }
-func MinFloat32(a, b float32) float32 {
+func Min(a, b float32) float32 {
 	if a < b {
 		return a
 	}
 	return b
 }
-func MaxFloat32(a, b float32) float32 {
+func Max(a, b float32) float32 {
 	if a > b {
 		return a
 	}
 	return b
 }
 func ClampFloat32(val, min, max float32) float32 {
-	return MaxFloat32(min, MinFloat32(max, val))
+	return Max(min, Min(max, val))
 }
 func rotationFromAxis(axis mgl32.Vec3) mgl32.Mat4 {
 	z := mgl32.Vec3{0, 0, 1}
@@ -175,6 +177,10 @@ func getTransform(e *ecs.Entity) *ecs.Transform {
 	}
 	return nil
 }
+func GetTransform(e *ecs.Entity) *ecs.Transform {
+
+	return getTransform(e)
+}
 
 func computeLocalAxes(localMode bool, t *ecs.Transform) (mgl32.Vec3, mgl32.Vec3, mgl32.Vec3) {
 	x := mgl32.Vec3{1, 0, 0}
@@ -191,4 +197,44 @@ func computeLocalAxes(localMode bool, t *ecs.Transform) (mgl32.Vec3, mgl32.Vec3,
 		z = q.Rotate(z)
 	}
 	return x, y, z
+}
+func computeGizmoOrigin(selection []*ecs.Entity, pivotMode state.PivotMode) mgl32.Vec3 {
+	if len(selection) == 0 {
+		return mgl32.Vec3{0, 0, 0}
+	}
+	if pivotMode == state.PivotModePivot {
+		// active entity is first in selection or tracked separately
+		e := selection[0]
+		if t := getTransform(e); t != nil {
+			return mgl32.Vec3{t.Position[0], t.Position[1], t.Position[2]}
+		}
+	}
+	// center mode: compute AABB center
+	min := mgl32.Vec3{1e9, 1e9, 1e9}
+	max := mgl32.Vec3{-1e9, -1e9, -1e9}
+	for _, e := range selection {
+		if t := getTransform(e); t != nil {
+			p := mgl32.Vec3{t.Position[0], t.Position[1], t.Position[2]}
+			min = mgl32.Vec3{Min(min.X(), p.X()), Min(min.Y(), p.Y()), Min(min.Z(), p.Z())}
+			max = mgl32.Vec3{Max(max.X(), p.X()), Max(max.Y(), p.Y()), Max(max.Z(), p.Z())}
+		}
+	}
+	return min.Add(max).Mul(0.5)
+}
+
+func captureSnapshotsByID(world *ecs.World, ids []int64) []undo.TransformSnapshot {
+	snaps := make([]undo.TransformSnapshot, 0, len(ids))
+	for _, id := range ids {
+		if e := world.FindByID(id); e != nil {
+			if t := ecs.GetTransform(e); t != nil {
+				snaps = append(snaps, undo.TransformSnapshot{
+					EntityID: id,
+					Position: t.Position,
+					Rotation: t.Rotation,
+					Scale:    t.Scale,
+				})
+			}
+		}
+	}
+	return snaps
 }
