@@ -9,6 +9,7 @@ import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 
 	"go-engine/Go-Cordance/internal/ecs"
+	"go-engine/Go-Cordance/internal/ecs/gizmo"
 	"go-engine/Go-Cordance/internal/editorlink"
 	"go-engine/Go-Cordance/internal/engine"
 	"go-engine/Go-Cordance/internal/scene"
@@ -103,7 +104,7 @@ func main() {
 	debugRenderer := engine.NewDebugRenderer(debugVertexSrc, debugFragmentSrc)
 	debugSys := ecs.NewDebugRenderSystem(debugRenderer, meshMgr, nil) // camSys set later
 	lightDebug := ecs.NewLightDebugRenderSystem(debugRenderer, meshMgr, nil)
-	gizmoSys := ecs.NewGizmoRenderSystem(debugRenderer, meshMgr, nil)
+	gizmoSys := gizmo.NewGizmoRenderSystem(debugRenderer, meshMgr, nil)
 	// later, after camera system exists, call gizmoSys.SetCameraSystem(camSys)
 
 	lightDebug.Enabled = true
@@ -187,6 +188,27 @@ func main() {
 			case glfw.KeyL:
 				gizmoSys.LocalRotation = !gizmoSys.LocalRotation
 				fmt.Println("Local rotation:", gizmoSys.LocalRotation)
+
+			case glfw.KeyW:
+				if !cursorDisabled {
+					gizmoSys.Mode = gizmo.GizmoMove
+					fmt.Println("Gizmo mode: Move")
+				}
+			case glfw.KeyE:
+				if !cursorDisabled {
+					gizmoSys.Mode = gizmo.GizmoRotate
+					fmt.Println("Gizmo mode: Rotate")
+				}
+			case glfw.KeyR:
+				if !cursorDisabled {
+					gizmoSys.Mode = gizmo.GizmoScale
+					fmt.Println("Gizmo mode: Scale")
+				}
+			case glfw.KeyQ:
+				if !cursorDisabled {
+					gizmoSys.Mode = gizmo.GizmoCombined
+					fmt.Println("Gizmo mode: Combined")
+				}
 
 			}
 
