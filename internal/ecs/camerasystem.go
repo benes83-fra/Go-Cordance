@@ -51,3 +51,11 @@ func (cs *CameraSystem) Update(_ float32, entities []*Entity) {
 func (cs *CameraSystem) Window() *glfw.Window {
 	return cs.window
 }
+
+// Forward returns the camera forward vector (direction camera is looking toward) in world space.
+func (cs *CameraSystem) Forward() mgl32.Vec3 {
+	// Derive forward from the view matrix.
+	// Using the view matrix layout, -Z axis of the camera in world space is:
+	f := mgl32.Vec3{-cs.View[8], -cs.View[9], -cs.View[10]}
+	return f.Normalize()
+}

@@ -36,6 +36,22 @@ func (gs *GizmoRenderSystem) rotationHover(
 		}
 	}
 
+	// --- Free rotate ring (screen-space) ---
+	{
+		// ring normal faces the camera
+		camForward := gs.CameraSystem.Forward()
+
+		// slightly larger radius than axis rings so it sits outside them
+		freeRadius := gizmoScale * 1.4
+		freeThickness := ringThickness
+
+		hit, dist := RayCircleIntersect(origin, dir, entityPos, camForward, freeRadius, freeThickness)
+		if hit && dist < closest {
+			closest = dist
+			gs.HoverAxis = "rfree"
+		}
+	}
+
 	return closest
 }
 
@@ -44,6 +60,55 @@ func (gs *GizmoRenderSystem) rotationDrag(
 	t *ecs.Transform,
 	origin, dir, entityPos, localX, localY, localZ mgl32.Vec3,
 ) {
+	// --- Free rotate (screen-space) ---
+	if gs.ActiveAxis == "rfree" {
+		camForward := gs.CameraSystem.Forward()
+
+		hit0, t0 := RayPlaneIntersection(gs.dragStartRayOrigin, gs.dragStartRayDir, gs.dragStartEntityPos, camForward)
+		hit1, t1 := RayPlaneIntersection(origin, dir, gs.dragStartEntityPos, camForward)
+		if !hit0 || !hit1 {
+			return
+		}
+
+		p0 := gs.dragStartRayOrigin.Add(gs.dragStartRayDir.Mul(t0))
+		p1 := origin.Add(dir.Mul(t1))
+
+		v0 := p0.Sub(entityPos).Normalize()
+		v1 := p1.Sub(entityPos).Normalize()
+
+		angle := float32(math.Acos(float64(v0.Dot(v1))))
+
+		cross := v0.Cross(v1)
+		if cross.Dot(camForward) < 0 {
+			angle = -angle
+		}
+
+		// snapping
+		if gs.CameraSystem.Window().GetKey(glfw.KeyLeftControl) == glfw.Press ||
+			gs.CameraSystem.Window().GetKey(glfw.KeyRightControl) == glfw.Press {
+
+			snapRad := degToRad(RotationSnapDegrees)
+			angle = float32(math.Round(float64(angle/snapRad))) * snapRad
+		}
+
+		// sensitivity
+		angle *= RotationSensitivity
+
+		q := mgl32.QuatRotate(angle, camForward)
+		current := mgl32.Quat{
+			W: t.Rotation[0],
+			V: mgl32.Vec3{t.Rotation[1], t.Rotation[2], t.Rotation[3]},
+		}
+		newQ := q.Mul(current).Normalize()
+
+		t.Rotation[0] = newQ.W
+		t.Rotation[1] = newQ.V[0]
+		t.Rotation[2] = newQ.V[1]
+		t.Rotation[3] = newQ.V[2]
+		return
+	}
+
+	// --- Axis rotations (existing logic) ---
 	if gs.ActiveAxis != "rx" && gs.ActiveAxis != "ry" && gs.ActiveAxis != "rz" {
 		return
 	}
@@ -146,4 +211,30 @@ func (gs *GizmoRenderSystem) renderRotationRings(
 		gl.DrawElements(gl.LINES, count, gl.UNSIGNED_INT, gl.PtrOffset(0))
 		gl.BindVertexArray(0)
 	}
+	// --- Free rotate ring ---
+	{
+		camForward := gs.CameraSystem.Forward()
+		rot := rotationFromAxis(camForward)
+
+		model := mgl32.Translate3D(entityPos.X(), entityPos.Y(), entityPos.Z())
+		model = model.Mul4(rot)
+		model = model.Mul4(mgl32.Scale3D(gizmoScale*1.4, gizmoScale*1.4, gizmoScale*1.4))
+
+		col := [4]float32{1, 1, 1, 1} // white
+		if gs.ActiveAxis == "rfree" {
+			col = [4]float32{1, 1, 0, 1} // active = yellow
+		} else if gs.HoverAxis == "rfree" {
+			col = [4]float32{1, 1, 1, 1} // hover = bright white
+		}
+
+		gl.UniformMatrix4fv(gs.Renderer.LocModel, 1, false, &model[0])
+		gl.UniformMatrix4fv(gs.Renderer.LocView, 1, false, &view[0])
+		gl.UniformMatrix4fv(gs.Renderer.LocProj, 1, false, &proj[0])
+		gl.Uniform4fv(gs.Renderer.LocColor, 1, &col[0])
+
+		gl.BindVertexArray(vao)
+		gl.DrawElements(gl.LINES, count, gl.UNSIGNED_INT, gl.PtrOffset(0))
+		gl.BindVertexArray(0)
+	}
+
 }
