@@ -4,6 +4,7 @@ import (
 	"go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editor/undo"
 	"go-engine/Go-Cordance/internal/engine"
+	"log"
 
 	"go-engine/Go-Cordance/internal/ecs"
 
@@ -69,7 +70,7 @@ func (gs *GizmoRenderSystem) Update(_ float32, _ []*ecs.Entity, selected *ecs.En
 
 	// resolve selection entities (IDs -> []*ecs.Entity)
 	selection := gs.selectedEntities()
-
+	//log.Printf("gizmo: Update called with selection IDs = %v, resolved entities = %d", gs.SelectionIDs, len(selection))
 	// Ensure the active entity (selected) is first in the selection slice so
 	// computeGizmoOrigin treats it as the pivot when PivotModePivot.
 	if selected != nil && len(selection) > 0 {
@@ -189,7 +190,7 @@ func (gs *GizmoRenderSystem) handleDragStart(origin, dir, gizmoOrigin mgl32.Vec3
 		gs.dragStartRayDir = dir
 		// use gizmo pivot for plane/axis math
 		gs.dragStartEntityPos = gizmoOrigin
-
+		log.Printf("gizmo: drag start selection IDs = %v", gs.SelectionIDs)
 		// capture before snapshots for undo (if world available)
 		if gs.World != nil && len(gs.SelectionIDs) > 0 {
 			gs.dragBefore = captureSnapshotsByID(gs.World, gs.SelectionIDs)
@@ -218,6 +219,7 @@ func (gs *GizmoRenderSystem) handleDragEnd() {
 
 func (gs *GizmoRenderSystem) selectedEntities() []*ecs.Entity {
 	if gs.World == nil || len(gs.SelectionIDs) == 0 {
+		//log.Printf("gizmo: selectedEntities called but World is nil or no SelectionIDs...World=%v, SelectionIDs=%v", gs.World, gs.SelectionIDs)
 		return nil
 	}
 	out := make([]*ecs.Entity, 0, len(gs.SelectionIDs))
@@ -229,8 +231,11 @@ func (gs *GizmoRenderSystem) selectedEntities() []*ecs.Entity {
 	return out
 }
 
-func (gs *GizmoRenderSystem) SetWorld(w *ecs.World)       { gs.World = w }
-func (gs *GizmoRenderSystem) SetSelectionIDs(ids []int64) { gs.SelectionIDs = ids }
+func (gs *GizmoRenderSystem) SetWorld(w *ecs.World) { gs.World = w }
+func (gs *GizmoRenderSystem) SetSelectionIDs(ids []int64) {
+	gs.SelectionIDs = ids
+	log.Printf("gizmo from setter: SetSelectionIDs called with IDs = %v", ids)
+}
 
 // RegisterGlobalGizmo registers a global reference to the GizmoRenderSystem.
 // Use this only as a small bridge when you don't want to change editor signatures.
@@ -243,6 +248,7 @@ func RegisterGlobalGizmo(gs *GizmoRenderSystem) {
 // SetGlobalSelectionIDs updates the registered gizmo's selection IDs.
 // Editor can call this when selection changes.
 func SetGlobalSelectionIDs(ids []int64) {
+	log.Printf("gizmo: SetGlobalSelectionIDs called with IDs = %v", ids)
 	if globalGizmo != nil {
 		globalGizmo.SetSelectionIDs(ids)
 	}

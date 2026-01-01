@@ -6,6 +6,7 @@ import (
 	"net"
 
 	"go-engine/Go-Cordance/internal/ecs"
+	"go-engine/Go-Cordance/internal/ecs/gizmo"
 	"go-engine/Go-Cordance/internal/scene"
 )
 
@@ -33,6 +34,7 @@ func StartServer(addr string, sc *scene.Scene) {
 
 func handleConn(conn net.Conn, sc *scene.Scene) {
 	defer conn.Close()
+	// inside the game-side editorlink message handler
 
 	for {
 		msg, err := readMsg(conn)
@@ -40,6 +42,7 @@ func handleConn(conn net.Conn, sc *scene.Scene) {
 			log.Printf("editorlink: read: %v", err)
 			return
 		}
+		log.Printf("editorlink: received msg type=%s data=%s", msg.Type, string(msg.Data))
 
 		switch msg.Type {
 		case "RequestSceneSnapshot":
@@ -84,6 +87,19 @@ func handleConn(conn net.Conn, sc *scene.Scene) {
 				sc.SelectedEntity = sel.ID
 			}
 			log.Printf("editorlink: SelectEntity %d ", sel.ID)
+		case "SelectEntities":
+			var sels MsgSelectEntities
+			if err := json.Unmarshal(msg.Data, &sels); err != nil {
+				log.Printf("editorlink: bad SelectEntities: %v", err)
+				continue
+			}
+			log.Printf("editorlink: SelectEntities %v", sels.IDs)
+			// set selection IDs in gizmo system
+			var ids []int64
+			for _, id := range sels.IDs {
+				ids = append(ids, int64(id))
+			}
+			gizmo.SetGlobalSelectionIDs(ids)
 
 		default:
 			log.Printf("editorlink: unknown msg type %q", msg.Type)

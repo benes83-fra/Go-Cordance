@@ -70,8 +70,24 @@ func UpdateEntities(ents []bridge.EntityInfo) {
 		log.Printf("  Entity %d: ID=%d, Name=%s", i, e.ID, e.Name)
 	}
 	state.Global.Entities = ents
+	// prune selection IDs that no longer exist
+	valid := map[int64]bool{}
+	for _, e := range ents {
+		valid[e.ID] = true
+	}
+	newIDs := make([]int64, 0, len(state.Global.Selection.IDs))
+	for _, id := range state.Global.Selection.IDs {
+		if valid[id] {
+			newIDs = append(newIDs, id)
+		}
+	}
+	state.Global.Selection.IDs = newIDs
+
 	// If there is a selected index, forward it to the gizmo; otherwise clear selection.
-	if state.Global.SelectedIndex >= 0 && state.Global.SelectedIndex < len(state.Global.Entities) {
+	// Forward current multi-selection to gizmo if present; otherwise fall back to single SelectedIndex.
+	if len(state.Global.Selection.IDs) > 0 {
+		gizmo.SetGlobalSelectionIDs(state.Global.Selection.IDs)
+	} else if state.Global.SelectedIndex >= 0 && state.Global.SelectedIndex < len(state.Global.Entities) {
 		id := state.Global.Entities[state.Global.SelectedIndex].ID
 		gizmo.SetGlobalSelectionIDs([]int64{id})
 	} else {

@@ -40,6 +40,10 @@ type MsgSelectEntity struct {
 	ID uint64 `json:"id"`
 }
 
+type MsgSelectEntities struct {
+	IDs []uint64 `json:"ids"`
+}
+
 // Renderer -> Editor
 type MsgSceneSnapshot struct {
 	Snapshot SceneSnapshot `json:"snapshot"`
@@ -88,6 +92,16 @@ func WriteSelectEntity(conn net.Conn, id int64) error {
 	sel := MsgSelectEntity{ID: uint64(id)}
 	fmt.Printf("Writinge selection %s", sel)
 	return writeMsg(conn, "SelectEntity", sel)
+}
+
+func WriteSelectEntities(conn net.Conn, ids []int64) error {
+	uids := make([]uint64, len(ids))
+	for i, id := range ids {
+		uids[i] = uint64(id)
+	}
+	sel := MsgSelectEntities{IDs: uids}
+	fmt.Printf("Writinge selection %s", sel)
+	return writeMsg(conn, "SelectEntities", sel)
 }
 
 // Public client helpers:

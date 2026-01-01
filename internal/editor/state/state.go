@@ -10,6 +10,7 @@ type EditorState struct {
 	SelectedIndex int
 	Foldout       map[string]bool
 	RefreshUI     func() // <-- add this
+	Selection     Selection
 }
 
 func NewEditorState() *EditorState {
