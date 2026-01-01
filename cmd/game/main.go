@@ -10,6 +10,7 @@ import (
 
 	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/ecs/gizmo"
+	"go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editorlink"
 	"go-engine/Go-Cordance/internal/engine"
 	"go-engine/Go-Cordance/internal/scene"
@@ -209,6 +210,14 @@ func main() {
 				if !cursorDisabled {
 					gizmoSys.Mode = gizmo.GizmoCombined
 					fmt.Println("Gizmo mode: Combined")
+				}
+			case glfw.KeyP:
+				if gizmoSys.PivotMode == state.PivotModePivot {
+					gizmoSys.SetPivotMode(state.PivotModeCenter)
+					fmt.Println("Gizmo pivot mode: Center")
+				} else {
+					gizmoSys.SetPivotMode(state.PivotModePivot)
+					fmt.Println("Gizmo pivot mode: Pivot")
 				}
 
 			}

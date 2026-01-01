@@ -7,6 +7,7 @@ import (
 
 	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/ecs/gizmo"
+	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/scene"
 )
 
@@ -100,6 +101,18 @@ func handleConn(conn net.Conn, sc *scene.Scene) {
 				ids = append(ids, int64(id))
 			}
 			gizmo.SetGlobalSelectionIDs(ids)
+		case "SetPivotMode":
+			var pm MsgSetPivotMode
+			if err := json.Unmarshal(msg.Data, &pm); err != nil {
+				log.Printf("editorlink: bad SetPivotMode: %v", err)
+				continue
+			}
+			log.Printf("editorlink: SetPivotMode %s", pm.Mode)
+			if pm.Mode == "pivot" {
+				gizmo.SetGlobalPivotMode(state.PivotModePivot)
+			} else if pm.Mode == "center" {
+				gizmo.SetGlobalPivotMode(state.PivotModeCenter)
+			}
 
 		default:
 			log.Printf("editorlink: unknown msg type %q", msg.Type)

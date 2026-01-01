@@ -8,6 +8,8 @@ import (
 
 	"go-engine/Go-Cordance/internal/ecs"
 
+	"sync"
+
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -93,9 +95,11 @@ func (gs *GizmoRenderSystem) Update(_ float32, _ []*ecs.Entity, selected *ecs.En
 		if gs.PivotMode == state.PivotModePivot {
 			// Use the active entity (selected) as pivot to avoid relying on selection ordering
 			gizmoOrigin = entityPos
+			log.Printf("gizmo: using active entity as pivot at %v   ... Pivot Mode", gizmoOrigin)
 		} else {
 			// center mode: compute AABB center of selection
 			gizmoOrigin = computeGizmoOrigin(selection, gs.PivotMode)
+			log.Printf("gizmo: computed center pivot at %v   ... Center Mode", gizmoOrigin)
 		}
 
 		// recompute gizmoScale from camera distance to pivot so size follows selection pivot
@@ -236,13 +240,30 @@ func (gs *GizmoRenderSystem) SetSelectionIDs(ids []int64) {
 	gs.SelectionIDs = ids
 	log.Printf("gizmo from setter: SetSelectionIDs called with IDs = %v", ids)
 }
+func (gs *GizmoRenderSystem) SetPivotMode(mode state.PivotMode) {
+	gs.PivotMode = mode
+	log.Printf("gizmo: SetPivotMode called with mode = %v", mode)
+}
 
 // RegisterGlobalGizmo registers a global reference to the GizmoRenderSystem.
 // Use this only as a small bridge when you don't want to change editor signatures.
-var globalGizmo *GizmoRenderSystem
+var (
+	globalGizmo   *GizmoRenderSystem
+	globalGizmoMu sync.Mutex
+)
 
 func RegisterGlobalGizmo(gs *GizmoRenderSystem) {
+	globalGizmoMu.Lock()
+	defer globalGizmoMu.Unlock()
 	globalGizmo = gs
+}
+func SetGlobalPivotMode(mode state.PivotMode) {
+	globalGizmoMu.Lock()
+	defer globalGizmoMu.Unlock()
+
+	if globalGizmo != nil {
+		globalGizmo.SetPivotMode(mode)
+	}
 }
 
 // SetGlobalSelectionIDs updates the registered gizmo's selection IDs.

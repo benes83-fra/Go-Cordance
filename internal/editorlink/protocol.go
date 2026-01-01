@@ -55,6 +55,9 @@ type MsgSetTransform struct {
 	Rotation [4]float32 `json:"rotation"`
 	Scale    [3]float32 `json:"scale"`
 }
+type MsgSetPivotMode struct {
+	Mode string `json:"mode"` // "pivot" or "center"
+}
 
 func readMsg(conn net.Conn) (Msg, error) {
 	var m Msg
@@ -102,6 +105,11 @@ func WriteSelectEntities(conn net.Conn, ids []int64) error {
 	sel := MsgSelectEntities{IDs: uids}
 	fmt.Printf("Writinge selection %s", sel)
 	return writeMsg(conn, "SelectEntities", sel)
+}
+
+func WriteSetPivotMode(conn net.Conn, mode string) error {
+	msg := MsgSetPivotMode{Mode: mode}
+	return writeMsg(conn, "SetPivotMode", msg)
 }
 
 // Public client helpers:

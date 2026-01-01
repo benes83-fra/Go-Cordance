@@ -43,7 +43,28 @@ func Run(world *ecs.World) {
 
 	// viewport placeholder
 	viewport := widget.NewLabel("Viewport Placeholder")
-
+	/*var pivotBtn *widget.Button
+	pivotBtn = widget.NewButton("Pivot Mode: Pivot", func() {
+		// toggle pivot mode
+		if st.Selection.Mode == state.PivotModePivot {
+			st.Selection.Mode = state.PivotModeCenter
+		} else {
+			st.Selection.Mode = state.PivotModePivot
+		}
+		pivotBtn.SetText("Pivot Mode: " + string(st.Selection.Mode))
+		if editorlink.EditorConn != nil {
+			var modeStr string
+			if st.Selection.Mode == state.PivotModePivot {
+				modeStr = "pivot"
+			} else {
+				modeStr = "center"
+			}
+			err := editorlink.WriteSetPivotMode(editorlink.EditorConn, modeStr)
+			if err != nil {
+				log.Printf("editor: failed to send pivot mode to editorlink: %v", err)
+			}
+		}
+	})*/
 	// layout
 	left := container.NewMax(hierarchyWidget)
 	center := container.NewVBox(viewport)
