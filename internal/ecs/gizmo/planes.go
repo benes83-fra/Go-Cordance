@@ -86,18 +86,34 @@ func (gs *GizmoRenderSystem) planeDrag(t *ecs.Transform, origin, dir mgl32.Vec3)
 	point := origin.Add(dir.Mul(tplane))
 	delta := point.Sub(gs.dragStartEntityPos)
 
+	// snapping (unchanged)
 	if gs.CameraSystem.Window().GetKey(glfw.KeyLeftControl) == glfw.Press ||
 		gs.CameraSystem.Window().GetKey(glfw.KeyRightControl) == glfw.Press {
-
 		delta[0] = float32(math.Round(float64(delta[0]/SnapIncrement))) * SnapIncrement
 		delta[1] = float32(math.Round(float64(delta[1]/SnapIncrement))) * SnapIncrement
 		delta[2] = float32(math.Round(float64(delta[2]/SnapIncrement))) * SnapIncrement
 	}
 
+	// multi-select: add delta to each entity position
+	if len(gs.SelectionIDs) > 1 && gs.World != nil {
+		for _, id := range gs.SelectionIDs {
+			if e := gs.World.FindByID(id); e != nil {
+				if tr := ecs.GetTransform(e); tr != nil {
+					pos := mgl32.Vec3{tr.Position[0], tr.Position[1], tr.Position[2]}
+					newPos := pos.Add(delta)
+					tr.Position[0], tr.Position[1], tr.Position[2] = newPos.X(), newPos.Y(), newPos.Z()
+				}
+			}
+		}
+		return
+	}
+
+	// single entity fallback
 	newPos := gs.dragStartEntityPos.Add(delta)
 	t.Position[0] = newPos.X()
 	t.Position[1] = newPos.Y()
 	t.Position[2] = newPos.Z()
+
 }
 
 // --- RENDER: plane squares ---

@@ -57,22 +57,38 @@ func (gs *GizmoRenderSystem) axisDrag(t *ecs.Transform, origin, dir mgl32.Vec3) 
 		axis = mgl32.Vec3{0, 0, 1}
 	}
 
+	// compute delta as before
 	t0 := projectRayOntoAxis(gs.dragStartRayOrigin, gs.dragStartRayDir, gs.dragStartEntityPos, axis)
 	t1 := projectRayOntoAxis(origin, dir, gs.dragStartEntityPos, axis)
 	delta := t1 - t0
 
-	// snapping with CTRL
+	// snapping with CTRL (unchanged)
 	if gs.CameraSystem.Window().GetKey(glfw.KeyLeftControl) == glfw.Press ||
 		gs.CameraSystem.Window().GetKey(glfw.KeyRightControl) == glfw.Press {
-
 		snapped := float32(math.Round(float64(delta/SnapIncrement))) * SnapIncrement
 		delta = snapped
 	}
 
+	// If multiple selected, move each entity by axis*delta
+	if len(gs.SelectionIDs) > 1 && gs.World != nil {
+		for _, id := range gs.SelectionIDs {
+			if e := gs.World.FindByID(id); e != nil {
+				if tr := ecs.GetTransform(e); tr != nil {
+					pos := mgl32.Vec3{tr.Position[0], tr.Position[1], tr.Position[2]}
+					newPos := pos.Add(axis.Mul(delta))
+					tr.Position[0], tr.Position[1], tr.Position[2] = newPos.X(), newPos.Y(), newPos.Z()
+				}
+			}
+		}
+		return
+	}
+
+	// single entity fallback (existing behavior)
 	newPos := gs.dragStartEntityPos.Add(axis.Mul(delta))
 	t.Position[0] = newPos.X()
 	t.Position[1] = newPos.Y()
 	t.Position[2] = newPos.Z()
+
 }
 
 // --- RENDER: axis arrows ---

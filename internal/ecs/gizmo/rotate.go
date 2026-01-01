@@ -168,18 +168,39 @@ func (gs *GizmoRenderSystem) rotationDrag(
 
 	// sensitivity
 	angle *= RotationSensitivity
-
 	q := mgl32.QuatRotate(angle, axis)
-	current := mgl32.Quat{
-		W: t.Rotation[0],
-		V: mgl32.Vec3{t.Rotation[1], t.Rotation[2], t.Rotation[3]},
-	}
-	newQ := q.Mul(current).Normalize()
+	// If multiple selected, rotate each entity around gizmo pivot and update orientation
+	if len(gs.SelectionIDs) > 1 && gs.World != nil {
+		for _, id := range gs.SelectionIDs {
+			if e := gs.World.FindByID(id); e != nil {
+				if tr := ecs.GetTransform(e); tr != nil {
+					// rotate position around pivot (gs.dragStartEntityPos)
+					pos := mgl32.Vec3{tr.Position[0], tr.Position[1], tr.Position[2]}
+					rel := pos.Sub(gs.dragStartEntityPos)
+					newPos := gs.dragStartEntityPos.Add(q.Rotate(rel))
+					tr.Position[0], tr.Position[1], tr.Position[2] = newPos.X(), newPos.Y(), newPos.Z()
 
+					// rotate orientation
+					curQ := mgl32.Quat{W: tr.Rotation[0], V: mgl32.Vec3{tr.Rotation[1], tr.Rotation[2], tr.Rotation[3]}}
+					outQ := q.Mul(curQ).Normalize()
+					tr.Rotation[0] = outQ.W
+					tr.Rotation[1] = outQ.V[0]
+					tr.Rotation[2] = outQ.V[1]
+					tr.Rotation[3] = outQ.V[2]
+				}
+			}
+		}
+		return
+	}
+
+	// single entity fallback (existing)
+	current := mgl32.Quat{W: t.Rotation[0], V: mgl32.Vec3{t.Rotation[1], t.Rotation[2], t.Rotation[3]}}
+	newQ := q.Mul(current).Normalize()
 	t.Rotation[0] = newQ.W
 	t.Rotation[1] = newQ.V[0]
 	t.Rotation[2] = newQ.V[1]
 	t.Rotation[3] = newQ.V[2]
+
 }
 
 // --- RENDER: rotation rings ---
