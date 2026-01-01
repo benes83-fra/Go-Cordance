@@ -2,6 +2,7 @@ package editor
 
 import (
 	"go-engine/Go-Cordance/internal/ecs"
+	"go-engine/Go-Cordance/internal/ecs/gizmo"
 	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editor/ui"
@@ -69,6 +70,13 @@ func UpdateEntities(ents []bridge.EntityInfo) {
 		log.Printf("  Entity %d: ID=%d, Name=%s", i, e.ID, e.Name)
 	}
 	state.Global.Entities = ents
+	// If there is a selected index, forward it to the gizmo; otherwise clear selection.
+	if state.Global.SelectedIndex >= 0 && state.Global.SelectedIndex < len(state.Global.Entities) {
+		id := state.Global.Entities[state.Global.SelectedIndex].ID
+		gizmo.SetGlobalSelectionIDs([]int64{id})
+	} else {
+		gizmo.SetGlobalSelectionIDs(nil)
+	}
 
 	if state.Global.RefreshUI != nil {
 		log.Printf("editor: RefreshUI triggered")

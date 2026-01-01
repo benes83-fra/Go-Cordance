@@ -114,6 +114,7 @@ func main() {
 	// bind runtime-only resources (textures, set LightEntity, etc).
 	sc, named := scene.BootstrapScene()
 	gizmoSys.SetWorld(sc.World())
+	gizmo.RegisterGlobalGizmo(gizmoSys)
 	// Create runtime systems that need the window/renderer/meshMgr
 	camSys := ecs.NewCameraSystem(window)
 	renderSys := ecs.NewRenderSystem(renderer, meshMgr, camSys)

@@ -231,3 +231,19 @@ func (gs *GizmoRenderSystem) selectedEntities() []*ecs.Entity {
 
 func (gs *GizmoRenderSystem) SetWorld(w *ecs.World)       { gs.World = w }
 func (gs *GizmoRenderSystem) SetSelectionIDs(ids []int64) { gs.SelectionIDs = ids }
+
+// RegisterGlobalGizmo registers a global reference to the GizmoRenderSystem.
+// Use this only as a small bridge when you don't want to change editor signatures.
+var globalGizmo *GizmoRenderSystem
+
+func RegisterGlobalGizmo(gs *GizmoRenderSystem) {
+	globalGizmo = gs
+}
+
+// SetGlobalSelectionIDs updates the registered gizmo's selection IDs.
+// Editor can call this when selection changes.
+func SetGlobalSelectionIDs(ids []int64) {
+	if globalGizmo != nil {
+		globalGizmo.SetSelectionIDs(ids)
+	}
+}

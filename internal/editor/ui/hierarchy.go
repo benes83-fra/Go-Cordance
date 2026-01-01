@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"go-engine/Go-Cordance/internal/ecs/gizmo"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editorlink"
 
@@ -30,6 +31,7 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) *widget.List {
 		if editorlink.EditorConn != nil {
 			go editorlink.WriteSelectEntity(editorlink.EditorConn, st.Entities[id].ID)
 		}
+		gizmo.SetGlobalSelectionIDs([]int64{st.Entities[id].ID})
 	}
 
 	return list
