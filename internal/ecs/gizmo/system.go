@@ -70,10 +70,33 @@ func (gs *GizmoRenderSystem) Update(_ float32, _ []*ecs.Entity, selected *ecs.En
 	// resolve selection entities (IDs -> []*ecs.Entity)
 	selection := gs.selectedEntities()
 
+	// Ensure the active entity (selected) is first in the selection slice so
+	// computeGizmoOrigin treats it as the pivot when PivotModePivot.
+	if selected != nil && len(selection) > 0 {
+		for i, e := range selection {
+			if e == selected {
+				if i != 0 {
+					// move element i to index 0 (preserve order of others)
+					copy(selection[1:i+1], selection[0:i]) // shift right
+					selection[0] = e
+				}
+				break
+			}
+		}
+	}
+
+	// compute gizmo origin from selection pivot mode; fall back to active entity position
 	// compute gizmo origin from selection pivot mode; fall back to active entity position
 	gizmoOrigin := entityPos
 	if len(selection) > 0 {
-		gizmoOrigin = computeGizmoOrigin(selection, gs.PivotMode)
+		if gs.PivotMode == state.PivotModePivot {
+			// Use the active entity (selected) as pivot to avoid relying on selection ordering
+			gizmoOrigin = entityPos
+		} else {
+			// center mode: compute AABB center of selection
+			gizmoOrigin = computeGizmoOrigin(selection, gs.PivotMode)
+		}
+
 		// recompute gizmoScale from camera distance to pivot so size follows selection pivot
 		camPos := mgl32.Vec3{
 			gs.CameraSystem.Position[0],
@@ -206,4 +229,5 @@ func (gs *GizmoRenderSystem) selectedEntities() []*ecs.Entity {
 	return out
 }
 
-func (gs *GizmoRenderSystem) SetWorld(w *ecs.World) { gs.World = w }
+func (gs *GizmoRenderSystem) SetWorld(w *ecs.World)       { gs.World = w }
+func (gs *GizmoRenderSystem) SetSelectionIDs(ids []int64) { gs.SelectionIDs = ids }
