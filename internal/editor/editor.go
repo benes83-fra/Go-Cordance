@@ -6,6 +6,7 @@ import (
 	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editor/ui"
+	"go-engine/Go-Cordance/internal/editorlink"
 
 	"log"
 
@@ -34,6 +35,11 @@ func Run(world *ecs.World) {
 		inspectorRebuild(world, st, hierarchyWidget)
 		log.Println("editor: hierarchy refresh")
 	}
+	editorlink.OnSetTransform = func(m editorlink.MsgSetTransform) {
+		UpdateEntityTransform(int64(m.ID), m.Position, m.Rotation, m.Scale)
+		state.Global.RefreshUI()
+	}
+
 	// Now create the hierarchy and pass a callback that calls inspectorRebuild.
 	hierarchyWidget = ui.NewHierarchyPanel(st, func(id int) {
 		// This callback runs on the UI goroutine (Fyne), so it's safe to call rebuild directly.
@@ -118,5 +124,16 @@ func UpdateEntities(ents []bridge.EntityInfo) {
 	if state.Global.RefreshUI != nil {
 		log.Printf("editor: RefreshUI triggered")
 		state.Global.RefreshUI()
+	}
+}
+
+func UpdateEntityTransform(id int64, pos bridge.Vec3, rot bridge.Vec4, scale bridge.Vec3) {
+	for i := range state.Global.Entities {
+		if state.Global.Entities[i].ID == id {
+			state.Global.Entities[i].Position = pos
+			state.Global.Entities[i].Rotation = rot
+			state.Global.Entities[i].Scale = scale
+			return
+		}
 	}
 }

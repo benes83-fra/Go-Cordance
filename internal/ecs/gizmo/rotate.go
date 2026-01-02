@@ -2,6 +2,7 @@ package gizmo
 
 import (
 	"go-engine/Go-Cordance/internal/ecs"
+	"go-engine/Go-Cordance/internal/ecs/gizmo/bridge"
 	"math"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -187,6 +188,14 @@ func (gs *GizmoRenderSystem) rotationDrag(
 					tr.Rotation[1] = outQ.V[0]
 					tr.Rotation[2] = outQ.V[1]
 					tr.Rotation[3] = outQ.V[2]
+					if bridge.SendTransformToEditor != nil {
+						bridge.SendTransformToEditor(
+							id,
+							tr.Position,
+							tr.Rotation,
+							tr.Scale,
+						)
+					}
 				}
 			}
 		}

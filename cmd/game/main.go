@@ -13,6 +13,7 @@ import (
 	"go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editorlink"
 	"go-engine/Go-Cordance/internal/engine"
+	"go-engine/Go-Cordance/internal/ecs/gizmo/bridge"
 	"go-engine/Go-Cordance/internal/scene"
 )
 
@@ -273,6 +274,23 @@ func main() {
 	// Optionally save the scene (pure data) to disk
 	sc.Save("my_scene.json")
 	go editorlink.StartServer(":7777", sc)
+	bridge.SendTransformToEditor = func(
+		id int64,
+		pos [3]float32,
+		rot [4]float32,
+		scale [3]float32,
+	) {
+		if editorlink.EditorConn != nil {
+			editorlink.WriteTransformFromGame(
+				editorlink.EditorConn,
+				int64(id),
+				pos,
+				rot,
+				scale,
+			)
+		}
+	}
+
 	// Main loop
 	last := glfw.GetTime()
 	for !window.ShouldClose() {

@@ -2,6 +2,7 @@ package gizmo
 
 import (
 	"go-engine/Go-Cordance/internal/ecs"
+	"go-engine/Go-Cordance/internal/ecs/gizmo/bridge"
 	"math"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -73,6 +74,14 @@ func (gs *GizmoRenderSystem) scaleDrag(t *ecs.Transform, origin, dir, gizmoOrigi
 						tr.Scale[0] *= scaleFactor
 						tr.Scale[1] *= scaleFactor
 						tr.Scale[2] *= scaleFactor
+						if bridge.SendTransformToEditor != nil {
+							bridge.SendTransformToEditor(
+								id,
+								tr.Position,
+								tr.Rotation,
+								tr.Scale,
+							)
+						}
 					}
 				}
 			}

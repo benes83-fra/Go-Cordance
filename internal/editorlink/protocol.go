@@ -123,3 +123,13 @@ func WriteRequestSceneSnapshot(conn net.Conn) error {
 func WriteSetTransform(conn net.Conn, msg MsgSetTransform) error {
 	return writeMsg(conn, "SetTransform", msg)
 }
+
+func WriteTransformFromGame(conn net.Conn, id int64, position [3]float32, rotation [4]float32, scale [3]float32) error {
+	msg := MsgSetTransform{
+		ID:       uint64(id),
+		Position: position,
+		Rotation: rotation,
+		Scale:    scale,
+	}
+	return writeMsg(conn, "SetTransformGizmo", msg)
+}

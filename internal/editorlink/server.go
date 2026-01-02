@@ -28,6 +28,7 @@ func StartServer(addr string, sc *scene.Scene) {
 			log.Printf("editorlink: accept: %v", err)
 			continue
 		}
+		EditorConn = conn
 		log.Printf("editorlink: editor connected from %s", conn.RemoteAddr())
 		go handleConn(conn, sc)
 	}
@@ -113,7 +114,15 @@ func handleConn(conn net.Conn, sc *scene.Scene) {
 			} else if pm.Mode == "center" {
 				gizmo.SetGlobalPivotMode(state.PivotModeCenter)
 			}
-
+		case "SetTransformsGizmo":
+			var mt MsgSetTransform
+			if err := json.Unmarshal(msg.Data, &mt); err != nil {
+				log.Printf("editorlink: bad SetTransformsGizmo: %v", err)
+				continue
+			}
+			if OnSetTransform != nil {
+				OnSetTransform(mt)
+			}
 		default:
 			log.Printf("editorlink: unknown msg type %q", msg.Type)
 		}
@@ -151,3 +160,7 @@ func buildSceneSnapshot(sc *scene.Scene) SceneSnapshot {
 
 	return snap
 }
+
+var OnSetTransform func(m MsgSetTransform)
+var OnSceneSnapshot func(m MsgSceneSnapshot)
+var OnSelectEntity func(m MsgSelectEntity)
