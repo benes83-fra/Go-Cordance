@@ -1,12 +1,14 @@
 package editor
 
 import (
+	"encoding/json"
 	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/ecs/gizmo"
 	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editor/ui"
 	"go-engine/Go-Cordance/internal/editorlink"
+	"net"
 
 	"log"
 
@@ -23,7 +25,7 @@ func Run(world *ecs.World) {
 	a.Settings().SetTheme(theme.DarkTheme())
 	win := a.NewWindow("Go-Cordance Editor")
 	win.Resize(fyne.NewSize(1000, 600))
-
+	startEditorLinkClient()
 	// state
 	st := state.Global
 	st.Foldout = map[string]bool{"Position": true, "Rotation": true, "Scale": true}
@@ -33,11 +35,7 @@ func Run(world *ecs.World) {
 	state.Global.RefreshUI = func() {
 		hierarchyWidget.Refresh()
 		inspectorRebuild(world, st, hierarchyWidget)
-		log.Println("editor: hierarchy refresh")
-	}
-	editorlink.OnSetTransform = func(m editorlink.MsgSetTransform) {
-		UpdateEntityTransform(int64(m.ID), m.Position, m.Rotation, m.Scale)
-		state.Global.RefreshUI()
+
 	}
 
 	// Now create the hierarchy and pass a callback that calls inspectorRebuild.
@@ -49,29 +47,7 @@ func Run(world *ecs.World) {
 
 	// viewport placeholder
 	viewport := widget.NewLabel("Viewport Placeholder")
-	/*var pivotBtn *widget.Button
-	pivotBtn = widget.NewButton("Pivot Mode: Pivot", func() {
-		// toggle pivot mode
-		if st.Selection.Mode == state.PivotModePivot {
-			st.Selection.Mode = state.PivotModeCenter
-		} else {
-			st.Selection.Mode = state.PivotModePivot
-		}
-		pivotBtn.SetText("Pivot Mode: " + string(st.Selection.Mode))
-		if editorlink.EditorConn != nil {
-			var modeStr string
-			if st.Selection.Mode == state.PivotModePivot {
-				modeStr = "pivot"
-			} else {
-				modeStr = "center"
-			}
-			err := editorlink.WriteSetPivotMode(editorlink.EditorConn, modeStr)
-			if err != nil {
-				log.Printf("editor: failed to send pivot mode to editorlink: %v", err)
-			}
-		}
-	})*/
-	// layout
+
 	left := container.NewMax(hierarchyWidget)
 	center := container.NewVBox(viewport)
 	right := container.NewVBox(inspectorContainer)
@@ -134,6 +110,38 @@ func UpdateEntityTransform(id int64, pos bridge.Vec3, rot bridge.Vec4, scale bri
 			state.Global.Entities[i].Rotation = rot
 			state.Global.Entities[i].Scale = scale
 			return
+		}
+	}
+}
+func startEditorLinkClient() {
+	conn, err := net.Dial("tcp", "localhost:7777")
+	if err != nil {
+		log.Fatalf("editor: cannot connect to game: %v", err)
+	}
+
+	go editorReadLoop(conn)
+}
+func editorReadLoop(conn net.Conn) {
+	for {
+		msg, err := editorlink.ReadMsg(conn)
+		if err != nil {
+			log.Printf("editor: read error: %v", err)
+			return
+		}
+
+		switch msg.Type {
+		case "SetTransformGizmo":
+			var m editorlink.MsgSetTransform
+			if err := json.Unmarshal(msg.Data, &m); err != nil {
+				log.Printf("editor: bad SetTransformGizmo: %v", err)
+				continue
+			}
+			fyne.Do(func() {
+				UpdateEntityTransform(int64(m.ID), m.Position, m.Rotation, m.Scale)
+				state.Global.RefreshUI()
+
+			})
+
 		}
 	}
 }

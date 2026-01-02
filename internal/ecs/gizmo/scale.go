@@ -74,14 +74,12 @@ func (gs *GizmoRenderSystem) scaleDrag(t *ecs.Transform, origin, dir, gizmoOrigi
 						tr.Scale[0] *= scaleFactor
 						tr.Scale[1] *= scaleFactor
 						tr.Scale[2] *= scaleFactor
-						if bridge.SendTransformToEditor != nil {
-							bridge.SendTransformToEditor(
-								id,
-								tr.Position,
-								tr.Rotation,
-								tr.Scale,
-							)
-						}
+						bridge.NotifyEditorOfTransform(
+							id,
+							tr.Position,
+							tr.Rotation,
+							tr.Scale,
+						)
 					}
 				}
 			}
@@ -90,6 +88,8 @@ func (gs *GizmoRenderSystem) scaleDrag(t *ecs.Transform, origin, dir, gizmoOrigi
 			t.Scale[0] *= scaleFactor
 			t.Scale[1] *= scaleFactor
 			t.Scale[2] *= scaleFactor
+			bridge.NotifyEditorOfTransform(globalId.ID, t.Position, t.Rotation, t.Scale)
+
 		}
 		return
 	}

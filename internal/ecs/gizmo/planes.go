@@ -2,6 +2,7 @@ package gizmo
 
 import (
 	"go-engine/Go-Cordance/internal/ecs"
+	"go-engine/Go-Cordance/internal/ecs/gizmo/bridge"
 	"math"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -102,6 +103,12 @@ func (gs *GizmoRenderSystem) planeDrag(t *ecs.Transform, origin, dir mgl32.Vec3)
 					pos := mgl32.Vec3{tr.Position[0], tr.Position[1], tr.Position[2]}
 					newPos := pos.Add(delta)
 					tr.Position[0], tr.Position[1], tr.Position[2] = newPos.X(), newPos.Y(), newPos.Z()
+					bridge.NotifyEditorOfTransform(
+						id,
+						tr.Position,
+						tr.Rotation,
+						tr.Scale,
+					)
 				}
 			}
 		}
@@ -113,6 +120,7 @@ func (gs *GizmoRenderSystem) planeDrag(t *ecs.Transform, origin, dir mgl32.Vec3)
 	t.Position[0] = newPos.X()
 	t.Position[1] = newPos.Y()
 	t.Position[2] = newPos.Z()
+	bridge.NotifyEditorOfTransform(globalId.ID, t.Position, t.Rotation, t.Scale)
 
 }
 

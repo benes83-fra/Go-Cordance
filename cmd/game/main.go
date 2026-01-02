@@ -10,10 +10,10 @@ import (
 
 	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/ecs/gizmo"
+	"go-engine/Go-Cordance/internal/ecs/gizmo/bridge"
 	"go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editorlink"
 	"go-engine/Go-Cordance/internal/engine"
-	"go-engine/Go-Cordance/internal/ecs/gizmo/bridge"
 	"go-engine/Go-Cordance/internal/scene"
 )
 
@@ -280,6 +280,7 @@ func main() {
 		rot [4]float32,
 		scale [3]float32,
 	) {
+		log.Print("Sending Transform this is EditorConn: %v", editorlink.EditorConn)
 		if editorlink.EditorConn != nil {
 			editorlink.WriteTransformFromGame(
 				editorlink.EditorConn,

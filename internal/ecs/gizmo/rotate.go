@@ -110,6 +110,12 @@ func (gs *GizmoRenderSystem) rotationDrag(
 						tr.Rotation[1] = newQ.V[0]
 						tr.Rotation[2] = newQ.V[1]
 						tr.Rotation[3] = newQ.V[2]
+						bridge.NotifyEditorOfTransform(
+							id,
+							tr.Position,
+							tr.Rotation,
+							tr.Scale,
+						)
 					}
 				}
 			}
@@ -121,6 +127,7 @@ func (gs *GizmoRenderSystem) rotationDrag(
 			t.Rotation[1] = newQ.V[0]
 			t.Rotation[2] = newQ.V[1]
 			t.Rotation[3] = newQ.V[2]
+			bridge.NotifyEditorOfTransform(globalId.ID, t.Position, t.Rotation, t.Scale)
 		}
 		return
 	}
@@ -188,14 +195,12 @@ func (gs *GizmoRenderSystem) rotationDrag(
 					tr.Rotation[1] = outQ.V[0]
 					tr.Rotation[2] = outQ.V[1]
 					tr.Rotation[3] = outQ.V[2]
-					if bridge.SendTransformToEditor != nil {
-						bridge.SendTransformToEditor(
-							id,
-							tr.Position,
-							tr.Rotation,
-							tr.Scale,
-						)
-					}
+					bridge.NotifyEditorOfTransform(
+						id,
+						tr.Position,
+						tr.Rotation,
+						tr.Scale,
+					)
 				}
 			}
 		}
@@ -209,6 +214,7 @@ func (gs *GizmoRenderSystem) rotationDrag(
 	t.Rotation[1] = newQ.V[0]
 	t.Rotation[2] = newQ.V[1]
 	t.Rotation[3] = newQ.V[2]
+	bridge.NotifyEditorOfTransform(globalId.ID, t.Position, t.Rotation, t.Scale)
 
 }
 

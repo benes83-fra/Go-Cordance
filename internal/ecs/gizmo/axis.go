@@ -79,14 +79,13 @@ func (gs *GizmoRenderSystem) axisDrag(t *ecs.Transform, origin, dir mgl32.Vec3) 
 					newPos := pos.Add(axis.Mul(delta))
 					tr.Position[0], tr.Position[1], tr.Position[2] = newPos.X(), newPos.Y(), newPos.Z()
 
-					if bridge.SendTransformToEditor != nil {
-						bridge.SendTransformToEditor(
-							id,
-							tr.Position,
-							tr.Rotation,
-							tr.Scale,
-						)
-					}
+					bridge.NotifyEditorOfTransform(
+						id,
+						tr.Position,
+						tr.Rotation,
+						tr.Scale,
+					)
+
 				}
 			}
 		}
@@ -98,6 +97,7 @@ func (gs *GizmoRenderSystem) axisDrag(t *ecs.Transform, origin, dir mgl32.Vec3) 
 	t.Position[0] = newPos.X()
 	t.Position[1] = newPos.Y()
 	t.Position[2] = newPos.Z()
+	bridge.NotifyEditorOfTransform(globalId.ID, t.Position, t.Rotation, t.Scale)
 
 }
 

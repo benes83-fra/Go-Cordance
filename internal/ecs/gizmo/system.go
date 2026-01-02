@@ -17,6 +17,7 @@ import (
 const SnapIncrement = 0.25
 const RotationSensitivity = 0.4  // lower = slower rotation
 const RotationSnapDegrees = 15.0 // choose 5, 10, 15, 30, etc.
+var globalId *ecs.Entity
 
 type GizmoRenderSystem struct {
 	Renderer      *engine.DebugRenderer
@@ -69,7 +70,7 @@ func (gs *GizmoRenderSystem) Update(_ float32, _ []*ecs.Entity, selected *ecs.En
 
 	// compute mouse ray once
 	mouseOrigin, mouseDir := RayFromMouse(gs.CameraSystem.Window(), gs.CameraSystem)
-
+	globalId = selected
 	// resolve selection entities (IDs -> []*ecs.Entity)
 	selection := gs.selectedEntities()
 	//log.Printf("gizmo: Update called with selection IDs = %v, resolved entities = %d", gs.SelectionIDs, len(selection))
@@ -95,11 +96,11 @@ func (gs *GizmoRenderSystem) Update(_ float32, _ []*ecs.Entity, selected *ecs.En
 		if gs.PivotMode == state.PivotModePivot {
 			// Use the active entity (selected) as pivot to avoid relying on selection ordering
 			gizmoOrigin = entityPos
-			log.Printf("gizmo: using active entity as pivot at %v   ... Pivot Mode", gizmoOrigin)
+
 		} else {
 			// center mode: compute AABB center of selection
 			gizmoOrigin = computeGizmoOrigin(selection, gs.PivotMode)
-			log.Printf("gizmo: computed center pivot at %v   ... Center Mode", gizmoOrigin)
+
 		}
 
 		// recompute gizmoScale from camera distance to pivot so size follows selection pivot
