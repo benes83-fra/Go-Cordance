@@ -5,12 +5,13 @@ import (
 )
 
 type EditorState struct {
-	Entities      []bridge.EntityInfo
-	SelectedID    int64
-	SelectedIndex int
-	Foldout       map[string]bool
-	RefreshUI     func() // <-- add this
-	Selection     Selection
+	Entities              []bridge.EntityInfo
+	SelectedID            int64
+	SelectedIndex         int
+	Foldout               map[string]bool
+	RefreshUI             func() // <-- add this
+	UpdateInspectorFields func(pos bridge.Vec3, rot bridge.Vec4, scale bridge.Vec3)
+	Selection             Selection
 }
 
 func NewEditorState() *EditorState {

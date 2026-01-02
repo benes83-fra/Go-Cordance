@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 )
 
@@ -132,6 +131,5 @@ func WriteTransformFromGame(conn net.Conn, id int64, position [3]float32, rotati
 		Rotation: rotation,
 		Scale:    scale,
 	}
-	log.Printf("Transform from game: msg: %v", msg)
 	return writeMsg(conn, "SetTransformGizmo", msg)
 }

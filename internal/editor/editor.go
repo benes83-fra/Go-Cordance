@@ -9,6 +9,7 @@ import (
 	"go-engine/Go-Cordance/internal/editor/ui"
 	"go-engine/Go-Cordance/internal/editorlink"
 	"net"
+	"time"
 
 	"log"
 
@@ -19,6 +20,9 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+var lastTransformUIRedraw time.Time
+var incomingTransforms = make(chan editorlink.MsgSetTransform, 128)
+
 // Run starts the editor UI for the provided world.
 func Run(world *ecs.World) {
 	a := app.New()
@@ -26,12 +30,38 @@ func Run(world *ecs.World) {
 	win := a.NewWindow("Go-Cordance Editor")
 	win.Resize(fyne.NewSize(1000, 600))
 	startEditorLinkClient()
+
 	// state
 	st := state.Global
 	st.Foldout = map[string]bool{"Position": true, "Rotation": true, "Scale": true}
 	var hierarchyWidget *widget.List
 	// Create inspector first so we have the rebuild function available.
-	inspectorContainer, inspectorRebuild := ui.NewInspectorPanel()
+	inspectorContainer, inspectorRebuild, inspectorUpdateFields := ui.NewInspectorPanel()
+	state.Global.UpdateInspectorFields = inspectorUpdateFields
+	go func() {
+		ticker := time.NewTicker(50 * time.Millisecond) // 20 Hz
+		for range ticker.C {
+			// pull all pending messages
+			for {
+				select {
+				case m := <-incomingTransforms:
+					UpdateEntityTransform(int64(m.ID), m.Position, m.Rotation, m.Scale)
+				default:
+					goto done
+				}
+			}
+		done:
+			// now update UI safely (we are on UI thread)
+			// Update inspector fields only (no rebuild)
+			if st.SelectedIndex >= 0 && st.SelectedIndex < len(st.Entities) {
+				ent := st.Entities[st.SelectedIndex]
+				if state.Global.UpdateInspectorFields != nil {
+					state.Global.UpdateInspectorFields(ent.Position, ent.Rotation, ent.Scale)
+				}
+			}
+
+		}
+	}()
 	state.Global.RefreshUI = func() {
 		hierarchyWidget.Refresh()
 		inspectorRebuild(world, st, hierarchyWidget)
@@ -136,12 +166,15 @@ func editorReadLoop(conn net.Conn) {
 				log.Printf("editor: bad SetTransformGizmo: %v", err)
 				continue
 			}
-			fyne.Do(func() {
-				UpdateEntityTransform(int64(m.ID), m.Position, m.Rotation, m.Scale)
-				state.Global.RefreshUI()
 
-			})
-
+			// push into channel (non-blocking)
+			select {
+			case incomingTransforms <- m:
+			default:
+				// channel full, drop oldest
+				<-incomingTransforms
+				incomingTransforms <- m
+			}
 		}
 	}
 }
