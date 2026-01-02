@@ -116,6 +116,7 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) *widget.List {
 				if editorlink.EditorConn != nil {
 					go editorlink.WriteSelectEntity(editorlink.EditorConn, ent.ID)
 				}
+				check.SetChecked(true)
 				// also make this the active selection in the multi-select structure
 				st.Selection.ActiveID = ent.ID
 				// ensure active is included in selection IDs (optional: keep single-click as "make active only")

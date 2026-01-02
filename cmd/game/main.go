@@ -214,12 +214,17 @@ func main() {
 			case glfw.KeyP:
 				if gizmoSys.PivotMode == state.PivotModePivot {
 					gizmoSys.SetPivotMode(state.PivotModeCenter)
-					fmt.Println("Gizmo pivot mode: Center")
+
 				} else {
 					gizmoSys.SetPivotMode(state.PivotModePivot)
-					fmt.Println("Gizmo pivot mode: Pivot")
-				}
 
+				}
+			case glfw.KeyZ:
+				log.Printf("Undo Gizmo action")
+				gizmoSys.Undo.Undo(sc.World())
+			case glfw.KeyY:
+				log.Printf("Redo Gizmo action")
+				gizmoSys.Undo.Redo(sc.World())
 			}
 
 		}
