@@ -397,3 +397,24 @@ func clamp(val, min, max float32) float32 {
 	}
 	return val
 }
+
+func (c *ColliderAABB) EditorName() string { return "AABB Collider" }
+
+func (c *ColliderAABB) EditorFields() map[string]any {
+	return map[string]any{
+		"HalfExtentsX": c.HalfExtents[0],
+		"HalfExtentsY": c.HalfExtents[1],
+		"HalfExtentsZ": c.HalfExtents[2],
+	}
+}
+
+func (c *ColliderAABB) SetEditorField(name string, value any) {
+	switch name {
+	case "HalfExtentsX":
+		c.HalfExtents[0] = value.(float32)
+	case "HalfExtentsY":
+		c.HalfExtents[1] = value.(float32)
+	case "HalfExtentsZ":
+		c.HalfExtents[2] = value.(float32)
+	}
+}

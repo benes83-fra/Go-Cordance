@@ -58,6 +58,11 @@ type MsgSetTransform struct {
 type MsgSetPivotMode struct {
 	Mode string `json:"mode"` // "pivot" or "center"
 }
+type MsgSetComponent struct {
+	EntityID uint64
+	Name     string
+	Fields   map[string]any
+}
 
 func readMsg(conn net.Conn) (Msg, error) {
 	var m Msg
@@ -135,4 +140,7 @@ func WriteTransformFromGame(conn net.Conn, id int64, position [3]float32, rotati
 }
 func WriteSetTransformFinal(conn net.Conn, m MsgSetTransform) error {
 	return writeMsg(conn, "SetTransformGizmoFinal", m)
+}
+func WriteSetComponent(conn net.Conn, msg MsgSetComponent) error {
+	return writeMsg(conn, "SetComponent", msg)
 }

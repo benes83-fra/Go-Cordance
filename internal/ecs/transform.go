@@ -69,3 +69,24 @@ func GetTransform(e *Entity) *Transform {
 	}
 	return nil
 }
+
+func (t *Transform) EditorName() string { return "Transform" }
+
+func (t *Transform) EditorFields() map[string]any {
+	return map[string]any{
+		"Position": t.Position,
+		"Rotation": t.Rotation,
+		"Scale":    t.Scale,
+	}
+}
+
+func (t *Transform) SetEditorField(name string, value any) {
+	switch name {
+	case "Position":
+		t.Position = value.([3]float32)
+	case "Rotation":
+		t.Rotation = value.([4]float32)
+	case "Scale":
+		t.Scale = value.([3]float32)
+	}
+}

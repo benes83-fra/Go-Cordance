@@ -20,3 +20,30 @@ func NewMaterial(color [4]float32) *Material {
 }
 
 func (m *Material) Update(dt float32) { _ = dt }
+
+func (m *Material) EditorName() string { return "Material" }
+
+func (m *Material) EditorFields() map[string]any {
+	return map[string]any{
+		"BaseColor": m.BaseColor,
+		"Ambient":   m.Ambient,
+		"Diffuse":   m.Diffuse,
+		"Specular":  m.Specular,
+		"Shininess": m.Shininess,
+	}
+}
+
+func (m *Material) SetEditorField(name string, value any) {
+	switch name {
+	case "BaseColor":
+		m.BaseColor = value.([4]float32)
+	case "Ambient":
+		m.Ambient = value.(float32)
+	case "Diffuse":
+		m.Diffuse = value.(float32)
+	case "Specular":
+		m.Specular = value.(float32)
+	case "Shininess":
+		m.Shininess = value.(float32)
+	}
+}

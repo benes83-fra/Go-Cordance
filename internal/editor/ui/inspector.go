@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"fmt"
+	"go-engine/Go-Cordance/internal/ecs"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editorlink"
 	"math"
@@ -130,6 +132,25 @@ func NewInspectorPanel() (
 		root.Add(rotFoldout)
 		root.Add(scaleFoldout)
 		root.Refresh()
+
+		// --- COMPONENT INSPECTION ---
+		if st.SelectedIndex >= 0 && st.SelectedIndex < len(st.Entities) {
+			entInfo := st.Entities[st.SelectedIndex]
+
+			// We need the actual ECS entity to inspect components.
+			// The editor state only stores bridge.EntityInfo, so we must fetch the ECS entity from world.
+			ecsWorld := world.(*ecs.World)
+			ecsEnt := ecsWorld.FindByID(entInfo.ID)
+			if ecsEnt != nil {
+				for _, comp := range ecsEnt.Components {
+					if insp, ok := comp.(ecs.EditorInspectable); ok {
+						fold := buildComponentUI(insp, entInfo.ID)
+						root.Add(fold)
+					}
+				}
+			}
+		}
+
 		// Defensive: no selection
 		if st.SelectedIndex < 0 || st.SelectedIndex >= len(st.Entities) {
 			posX.SetText("")
@@ -298,4 +319,79 @@ func quatToEuler(q mgl32.Quat) (float32, float32, float32) {
 func eulerToQuat(pitch, yaw, roll float32) mgl32.Quat {
 	// mgl32.AnglesToQuat uses intrinsic rotations, ZYX order
 	return mgl32.AnglesToQuat(pitch, yaw, roll, mgl32.ZYX)
+}
+func buildComponentUI(c ecs.EditorInspectable, entityID int64) fyne.CanvasObject {
+	fields := c.EditorFields()
+	box := container.NewVBox()
+
+	for name, value := range fields {
+		switch v := value.(type) {
+
+		case float32:
+			e := widget.NewEntry()
+			e.SetText(fmt.Sprintf("%.3f", v))
+			e.OnChanged = func(s string) {
+				c.SetEditorField(name, parse32(s))
+				sendComponentUpdate(entityID, c)
+			}
+			box.Add(container.NewHBox(widget.NewLabel(name), e))
+
+		case [3]float32:
+			x := widget.NewEntry()
+			y := widget.NewEntry()
+			z := widget.NewEntry()
+
+			x.SetText(fmt.Sprintf("%.3f", v[0]))
+			y.SetText(fmt.Sprintf("%.3f", v[1]))
+			z.SetText(fmt.Sprintf("%.3f", v[2]))
+
+			x.OnChanged = func(s string) {
+				v[0] = parse32(s)
+				c.SetEditorField(name, v)
+				sendComponentUpdate(entityID, c)
+			}
+			y.OnChanged = func(s string) {
+				v[1] = parse32(s)
+				c.SetEditorField(name, v)
+				sendComponentUpdate(entityID, c)
+			}
+			z.OnChanged = func(s string) {
+				v[2] = parse32(s)
+				c.SetEditorField(name, v)
+				sendComponentUpdate(entityID, c)
+			}
+
+			box.Add(container.NewVBox(
+				widget.NewLabel(name),
+				container.NewHBox(widget.NewLabel("X"), x),
+				container.NewHBox(widget.NewLabel("Y"), y),
+				container.NewHBox(widget.NewLabel("Z"), z),
+			))
+
+		case string:
+			e := widget.NewEntry()
+			e.SetText(v)
+			e.OnChanged = func(s string) {
+				c.SetEditorField(name, s)
+				sendComponentUpdate(entityID, c)
+			}
+			box.Add(container.NewHBox(widget.NewLabel(name), e))
+		}
+	}
+
+	return NewFoldout(c.EditorName(), box, true, theme.MenuDropDownIcon())
+}
+
+func sendComponentUpdate(entityID int64, c ecs.EditorInspectable) {
+	if editorlink.EditorConn == nil {
+		return
+	}
+
+	msg := editorlink.MsgSetComponent{
+		EntityID: uint64(entityID),
+		Name:     c.EditorName(),
+		Fields:   c.EditorFields(),
+	}
+
+	go editorlink.WriteSetComponent(editorlink.EditorConn, msg)
 }

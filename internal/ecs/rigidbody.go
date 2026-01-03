@@ -28,3 +28,24 @@ func (rb *RigidBody) ClearForce() {
 func (rb *RigidBody) Update(dt float32) {
 	_ = dt
 }
+
+func (rb *RigidBody) EditorName() string { return "RigidBody" }
+
+func (rb *RigidBody) EditorFields() map[string]any {
+	return map[string]any{
+		"Mass":  rb.Mass,
+		"Vel":   rb.Vel,
+		"Force": rb.Force,
+	}
+}
+
+func (rb *RigidBody) SetEditorField(name string, value any) {
+	switch name {
+	case "Mass":
+		rb.Mass = value.(float32)
+	case "Vel":
+		rb.Vel = value.([3]float32)
+	case "Force":
+		rb.Force = value.([3]float32)
+	}
+}
