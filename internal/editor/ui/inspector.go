@@ -128,28 +128,30 @@ func NewInspectorPanel() (
 		scaleFoldout.SetOnToggle(func(expanded bool) {
 			st.Foldout["Scale"] = expanded
 		})
-		root.Add(posFoldout)
-		root.Add(rotFoldout)
-		root.Add(scaleFoldout)
-		root.Refresh()
+		// Create left column for transform
+		left := container.NewVBox(posFoldout, rotFoldout, scaleFoldout)
 
-		// --- COMPONENT INSPECTION ---
+		// Create right column for components
+		right := container.NewVBox()
+
 		if st.SelectedIndex >= 0 && st.SelectedIndex < len(st.Entities) {
 			entInfo := st.Entities[st.SelectedIndex]
-
-			// We need the actual ECS entity to inspect components.
-			// The editor state only stores bridge.EntityInfo, so we must fetch the ECS entity from world.
 			ecsWorld := world.(*ecs.World)
 			ecsEnt := ecsWorld.FindByID(entInfo.ID)
 			if ecsEnt != nil {
 				for _, comp := range ecsEnt.Components {
 					if insp, ok := comp.(ecs.EditorInspectable); ok {
 						fold := buildComponentUI(insp, entInfo.ID)
-						root.Add(fold)
+						right.Add(fold)
 					}
 				}
 			}
 		}
+
+		// Combine into horizontal layout
+		split := container.NewHBox(left, right)
+		root.Objects = []fyne.CanvasObject{split}
+		root.Refresh()
 
 		// Defensive: no selection
 		if st.SelectedIndex < 0 || st.SelectedIndex >= len(st.Entities) {
