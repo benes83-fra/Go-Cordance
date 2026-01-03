@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"fmt"
-	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editorlink"
 	"math"
@@ -28,7 +26,7 @@ func parse32(s string) float32 {
 func NewInspectorPanel() (
 	fyne.CanvasObject,
 	func(world interface{}, st *state.EditorState, hierarchy *widget.List),
-	func(pos bridge.Vec3, rot bridge.Vec4, scale bridge.Vec3),
+
 ) {
 	// Position entries
 	posX := widget.NewEntry()
@@ -241,33 +239,11 @@ func NewInspectorPanel() (
 			sendTransformIfConnected(st, st.SelectedIndex)
 		}
 	}
-	inspectorUpdateFields := func(pos bridge.Vec3, rot bridge.Vec4, scale bridge.Vec3) {
-		// --- Position ---
-		posX.SetText(fmt.Sprintf("%.3f", pos[0]))
-		posY.SetText(fmt.Sprintf("%.3f", pos[1]))
-		posZ.SetText(fmt.Sprintf("%.3f", pos[2]))
-
-		// --- Rotation (convert quaternion → Euler degrees) ---
-		q := mgl32.Quat{
-			W: rot[0],
-			V: mgl32.Vec3{rot[1], rot[2], rot[3]},
-		}
-		pitch, yaw, roll := quatToEuler(q)
-
-		rotX.SetText(fmt.Sprintf("%.3f", pitch*180/math.Pi))
-		rotY.SetText(fmt.Sprintf("%.3f", yaw*180/math.Pi))
-		rotZ.SetText(fmt.Sprintf("%.3f", roll*180/math.Pi))
-
-		// --- Scale ---
-		scaleX.SetText(fmt.Sprintf("%.3f", scale[0]))
-		scaleY.SetText(fmt.Sprintf("%.3f", scale[1]))
-		scaleZ.SetText(fmt.Sprintf("%.3f", scale[2]))
-	}
 
 	// Return the UI and the rebuild function
 	return root, func(world interface{}, st *state.EditorState, hierarchy *widget.List) {
 		rebuild(world, st, hierarchy)
-	}, inspectorUpdateFields
+	}
 }
 
 // helper to send transform

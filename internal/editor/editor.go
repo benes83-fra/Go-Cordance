@@ -36,32 +36,8 @@ func Run(world *ecs.World) {
 	st.Foldout = map[string]bool{"Position": true, "Rotation": true, "Scale": true}
 	var hierarchyWidget *widget.List
 	// Create inspector first so we have the rebuild function available.
-	inspectorContainer, inspectorRebuild, inspectorUpdateFields := ui.NewInspectorPanel()
-	state.Global.UpdateInspectorFields = inspectorUpdateFields
-	go func() {
-		ticker := time.NewTicker(50 * time.Millisecond) // 20 Hz
-		for range ticker.C {
-			// pull all pending messages
-			for {
-				select {
-				case m := <-incomingTransforms:
-					UpdateEntityTransform(int64(m.ID), m.Position, m.Rotation, m.Scale)
-				default:
-					goto done
-				}
-			}
-		done:
-			// now update UI safely (we are on UI thread)
-			// Update inspector fields only (no rebuild)
-			if st.SelectedIndex >= 0 && st.SelectedIndex < len(st.Entities) {
-				ent := st.Entities[st.SelectedIndex]
-				if state.Global.UpdateInspectorFields != nil {
-					state.Global.UpdateInspectorFields(ent.Position, ent.Rotation, ent.Scale)
-				}
-			}
+	inspectorContainer, inspectorRebuild := ui.NewInspectorPanel()
 
-		}
-	}()
 	state.Global.RefreshUI = func() {
 		hierarchyWidget.Refresh()
 		inspectorRebuild(world, st, hierarchyWidget)
@@ -167,14 +143,13 @@ func editorReadLoop(conn net.Conn) {
 				continue
 			}
 
-			// push into channel (non-blocking)
-			select {
-			case incomingTransforms <- m:
-			default:
-				// channel full, drop oldest
-				<-incomingTransforms
-				incomingTransforms <- m
-			}
+			fyne.DoAndWait(func() {
+				UpdateEntityTransform(int64(m.ID), m.Position, m.Rotation, m.Scale)
+				if state.Global.RefreshUI != nil {
+					state.Global.RefreshUI()
+				}
+			})
+
 		}
 	}
 }
