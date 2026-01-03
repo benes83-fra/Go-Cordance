@@ -280,7 +280,6 @@ func main() {
 		rot [4]float32,
 		scale [3]float32,
 	) {
-		log.Print("Sending Transform this is EditorConn: %v", editorlink.EditorConn)
 		if editorlink.EditorConn != nil {
 			editorlink.WriteTransformFromGame(
 				editorlink.EditorConn,
@@ -289,6 +288,17 @@ func main() {
 				rot,
 				scale,
 			)
+		}
+	}
+	bridge.SendTransformToEditorFinal = func(id int64, pos [3]float32, rot [4]float32, scale [3]float32) {
+		if editorlink.EditorConn != nil {
+			msg := editorlink.MsgSetTransform{
+				ID:       uint64(id),
+				Position: pos,
+				Rotation: rot,
+				Scale:    scale,
+			}
+			go editorlink.WriteSetTransformFinal(editorlink.EditorConn, msg)
 		}
 	}
 

@@ -16,3 +16,16 @@ func NotifyEditorOfTransform(id int64, pos [3]float32, rot [4]float32, scale [3]
 		SendTransformToEditor(id, pos, rot, scale)
 	}
 }
+
+var SendTransformToEditorFinal func(
+	id int64,
+	pos [3]float32,
+	rot [4]float32,
+	scale [3]float32,
+)
+
+func NotifyEditorOfTransformFinal(id int64, pos [3]float32, rot [4]float32, scale [3]float32) {
+	if SendTransformToEditorFinal != nil {
+		SendTransformToEditorFinal(id, pos, rot, scale)
+	}
+}

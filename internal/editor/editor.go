@@ -142,11 +142,19 @@ func editorReadLoop(conn net.Conn) {
 				log.Printf("editor: bad SetTransformGizmo: %v", err)
 				continue
 			}
+			UpdateEntityTransform(int64(m.ID), m.Position, m.Rotation, m.Scale)
+
+		case "SetTransformGizmoFinal":
+			var m editorlink.MsgSetTransform
+			if err := json.Unmarshal(msg.Data, &m); err != nil {
+				log.Printf("editor: bad SetTransformGizmoFinal: %v", err)
+				continue
+			}
 
 			fyne.DoAndWait(func() {
 				UpdateEntityTransform(int64(m.ID), m.Position, m.Rotation, m.Scale)
 				if state.Global.RefreshUI != nil {
-					state.Global.RefreshUI()
+					state.Global.RefreshUI() // rebuild inspector ONCE
 				}
 			})
 

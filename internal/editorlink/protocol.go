@@ -133,3 +133,6 @@ func WriteTransformFromGame(conn net.Conn, id int64, position [3]float32, rotati
 	}
 	return writeMsg(conn, "SetTransformGizmo", msg)
 }
+func WriteSetTransformFinal(conn net.Conn, m MsgSetTransform) error {
+	return writeMsg(conn, "SetTransformGizmoFinal", m)
+}

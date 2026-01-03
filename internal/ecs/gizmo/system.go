@@ -1,6 +1,7 @@
 package gizmo
 
 import (
+	"go-engine/Go-Cordance/internal/ecs/gizmo/bridge"
 	"go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editor/undo"
 	"go-engine/Go-Cordance/internal/engine"
@@ -210,6 +211,22 @@ func (gs *GizmoRenderSystem) handleDragEnd() {
 		gs.CameraSystem.Window().GetMouseButton(glfw.MouseButtonLeft) == glfw.Release {
 
 		gs.IsDragging = false
+
+		// --- SEND FINAL TRANSFORM TO EDITOR ---
+		if gs.World != nil && len(gs.SelectionIDs) > 0 {
+			for _, id := range gs.SelectionIDs {
+				if e := gs.World.FindByID(id); e != nil {
+					if tr := ecs.GetTransform(e); tr != nil {
+						bridge.NotifyEditorOfTransformFinal(
+							id,
+							tr.Position,
+							tr.Rotation,
+							tr.Scale,
+						)
+					}
+				}
+			}
+		}
 
 		// capture after snapshots and push undo command
 		if gs.World != nil && len(gs.SelectionIDs) > 0 && len(gs.dragBefore) > 0 {
