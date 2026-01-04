@@ -130,6 +130,21 @@ func handleConn(conn net.Conn, sc *scene.Scene) {
 					}
 				}
 			}
+		case "RemoveComponent":
+			var m MsgRemoveComponent
+			json.Unmarshal(msg.Data, &m)
+
+			ent := sc.World().FindByID(int64(m.EntityID))
+			if ent != nil {
+				for _, comp := range ent.Components {
+					if insp, ok := comp.(ecs.EditorInspectable); ok {
+						if insp.EditorName() == m.Name {
+							ent.RemoveComponent(comp)
+							break
+						}
+					}
+				}
+			}
 
 		default:
 			log.Printf("editorlink: unknown msg type %q", msg.Type)

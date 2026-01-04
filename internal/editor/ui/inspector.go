@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/go-gl/mathgl/mgl32"
@@ -143,15 +144,25 @@ func NewInspectorPanel() (
 			ecsEnt := ecsWorld.FindByID(entInfo.ID)
 			if ecsEnt != nil {
 				for _, comp := range ecsEnt.Components {
+					if _, isTransform := comp.(*ecs.Transform); isTransform {
+						continue // skip transform entirely
+					}
 					if insp, ok := comp.(ecs.EditorInspectable); ok {
-						fold := buildComponentUI(insp, entInfo.ID)
+						fold := buildComponentUI(insp, entInfo.ID, func() {
+							rebuild(world, st, hierarchy)
+						})
+
 						right.Add(fold)
 					}
 				}
+
 			}
 			addBtn := widget.NewButton("Add Component", func() {
-				showAddComponentDialog(ecsWorld, ecsEnt, entInfo.ID)
+				showAddComponentDialog(ecsWorld, ecsEnt, entInfo.ID, func() {
+					rebuild(world, st, hierarchy)
+				})
 			})
+
 			right.Add(addBtn)
 		}
 		leftScroll := container.NewScroll(left)
@@ -335,7 +346,7 @@ func eulerToQuat(pitch, yaw, roll float32) mgl32.Quat {
 	// mgl32.AnglesToQuat uses intrinsic rotations, ZYX order
 	return mgl32.AnglesToQuat(pitch, yaw, roll, mgl32.ZYX)
 }
-func buildComponentUI(c ecs.EditorInspectable, entityID int64) fyne.CanvasObject {
+func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) fyne.CanvasObject {
 	fields := c.EditorFields()
 	box := container.NewVBox()
 
@@ -394,7 +405,19 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64) fyne.CanvasObject
 		}
 	}
 
-	return NewFoldout(c.EditorName(), box, true, theme.MenuDropDownIcon())
+	removeBtn := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
+		sendRemoveComponent(entityID, c.EditorName())
+		refresh()
+	})
+
+	header := container.NewHBox(
+		widget.NewLabel(c.EditorName()),
+		layout.NewSpacer(),
+		removeBtn,
+	)
+
+	return NewFoldoutWithHeader(header, box, true)
+
 }
 
 func sendComponentUpdate(entityID int64, c ecs.EditorInspectable) {
@@ -411,7 +434,7 @@ func sendComponentUpdate(entityID int64, c ecs.EditorInspectable) {
 	go editorlink.WriteSetComponent(editorlink.EditorConn, msg)
 }
 
-func showAddComponentDialog(world *ecs.World, ent *ecs.Entity, entityID int64) {
+func showAddComponentDialog(world *ecs.World, ent *ecs.Entity, entityID int64, refresh func()) {
 	items := []string{}
 	for name := range ecs.ComponentRegistry {
 		proto := ecs.ComponentRegistry[name]()
@@ -439,7 +462,9 @@ func showAddComponentDialog(world *ecs.World, ent *ecs.Entity, entityID int64) {
 			}
 
 			dlg.Hide()
+			refresh() // <--- forces inspector to rebuild
 		})
+
 		buttons.Add(btn)
 	}
 
@@ -455,4 +480,47 @@ func showAddComponentDialog(world *ecs.World, ent *ecs.Entity, entityID int64) {
 
 	dlg.Resize(fyne.NewSize(300, 400)) // prevents scrollbars
 	dlg.Show()
+}
+
+func sendRemoveComponent(entityID int64, name string) {
+	if editorlink.EditorConn == nil {
+		return
+	}
+
+	msg := editorlink.MsgRemoveComponent{
+		EntityID: uint64(entityID),
+		Name:     name,
+	}
+
+	go editorlink.WriteRemoveComponent(editorlink.EditorConn, msg)
+}
+
+func NewFoldoutWithHeader(header fyne.CanvasObject, content fyne.CanvasObject, expanded bool) fyne.CanvasObject {
+	icon := widget.NewIcon(theme.MenuDropDownIcon())
+	if !expanded {
+		icon.SetResource(theme.MenuIcon())
+	}
+
+	headerBtn := widget.NewButton("", func() {
+		expanded = !expanded
+		if expanded {
+			icon.SetResource(theme.MenuDropDownIcon())
+			content.Show()
+		} else {
+			icon.SetResource(theme.MenuIcon())
+			content.Hide()
+		}
+	})
+	headerBtn.Importance = widget.LowImportance
+
+	headerRow := container.NewBorder(nil, nil, icon, nil, headerBtn, header)
+
+	if !expanded {
+		content.Hide()
+	}
+
+	return container.NewVBox(
+		headerRow,
+		content,
+	)
 }

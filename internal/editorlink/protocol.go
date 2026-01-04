@@ -63,6 +63,10 @@ type MsgSetComponent struct {
 	Name     string
 	Fields   map[string]any
 }
+type MsgRemoveComponent struct {
+	EntityID uint64
+	Name     string
+}
 
 func readMsg(conn net.Conn) (Msg, error) {
 	var m Msg
@@ -143,4 +147,8 @@ func WriteSetTransformFinal(conn net.Conn, m MsgSetTransform) error {
 }
 func WriteSetComponent(conn net.Conn, msg MsgSetComponent) error {
 	return writeMsg(conn, "SetComponent", msg)
+}
+
+func WriteRemoveComponent(conn net.Conn, msg MsgRemoveComponent) error {
+	return writeMsg(conn, "RemoveComponent", msg)
 }
