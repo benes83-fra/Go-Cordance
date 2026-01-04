@@ -71,3 +71,9 @@ func NewNormalMap(id uint32) *NormalMap { return &NormalMap{ID: id} }
 func (n *NormalMap) Update(dt float32) {
 	_ = dt
 }
+
+type EditorInspectable interface {
+	EditorName() string
+	EditorFields() map[string]any
+	SetEditorField(name string, value any)
+}

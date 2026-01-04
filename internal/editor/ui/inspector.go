@@ -10,10 +10,13 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/go-gl/mathgl/mgl32"
 )
+
+var dlg dialog.Dialog
 
 func parse32(s string) float32 {
 	f, err := strconv.ParseFloat(s, 32)
@@ -146,10 +149,20 @@ func NewInspectorPanel() (
 					}
 				}
 			}
+			addBtn := widget.NewButton("Add Component", func() {
+				showAddComponentDialog(ecsWorld, ecsEnt, entInfo.ID)
+			})
+			right.Add(addBtn)
 		}
+		leftScroll := container.NewScroll(left)
+		rightScroll := container.NewScroll(right)
+
+		leftScroll.SetMinSize(fyne.NewSize(250, 750))
+		rightScroll.SetMinSize((fyne.NewSize(250, 750)))
+		// --- Add Component Button ---
 
 		// Combine into horizontal layout
-		split := container.NewHBox(left, right)
+		split := container.NewHBox(leftScroll, rightScroll)
 		root.Objects = []fyne.CanvasObject{split}
 		root.Refresh()
 
@@ -396,4 +409,50 @@ func sendComponentUpdate(entityID int64, c ecs.EditorInspectable) {
 	}
 
 	go editorlink.WriteSetComponent(editorlink.EditorConn, msg)
+}
+
+func showAddComponentDialog(world *ecs.World, ent *ecs.Entity, entityID int64) {
+	items := []string{}
+	for name := range ecs.ComponentRegistry {
+		proto := ecs.ComponentRegistry[name]()
+		if ent.GetComponent(proto) == nil {
+			items = append(items, name)
+		}
+	}
+
+	if len(items) == 0 {
+		dialog.ShowInformation("Add Component", "All components already added.", fyne.CurrentApp().Driver().AllWindows()[0])
+		return
+	}
+
+	// Build a clean vertical list of buttons
+	buttons := container.NewVBox()
+	for _, name := range items {
+		compName := name
+		btn := widget.NewButton(compName, func() {
+			constructor := ecs.ComponentRegistry[compName]
+			newComp := constructor()
+			ent.AddComponent(newComp)
+
+			if insp, ok := newComp.(ecs.EditorInspectable); ok {
+				sendComponentUpdate(entityID, insp)
+			}
+
+			dlg.Hide()
+		})
+		buttons.Add(btn)
+	}
+
+	dlg = dialog.NewCustom(
+		"Add Component",
+		"Close",
+		container.NewVBox(
+			widget.NewLabel("Choose a component to add:"),
+			buttons,
+		),
+		fyne.CurrentApp().Driver().AllWindows()[0],
+	)
+
+	dlg.Resize(fyne.NewSize(300, 400)) // prevents scrollbars
+	dlg.Show()
 }
