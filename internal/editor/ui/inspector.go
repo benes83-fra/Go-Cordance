@@ -7,6 +7,7 @@ import (
 	"go-engine/Go-Cordance/internal/editorlink"
 	"math"
 	"strconv"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -168,14 +169,27 @@ func NewInspectorPanel() (
 		leftScroll := container.NewScroll(left)
 		rightScroll := container.NewScroll(right)
 
-		leftScroll.SetMinSize(fyne.NewSize(250, 750))
-		rightScroll.SetMinSize((fyne.NewSize(250, 750)))
-		// --- Add Component Button ---
+		// Create a resizable splitter
+		split := container.NewHSplit(leftScroll, rightScroll)
 
-		// Combine into horizontal layout
-		split := container.NewHBox(leftScroll, rightScroll)
+		// Apply saved offset (default 0.35 if zero)
+		if st.SplitOffset > 0 {
+			split.Offset = st.SplitOffset
+		} else {
+			split.Offset = 0.35
+		}
+		// Save the offset after layout
+		go func() {
+			// Let Fyne finish layout
+			time.Sleep(50 * time.Millisecond)
+			st.SplitOffset = split.Offset
+		}()
+
+		// Optional: minimum sizes so neither side collapses
+		leftScroll.SetMinSize(fyne.NewSize(200, 750))
+		rightScroll.SetMinSize(fyne.NewSize(200, 750))
+
 		root.Objects = []fyne.CanvasObject{split}
-		root.Refresh()
 
 		// Defensive: no selection
 		if st.SelectedIndex < 0 || st.SelectedIndex >= len(st.Entities) {
@@ -493,34 +507,4 @@ func sendRemoveComponent(entityID int64, name string) {
 	}
 
 	go editorlink.WriteRemoveComponent(editorlink.EditorConn, msg)
-}
-
-func NewFoldoutWithHeader(header fyne.CanvasObject, content fyne.CanvasObject, expanded bool) fyne.CanvasObject {
-	icon := widget.NewIcon(theme.MenuDropDownIcon())
-	if !expanded {
-		icon.SetResource(theme.MenuIcon())
-	}
-
-	headerBtn := widget.NewButton("", func() {
-		expanded = !expanded
-		if expanded {
-			icon.SetResource(theme.MenuDropDownIcon())
-			content.Show()
-		} else {
-			icon.SetResource(theme.MenuIcon())
-			content.Hide()
-		}
-	})
-	headerBtn.Importance = widget.LowImportance
-
-	headerRow := container.NewBorder(nil, nil, icon, nil, headerBtn, header)
-
-	if !expanded {
-		content.Hide()
-	}
-
-	return container.NewVBox(
-		headerRow,
-		content,
-	)
 }

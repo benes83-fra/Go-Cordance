@@ -11,6 +11,7 @@ type EditorState struct {
 	Foldout       map[string]bool
 	RefreshUI     func() // <-- add this
 	Selection     Selection
+	SplitOffset   float64
 }
 
 func NewEditorState() *EditorState {
@@ -23,6 +24,7 @@ func New() *EditorState {
 	return &EditorState{
 		Entities:      []bridge.EntityInfo{},
 		SelectedIndex: -1,
+		SplitOffset:   0.35,
 	}
 
 }

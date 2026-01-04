@@ -9,7 +9,6 @@ import (
 	"go-engine/Go-Cordance/internal/editor/ui"
 	"go-engine/Go-Cordance/internal/editorlink"
 	"net"
-	"time"
 
 	"log"
 
@@ -19,9 +18,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
-
-var lastTransformUIRedraw time.Time
-var incomingTransforms = make(chan editorlink.MsgSetTransform, 128)
 
 // Run starts the editor UI for the provided world.
 func Run(world *ecs.World) {
@@ -67,6 +63,7 @@ func Run(world *ecs.World) {
 	// initial build (no selection)
 	inspectorRebuild(world, st, hierarchyWidget)
 	win.SetCloseIntercept(func() {
+		st.SplitOffset = split.Offset
 		win.Close()
 	})
 

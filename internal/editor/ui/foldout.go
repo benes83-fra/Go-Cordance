@@ -111,3 +111,33 @@ func (r *foldoutRenderer) Objects() []fyne.CanvasObject {
 }
 
 func (r *foldoutRenderer) Destroy() {}
+
+func NewFoldoutWithHeader(header fyne.CanvasObject, content fyne.CanvasObject, expanded bool) fyne.CanvasObject {
+	icon := widget.NewIcon(theme.MenuDropDownIcon())
+	if !expanded {
+		icon.SetResource(theme.MenuIcon())
+	}
+
+	headerBtn := widget.NewButton("", func() {
+		expanded = !expanded
+		if expanded {
+			icon.SetResource(theme.MenuDropDownIcon())
+			content.Show()
+		} else {
+			icon.SetResource(theme.MenuIcon())
+			content.Hide()
+		}
+	})
+	headerBtn.Importance = widget.LowImportance
+
+	headerRow := container.NewBorder(nil, nil, icon, nil, headerBtn, header)
+
+	if !expanded {
+		content.Hide()
+	}
+
+	return container.NewVBox(
+		headerRow,
+		content,
+	)
+}
