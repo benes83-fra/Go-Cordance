@@ -140,12 +140,10 @@ func handleConn(conn net.Conn, sc *scene.Scene) {
 func buildSceneSnapshot(sc *scene.Scene) SceneSnapshot {
 	snap := SceneSnapshot{
 		Entities: make([]EntityView, 0),
-		Selected: 0, // TODO: get from your existing selection tracking
+		Selected: 0,
 	}
 
-	// This depends on your actual Scene/ECS layout.
-	// I’ll sketch it assuming you have something like sc.Entities or sc.World.
-	for _, ent := range sc.World().Entities { // adjust this line to your real API
+	for _, ent := range sc.World().Entities {
 		view := EntityView{
 			ID: uint64(ent.ID),
 		}
@@ -156,11 +154,24 @@ func buildSceneSnapshot(sc *scene.Scene) SceneSnapshot {
 		if c := ent.GetComponent((*ecs.Transform)(nil)); c != nil {
 			tr := c.(*ecs.Transform)
 			view.Position = Vec3(tr.Position)
-			// TODO Rotation/Scale
+			view.Components = append(view.Components, "Transform")
 		}
 		if c := ent.GetComponent((*ecs.Material)(nil)); c != nil {
 			mat := c.(*ecs.Material)
 			view.BaseColor = Vec4(mat.BaseColor)
+			view.Components = append(view.Components, "Material")
+		}
+		if c := ent.GetComponent((*ecs.RigidBody)(nil)); c != nil {
+			view.Components = append(view.Components, "RigidBody")
+		}
+		if ent.GetComponent((*ecs.ColliderSphere)(nil)) != nil {
+			view.Components = append(view.Components, "ColliderSphere")
+		}
+		if ent.GetComponent((*ecs.ColliderAABB)(nil)) != nil {
+			view.Components = append(view.Components, "ColliderAABB")
+		}
+		if ent.GetComponent((*ecs.ColliderPlane)(nil)) != nil {
+			view.Components = append(view.Components, "ColliderPlane")
 		}
 
 		snap.Entities = append(snap.Entities, view)
@@ -168,6 +179,7 @@ func buildSceneSnapshot(sc *scene.Scene) SceneSnapshot {
 
 	return snap
 }
+
 func applySetComponent(sc *scene.Scene, m MsgSetComponent) {
 	ent := sc.World().FindByID(int64(m.EntityID))
 	if ent == nil {
@@ -190,13 +202,6 @@ func applySetComponent(sc *scene.Scene, m MsgSetComponent) {
 		ent.AddComponent(comp)
 	}
 	// Push updated snapshot back to editor
-	if EditorConn != nil {
-		snap := buildSceneSnapshot(sc)
-		resp := MsgSceneSnapshot{Snapshot: snap}
-		if err := writeMsg(EditorConn, "SceneSnapshot", resp); err != nil {
-			log.Printf("editorlink: failed to send SceneSnapshot: %v", err)
-		}
-	}
 
 	// Apply fields
 	if insp, ok := comp.(ecs.EditorInspectable); ok {
@@ -205,6 +210,13 @@ func applySetComponent(sc *scene.Scene, m MsgSetComponent) {
 		}
 	} else {
 		log.Printf("game: SetComponent: component %s is not EditorInspectable", m.Name)
+	}
+	if EditorConn != nil {
+		snap := buildSceneSnapshot(sc)
+		resp := MsgSceneSnapshot{Snapshot: snap}
+		if err := writeMsg(EditorConn, "SceneSnapshot", resp); err != nil {
+			log.Printf("editorlink: failed to send SceneSnapshot: %v", err)
+		}
 	}
 }
 func applyRemoveComponent(sc *scene.Scene, m MsgRemoveComponent) {
@@ -226,6 +238,8 @@ func applyRemoveComponent(sc *scene.Scene, m MsgRemoveComponent) {
 		return
 	}
 	// Push updated snapshot back to editor
+
+	ent.RemoveComponent(comp)
 	if EditorConn != nil {
 		snap := buildSceneSnapshot(sc)
 		resp := MsgSceneSnapshot{Snapshot: snap}
@@ -233,6 +247,4 @@ func applyRemoveComponent(sc *scene.Scene, m MsgRemoveComponent) {
 			log.Printf("editorlink: failed to send SceneSnapshot: %v", err)
 		}
 	}
-
-	ent.RemoveComponent(comp)
 }

@@ -73,7 +73,7 @@ func Run(world *ecs.World) {
 func UpdateEntities(ents []bridge.EntityInfo) {
 	log.Printf("editor: UpdateEntities called with %d entities", len(ents))
 	for i, e := range ents {
-		log.Printf("  Entity %d: ID=%d, Name=%s", i, e.ID, e.Name)
+		log.Printf(" Entity %d: ID=%d, Name=%s, Components=%v", i, e.ID, e.Name, e.Components)
 	}
 	state.Global.Entities = ents
 	// prune selection IDs that no longer exist
@@ -112,6 +112,7 @@ func UpdateEntityTransform(id int64, pos bridge.Vec3, rot bridge.Vec4, scale bri
 			state.Global.Entities[i].Position = pos
 			state.Global.Entities[i].Rotation = rot
 			state.Global.Entities[i].Scale = scale
+
 			return
 		}
 	}
@@ -153,6 +154,30 @@ func editorReadLoop(conn net.Conn) {
 				if state.Global.RefreshUI != nil {
 					state.Global.RefreshUI() // rebuild inspector ONCE
 				}
+			})
+		case "SceneSnapshot":
+			var snap editorlink.MsgSceneSnapshot
+			if err := json.Unmarshal(msg.Data, &snap); err != nil {
+				log.Printf("editor: bad SceneSnapshot: %v", err)
+				continue
+			}
+
+			// Convert snapshot to bridge.EntityInfo
+			ents := make([]bridge.EntityInfo, len(snap.Snapshot.Entities))
+			for i, e := range snap.Snapshot.Entities {
+				ents[i] = bridge.EntityInfo{
+					ID:       int64(e.ID),
+					Name:     e.Name,
+					Position: bridge.Vec3(e.Position),
+					Rotation: bridge.Vec4(e.Rotation),
+					Scale:    bridge.Vec3(e.Scale),
+
+					Components: e.Components, // <-- NEW
+				}
+			}
+
+			fyne.DoAndWait(func() {
+				UpdateEntities(ents)
 			})
 
 		}

@@ -5,6 +5,7 @@ import (
 	"go-engine/Go-Cordance/internal/ecs"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editorlink"
+	"log"
 	"math"
 	"strconv"
 	"time"
@@ -144,15 +145,23 @@ func NewInspectorPanel() (
 			ecsWorld := world.(*ecs.World)
 			ecsEnt := ecsWorld.FindByID(entInfo.ID)
 			if ecsEnt != nil {
-				for _, comp := range ecsEnt.Components {
-					if _, isTransform := comp.(*ecs.Transform); isTransform {
-						continue // skip transform entirely
+				for _, name := range entInfo.Components {
+					constructor, ok := ecs.ComponentRegistry[name]
+					if !ok {
+						log.Printf("editor: no constructor for component %q in registry", name)
+						continue
 					}
+
+					comp := ecsEnt.GetComponent(constructor())
+					if comp == nil {
+						log.Printf("editor: entity %d has %q in snapshot but not in ECS world", entInfo.ID, name)
+						continue
+					}
+
 					if insp, ok := comp.(ecs.EditorInspectable); ok {
 						fold := buildComponentUI(insp, entInfo.ID, func() {
 							rebuild(world, st, hierarchy)
 						})
-
 						right.Add(fold)
 					}
 				}

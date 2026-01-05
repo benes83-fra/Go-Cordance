@@ -398,7 +398,7 @@ func clamp(val, min, max float32) float32 {
 	return val
 }
 
-func (c *ColliderAABB) EditorName() string { return "AABB Collider" }
+func (c *ColliderAABB) EditorName() string { return "ColliderAABB" }
 
 func (c *ColliderAABB) EditorFields() map[string]any {
 	return map[string]any{
@@ -411,10 +411,41 @@ func (c *ColliderAABB) EditorFields() map[string]any {
 func (c *ColliderAABB) SetEditorField(name string, value any) {
 	switch name {
 	case "HalfExtentsX":
-		c.HalfExtents[0] = value.(float32)
+		c.HalfExtents[0] = toFloat32(value)
 	case "HalfExtentsY":
-		c.HalfExtents[1] = value.(float32)
+		c.HalfExtents[1] = toFloat32(value)
 	case "HalfExtentsZ":
-		c.HalfExtents[2] = value.(float32)
+		c.HalfExtents[2] = toFloat32(value)
 	}
+}
+func (c *ColliderPlane) EditorName() string { return "ColliderPlane" }
+
+func (c *ColliderPlane) EditorFields() map[string]any {
+	return map[string]any{
+		"Y": c.Y,
+	}
+}
+
+func (c *ColliderPlane) SetEditorField(name string, value any) {
+	switch name {
+	case "Y":
+		c.Y = toFloat32(value)
+	}
+
+}
+
+func (c *ColliderSphere) EditorName() string { return "ColliderSphere" }
+
+func (c *ColliderSphere) EditorFields() map[string]any {
+	return map[string]any{
+		"Radius": c.Radius,
+	}
+}
+
+func (c *ColliderSphere) SetEditorField(name string, value any) {
+	switch name {
+	case "Radius":
+		c.Radius = toFloat32(value)
+	}
+
 }

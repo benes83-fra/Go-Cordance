@@ -62,12 +62,14 @@ func snapshotToEntityInfo(snap editorlink.SceneSnapshot) []bridge.EntityInfo {
 	out := make([]bridge.EntityInfo, len(snap.Entities))
 	for i, e := range snap.Entities {
 		out[i] = bridge.EntityInfo{
-			ID:       int64(e.ID), // snapshot ID is uint64 -> bridge uses int64
-			Name:     e.Name,
-			Position: bridge.Vec3(e.Position),
-			Rotation: bridge.Vec4(e.Rotation),
-			Scale:    bridge.Vec3(e.Scale),
+			ID:         int64(e.ID),
+			Name:       e.Name,
+			Position:   bridge.Vec3(e.Position),
+			Rotation:   bridge.Vec4(e.Rotation),
+			Scale:      bridge.Vec3(e.Scale),
+			Components: e.Components, // <-- THIS LINE FIXES EVERYTHING
 		}
+
 	}
 	return out
 }
