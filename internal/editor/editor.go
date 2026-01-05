@@ -123,8 +123,14 @@ func startEditorLinkClient() {
 		log.Fatalf("editor: cannot connect to game: %v", err)
 	}
 
+	editorlink.EditorConn = conn
+
+	// Request initial snapshot
+	go editorlink.WriteRequestSceneSnapshot(conn)
+
 	go editorReadLoop(conn)
 }
+
 func editorReadLoop(conn net.Conn) {
 	for {
 		msg, err := editorlink.ReadMsg(conn)

@@ -11,11 +11,6 @@ import (
 )
 
 func main() {
-	go func() {
-		if err := connectAndRequestSnapshot(); err != nil {
-			log.Printf("editor: IPC error: %v", err)
-		}
-	}()
 
 	sc, _ := scene.BootstrapScene()
 	world := sc.World() // or sc.Entities if you expose them directly
