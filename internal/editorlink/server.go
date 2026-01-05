@@ -8,6 +8,7 @@ import (
 	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/ecs/gizmo"
 	state "go-engine/Go-Cordance/internal/editor/state"
+
 	"go-engine/Go-Cordance/internal/scene"
 )
 
@@ -116,35 +117,19 @@ func handleConn(conn net.Conn, sc *scene.Scene) {
 			}
 		case "SetComponent":
 			var m MsgSetComponent
-			json.Unmarshal(msg.Data, &m)
-
-			ent := sc.World().FindByID(int64(m.EntityID))
-			if ent != nil {
-				for _, comp := range ent.Components {
-					if insp, ok := comp.(ecs.EditorInspectable); ok {
-						if insp.EditorName() == m.Name {
-							for k, v := range m.Fields {
-								insp.SetEditorField(k, v)
-							}
-						}
-					}
-				}
+			if err := json.Unmarshal(msg.Data, &m); err != nil {
+				log.Printf("game: bad SetComponent: %v", err)
+				continue
 			}
+			applySetComponent(sc, m)
+
 		case "RemoveComponent":
 			var m MsgRemoveComponent
-			json.Unmarshal(msg.Data, &m)
-
-			ent := sc.World().FindByID(int64(m.EntityID))
-			if ent != nil {
-				for _, comp := range ent.Components {
-					if insp, ok := comp.(ecs.EditorInspectable); ok {
-						if insp.EditorName() == m.Name {
-							ent.RemoveComponent(comp)
-							break
-						}
-					}
-				}
+			if err := json.Unmarshal(msg.Data, &m); err != nil {
+				log.Printf("game: bad RemoveComponent: %v", err)
+				continue
 			}
+			applyRemoveComponent(sc, m)
 
 		default:
 			log.Printf("editorlink: unknown msg type %q", msg.Type)
@@ -182,4 +167,72 @@ func buildSceneSnapshot(sc *scene.Scene) SceneSnapshot {
 	}
 
 	return snap
+}
+func applySetComponent(sc *scene.Scene, m MsgSetComponent) {
+	ent := sc.World().FindByID(int64(m.EntityID))
+	if ent == nil {
+		log.Printf("game: SetComponent: entity %d not found", m.EntityID)
+		return
+	}
+
+	// Find the component by name
+	constructor, ok := ecs.ComponentRegistry[m.Name]
+	if !ok {
+		log.Printf("game: SetComponent: unknown component %s", m.Name)
+		return
+	}
+
+	// Ensure the entity has the component
+	comp := ent.GetComponent(constructor())
+	if comp == nil {
+		// Component doesn't exist yet → create it
+		comp = constructor()
+		ent.AddComponent(comp)
+	}
+	// Push updated snapshot back to editor
+	if EditorConn != nil {
+		snap := buildSceneSnapshot(sc)
+		resp := MsgSceneSnapshot{Snapshot: snap}
+		if err := writeMsg(EditorConn, "SceneSnapshot", resp); err != nil {
+			log.Printf("editorlink: failed to send SceneSnapshot: %v", err)
+		}
+	}
+
+	// Apply fields
+	if insp, ok := comp.(ecs.EditorInspectable); ok {
+		for key, val := range m.Fields {
+			insp.SetEditorField(key, val)
+		}
+	} else {
+		log.Printf("game: SetComponent: component %s is not EditorInspectable", m.Name)
+	}
+}
+func applyRemoveComponent(sc *scene.Scene, m MsgRemoveComponent) {
+	ent := sc.World().FindByID(int64(m.EntityID))
+	if ent == nil {
+		log.Printf("game: RemoveComponent: entity %d not found", m.EntityID)
+		return
+	}
+
+	constructor, ok := ecs.ComponentRegistry[m.Name]
+	if !ok {
+		log.Printf("game: RemoveComponent: unknown component %s", m.Name)
+		return
+	}
+
+	comp := ent.GetComponent(constructor())
+	if comp == nil {
+		log.Printf("game: RemoveComponent: component %s not present", m.Name)
+		return
+	}
+	// Push updated snapshot back to editor
+	if EditorConn != nil {
+		snap := buildSceneSnapshot(sc)
+		resp := MsgSceneSnapshot{Snapshot: snap}
+		if err := writeMsg(EditorConn, "SceneSnapshot", resp); err != nil {
+			log.Printf("editorlink: failed to send SceneSnapshot: %v", err)
+		}
+	}
+
+	ent.RemoveComponent(comp)
 }

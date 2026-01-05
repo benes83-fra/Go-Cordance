@@ -1,5 +1,7 @@
 package ecs
 
+import "strconv"
+
 // RigidBody is a physics component with mass, velocity, and accumulated force.
 type RigidBody struct {
 	Mass  float32
@@ -42,10 +44,50 @@ func (rb *RigidBody) EditorFields() map[string]any {
 func (rb *RigidBody) SetEditorField(name string, value any) {
 	switch name {
 	case "Mass":
-		rb.Mass = value.(float32)
+		rb.Mass = toFloat32(value)
 	case "Vel":
-		rb.Vel = value.([3]float32)
+		rb.Vel = toVec3(value)
 	case "Force":
-		rb.Force = value.([3]float32)
+		rb.Force = toVec3(value)
+	}
+}
+
+func toFloat32(v any) float32 {
+	switch n := v.(type) {
+	case float32:
+		return n
+	case float64:
+		return float32(n)
+	case int:
+		return float32(n)
+	case string:
+		f, _ := strconv.ParseFloat(n, 32)
+		return float32(f)
+	default:
+		return 0
+	}
+}
+
+func toVec3(v any) [3]float32 {
+	var out [3]float32
+
+	switch arr := v.(type) {
+	case [3]float32:
+		return arr
+	case []float32:
+		copy(out[:], arr)
+		return out
+	case []float64:
+		for i := 0; i < len(arr) && i < 3; i++ {
+			out[i] = float32(arr[i])
+		}
+		return out
+	case []any:
+		for i := 0; i < len(arr) && i < 3; i++ {
+			out[i] = toFloat32(arr[i])
+		}
+		return out
+	default:
+		return out
 	}
 }
