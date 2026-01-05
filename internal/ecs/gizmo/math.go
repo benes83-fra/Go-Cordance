@@ -129,21 +129,7 @@ func SnapPosition(pos mgl32.Vec3, increment float32) mgl32.Vec3 {
 		float32(math.Round(float64(pos.Z())/float64(increment))) * increment,
 	}
 }
-func Min(a, b float32) float32 {
-	if a < b {
-		return a
-	}
-	return b
-}
-func Max(a, b float32) float32 {
-	if a > b {
-		return a
-	}
-	return b
-}
-func ClampFloat32(val, min, max float32) float32 {
-	return Max(min, Min(max, val))
-}
+
 func rotationFromAxis(axis mgl32.Vec3) mgl32.Mat4 {
 	z := mgl32.Vec3{0, 0, 1}
 	dot := z.Dot(axis)
@@ -237,4 +223,19 @@ func captureSnapshotsByID(world *ecs.World, ids []int64) []undo.TransformSnapsho
 		}
 	}
 	return snaps
+}
+func Min(a, b float32) float32 {
+	if a < b {
+		return a
+	}
+	return b
+}
+func Max(a, b float32) float32 {
+	if a > b {
+		return a
+	}
+	return b
+}
+func ClampFloat32(val, min, max float32) float32 {
+	return Max(min, Min(max, val))
 }

@@ -36,14 +36,14 @@ func (m *Material) EditorFields() map[string]any {
 func (m *Material) SetEditorField(name string, value any) {
 	switch name {
 	case "BaseColor":
-		m.BaseColor = value.([4]float32)
+		m.BaseColor = toVec4(value)
 	case "Ambient":
-		m.Ambient = value.(float32)
+		m.Ambient = toFloat32(value)
 	case "Diffuse":
-		m.Diffuse = value.(float32)
+		m.Diffuse = toFloat32(value)
 	case "Specular":
-		m.Specular = value.(float32)
+		m.Specular = toFloat32(value)
 	case "Shininess":
-		m.Shininess = value.(float32)
+		m.Shininess = toFloat32(value)
 	}
 }

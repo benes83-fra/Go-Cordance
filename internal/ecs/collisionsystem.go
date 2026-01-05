@@ -381,23 +381,6 @@ func (cs *CollisionSystem) Update(dt float32, entities []*Entity) {
 	}
 }
 
-func min(a, b float32) float32 {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func clamp(val, min, max float32) float32 {
-	if val < min {
-		return min
-	}
-	if val > max {
-		return max
-	}
-	return val
-}
-
 func (c *ColliderAABB) EditorName() string { return "ColliderAABB" }
 
 func (c *ColliderAABB) EditorFields() map[string]any {
