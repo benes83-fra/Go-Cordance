@@ -1,4 +1,5 @@
 #version 330 core
+#define MAX_LIGHTS 8
 
 in vec3 FragPos;
 in vec3 Normal;
@@ -13,10 +14,15 @@ uniform float matAmbient;
 uniform float matDiffuse;
 uniform float matSpecular;
 uniform float matShininess;
-uniform vec3 lightDir;
+
 uniform vec3 viewPos;
-uniform vec3 lightColor;
-uniform float lightIntensity;
+
+
+uniform int lightCount;
+uniform vec3 lightDir[MAX_LIGHTS];
+uniform vec3 lightColor[MAX_LIGHTS];
+uniform float lightIntensity[MAX_LIGHTS];
+
 
 
 // diffuse texture
@@ -43,25 +49,29 @@ void main() {
         finalNormal = normalize(TBN * n);
     }
 
-    vec3 light = normalize(-lightDir);
     vec3 viewDir = normalize(viewPos - FragPos);
 
-    // Ambient
+    // Ambient stays the same
     vec3 ambient = matAmbient * vec3(BaseColor);
 
-    // Diffuse (use finalNormal)
-    float diff = max(dot(finalNormal, light), 0.0);
-    vec3 diffuse = matDiffuse * diff * vec3(BaseColor);
+    // Accumulate all lights
+    vec3 lighting = ambient;
 
-    // Specular (use finalNormal)
-    vec3 reflectDir = reflect(-light, finalNormal);
-    float spec = 0.0;
-    if (diff > 0.0) {
-        spec = pow(max(dot(viewDir, reflectDir), 0.0), matShininess);
+    for (int i = 0; i < lightCount; i++) {
+        vec3 L = normalize(-lightDir[i]);
+
+        // Diffuse
+        float diff = max(dot(finalNormal, L), 0.0);
+        vec3 diffuse = matDiffuse * diff * lightColor[i] * lightIntensity[i];
+
+        // Specular (Blinn-Phong)
+        vec3 H = normalize(L + viewDir);
+        float spec = pow(max(dot(finalNormal, H), 0.0), matShininess);
+        vec3 specular = matSpecular * spec * lightColor[i] * lightIntensity[i];
+
+        lighting += diffuse + specular;
     }
-    vec3 specular = matSpecular * spec * vec3(1.0);
 
-    vec3 lighting =ambient +  (diffuse + specular) * lightColor * lightIntensity;
 
 
     // Base color from material or diffuse texture

@@ -81,3 +81,28 @@ func clamp(val, min, max float32) float32 {
 	}
 	return val
 }
+func toInt(v any) int {
+	switch n := v.(type) {
+	case int64:
+		return int(n)
+	case int32:
+		return int(n)
+	case int:
+		return int(n)
+	case uint:
+		return int(n)
+	case uint16:
+		return int(n)
+	case uint32:
+		return int(n)
+	case uint64:
+		return int(n)
+	case string:
+		i, _ := strconv.ParseInt(n, 0, 0)
+		return int(i)
+	default:
+		return 0
+
+	}
+
+}

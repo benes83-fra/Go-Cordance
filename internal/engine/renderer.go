@@ -8,21 +8,24 @@ import (
 )
 
 type Renderer struct {
-	Program           uint32
-	LocModel          int32
-	LocView           int32
-	LocProj           int32
-	LocBaseCol        int32
-	LocLightDir       int32
-	LocViewPos        int32
-	LocAmbient        int32
-	LocDiffuse        int32
-	LocSpecular       int32
-	LocShininess      int32
-	LocDiffuseTex     int32
-	LocUseTexture     int32
-	LocLightColor     int32
-	LocLightIntensity int32
+	Program    uint32
+	LocModel   int32
+	LocView    int32
+	LocProj    int32
+	LocBaseCol int32
+
+	LocViewPos    int32
+	LocAmbient    int32
+	LocDiffuse    int32
+	LocSpecular   int32
+	LocShininess  int32
+	LocDiffuseTex int32
+	LocUseTexture int32
+
+	LocLightCount     int32
+	LocLightDir       [8]int32
+	LocLightColor     [8]int32
+	LocLightIntensity [8]int32
 
 	LightColor     [3]float32
 	LightIntensity float32
@@ -40,7 +43,7 @@ func (r *Renderer) InitUniforms() {
 	r.LocView = gl.GetUniformLocation(r.Program, gl.Str("view\x00"))
 	r.LocProj = gl.GetUniformLocation(r.Program, gl.Str("projection\x00"))
 	r.LocBaseCol = gl.GetUniformLocation(r.Program, gl.Str("BaseColor\x00"))
-	r.LocLightDir = gl.GetUniformLocation(r.Program, gl.Str("lightDir\x00"))
+
 	r.LocViewPos = gl.GetUniformLocation(r.Program, gl.Str("viewPos\x00"))
 	r.LocAmbient = gl.GetUniformLocation(r.Program, gl.Str("matAmbient\x00"))
 	r.LocDiffuse = gl.GetUniformLocation(r.Program, gl.Str("matDiffuse\x00"))
@@ -48,8 +51,17 @@ func (r *Renderer) InitUniforms() {
 	r.LocShininess = gl.GetUniformLocation(r.Program, gl.Str("matShininess\x00"))
 	r.LocDiffuseTex = gl.GetUniformLocation(r.Program, gl.Str("diffuseTex\x00"))
 	r.LocUseTexture = gl.GetUniformLocation(r.Program, gl.Str("useTexture\x00"))
-	r.LocLightColor = gl.GetUniformLocation(r.Program, gl.Str("lightColor\x00"))
-	r.LocLightIntensity = gl.GetUniformLocation(r.Program, gl.Str("lightIntensity\x00"))
+
+	r.LocLightCount = gl.GetUniformLocation(r.Program, gl.Str("lightCount\x00"))
+	for i := 0; i < 8; i++ {
+		nameDir := fmt.Sprintf("lightDir[%d]\x00", i)
+		nameCol := fmt.Sprintf("lightColor[%d]\x00", i)
+		nameInt := fmt.Sprintf("lightIntensity[%d]\x00", i)
+
+		r.LocLightDir[i] = gl.GetUniformLocation(r.Program, gl.Str(nameDir))
+		r.LocLightColor[i] = gl.GetUniformLocation(r.Program, gl.Str(nameCol))
+		r.LocLightIntensity[i] = gl.GetUniformLocation(r.Program, gl.Str(nameInt))
+	}
 
 	//for debugging purpose
 	// renderer.InitUniforms (add these lines)
@@ -60,11 +72,10 @@ func (r *Renderer) InitUniforms() {
 
 	names := map[string]int32{
 		"model": r.LocModel, "view": r.LocView, "projection": r.LocProj,
-		"baseColor": r.LocBaseCol, "lightDir": r.LocLightDir, "viewPos": r.LocViewPos,
+		"baseColor": r.LocBaseCol, "viewPos": r.LocViewPos,
 		"matAmbient": r.LocAmbient, "matDiffuse": r.LocDiffuse,
 		"matSpecular": r.LocSpecular, "matShininess": r.LocShininess,
 		"diffuseTex": r.LocDiffuseTex, "useTexture": r.LocUseTexture,
-		"lightColor": r.LocLightColor, "lightIntensity": r.LocLightIntensity,
 	}
 
 	for n, loc := range names {

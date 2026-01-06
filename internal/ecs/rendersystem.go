@@ -47,33 +47,64 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 	view := rs.CameraSystem.View
 	proj := rs.CameraSystem.Projection
 
-	if rs.OrbitalEnabled {
-		angle := float32(glfw.GetTime()) // seconds since start
+	// Only use orbital light if NO LightComponents exist
+	hasLight := false
+	for _, e := range entities {
+		if _, ok := e.GetComponent((*LightComponent)(nil)).(*LightComponent); ok {
+			hasLight = true
+			break
+		}
+	}
+
+	if rs.OrbitalEnabled && !hasLight {
+		angle := float32(glfw.GetTime())
 		rs.LightDir[0] = float32(math.Cos(float64(angle)))
 		rs.LightDir[2] = float32(math.Sin(float64(angle)))
-		rs.LightDir[1] = -0.7 // keep some downward tilt
+		rs.LightDir[1] = -0.7
 	}
+
 	rs.Renderer.LightColor = [3]float32{1, 1, 1}
 	rs.Renderer.LightIntensity = 1.0
 
 	// Find first LightComponent in the scene
-	for _, e := range entities {
-		if lc, ok := e.GetComponent((*LightComponent)(nil)).(*LightComponent); ok {
-			rs.Renderer.LightColor = lc.Color
-			rs.Renderer.LightIntensity = lc.Intensity
-			break // one directional light for now
-		}
-	}
+	lights := make([]engine.LightData, 0)
 
-	// Upload light uniforms ONCE per frame
-	gl.Uniform3fv(rs.Renderer.LocLightDir, 1, &rs.LightDir[0])
-	gl.Uniform3f(
-		rs.Renderer.LocLightColor,
-		rs.Renderer.LightColor[0],
-		rs.Renderer.LightColor[1],
-		rs.Renderer.LightColor[2],
-	)
-	gl.Uniform1f(rs.Renderer.LocLightIntensity, rs.Renderer.LightIntensity)
+	for _, e := range entities {
+		lc, ok := e.GetComponent((*LightComponent)(nil)).(*LightComponent)
+		if !ok {
+			continue
+		}
+
+		tr, _ := e.GetComponent((*Transform)(nil)).(*Transform)
+
+		// Compute direction from transform
+		dir := [3]float32{0, 0, -1} // default forward
+
+		if tr != nil {
+			q := mgl32.Quat{
+				W: tr.Rotation[0],
+				V: mgl32.Vec3{tr.Rotation[1], tr.Rotation[2], tr.Rotation[3]},
+			}
+			fwd := q.Rotate(mgl32.Vec3{0, 0, -1})
+			dir = [3]float32{fwd.X(), fwd.Y(), fwd.Z()}
+		}
+
+		lights = append(lights, engine.LightData{
+			Type:      int32(lc.Type),
+			Color:     lc.Color,
+			Intensity: lc.Intensity,
+			Direction: dir,
+		})
+	}
+	// Upload light count
+	gl.Uniform1i(rs.Renderer.LocLightCount, int32(len(lights)))
+
+	// Upload each light
+	for i, L := range lights {
+		gl.Uniform3f(rs.Renderer.LocLightColor[i], L.Color[0], L.Color[1], L.Color[2])
+		gl.Uniform1f(rs.Renderer.LocLightIntensity[i], L.Intensity)
+		gl.Uniform3f(rs.Renderer.LocLightDir[i], L.Direction[0], L.Direction[1], L.Direction[2])
+	}
 
 	// Upload camera position once
 	camPos := rs.CameraSystem.Position
