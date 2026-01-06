@@ -48,19 +48,26 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 	proj := rs.CameraSystem.Projection
 
 	// Only use orbital light if NO LightComponents exist
-	hasLight := false
-	for _, e := range entities {
-		if _, ok := e.GetComponent((*LightComponent)(nil)).(*LightComponent); ok {
-			hasLight = true
-			break
-		}
-	}
 
-	if rs.OrbitalEnabled && !hasLight {
+	if rs.OrbitalEnabled {
 		angle := float32(glfw.GetTime())
 		rs.LightDir[0] = float32(math.Cos(float64(angle)))
 		rs.LightDir[2] = float32(math.Sin(float64(angle)))
 		rs.LightDir[1] = -0.7
+	}
+
+	// Drive the visual light gizmo (LightEntity / LightArrow) from LightDir
+	if rs.LightEntity != nil {
+		if t, ok := rs.LightEntity.GetComponent((*Transform)(nil)).(*Transform); ok {
+			t.Position[0] = rs.LightDir[0] * 5
+			t.Position[1] = rs.LightDir[1] * 5
+			t.Position[2] = rs.LightDir[2] * 5
+		}
+	}
+	if rs.LightArrow != nil {
+		if t, ok := rs.LightArrow.GetComponent((*Transform)(nil)).(*Transform); ok {
+			t.Scale = [3]float32{rs.LightDir[0] * 5, rs.LightDir[1] * 5, rs.LightDir[2] * 5}
+		}
 	}
 
 	rs.Renderer.LightColor = [3]float32{1, 1, 1}
@@ -88,6 +95,9 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 			fwd := q.Rotate(mgl32.Vec3{0, 0, -1})
 			dir = [3]float32{fwd.X(), fwd.Y(), fwd.Z()}
 		}
+		if rs.LightEntity != nil && e == rs.LightEntity {
+			dir = rs.LightDir
+		}
 
 		lights = append(lights, engine.LightData{
 			Type:      int32(lc.Type),
@@ -114,19 +124,7 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 		var mesh *Mesh
 		var mat *Material
 		var tex *Texture
-		if rs.LightEntity != nil {
-			if t, ok := rs.LightEntity.GetComponent((*Transform)(nil)).(*Transform); ok {
-				t.Position[0] = rs.LightDir[0] * 5
-				t.Position[1] = rs.LightDir[1] * 5
-				t.Position[2] = rs.LightDir[2] * 5
-			}
-		}
-		if rs.LightArrow != nil {
-			if t, ok := rs.LightArrow.GetComponent((*Transform)(nil)).(*Transform); ok {
-				// scale the line to point in LightDir
-				t.Scale = [3]float32{rs.LightDir[0] * 5, rs.LightDir[1] * 5, rs.LightDir[2] * 5}
-			}
-		}
+
 		for _, c := range e.Components {
 			switch v := c.(type) {
 			case *Transform:
