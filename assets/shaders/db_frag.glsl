@@ -32,6 +32,9 @@ uniform bool flipNormalGreen; // toggle green channel flip for DX vs GL
 // 5 = visualize TangentW (grayscale)
 // 6 = visualize UV (rg)
 uniform int showMode;
+uniform vec3 lightColor;
+uniform float lightIntensity;
+
 
 void main() {
     // base geometric normal
@@ -102,7 +105,7 @@ void main() {
     }
     vec3 specular = matSpecular * spec * vec3(1.0);
 
-    vec3 lighting = ambient + diffuse + specular;
+    vec3 lighting =ambient +  (diffuse + specular) * lightColor * lightIntensity;
 
     vec4 base = BaseColor;
     if (useTexture) base = texture(diffuseTex, TexCoord);

@@ -8,20 +8,24 @@ import (
 )
 
 type Renderer struct {
-	Program       uint32
-	LocModel      int32
-	LocView       int32
-	LocProj       int32
-	LocBaseCol    int32
-	LocLightDir   int32
-	LocViewPos    int32
-	LocAmbient    int32
-	LocDiffuse    int32
-	LocSpecular   int32
-	LocShininess  int32
-	LocDiffuseTex int32
-	LocUseTexture int32
+	Program           uint32
+	LocModel          int32
+	LocView           int32
+	LocProj           int32
+	LocBaseCol        int32
+	LocLightDir       int32
+	LocViewPos        int32
+	LocAmbient        int32
+	LocDiffuse        int32
+	LocSpecular       int32
+	LocShininess      int32
+	LocDiffuseTex     int32
+	LocUseTexture     int32
+	LocLightColor     int32
+	LocLightIntensity int32
 
+	LightColor     [3]float32
+	LightIntensity float32
 	// new debug / normal map uniforms
 	LocNormalMap    int32
 	LocUseNormalMap int32
@@ -44,6 +48,8 @@ func (r *Renderer) InitUniforms() {
 	r.LocShininess = gl.GetUniformLocation(r.Program, gl.Str("matShininess\x00"))
 	r.LocDiffuseTex = gl.GetUniformLocation(r.Program, gl.Str("diffuseTex\x00"))
 	r.LocUseTexture = gl.GetUniformLocation(r.Program, gl.Str("useTexture\x00"))
+	r.LocLightColor = gl.GetUniformLocation(r.Program, gl.Str("lightColor\x00"))
+	r.LocLightIntensity = gl.GetUniformLocation(r.Program, gl.Str("lightIntensity\x00"))
 
 	//for debugging purpose
 	// renderer.InitUniforms (add these lines)
@@ -56,8 +62,11 @@ func (r *Renderer) InitUniforms() {
 		"model": r.LocModel, "view": r.LocView, "projection": r.LocProj,
 		"baseColor": r.LocBaseCol, "lightDir": r.LocLightDir, "viewPos": r.LocViewPos,
 		"matAmbient": r.LocAmbient, "matDiffuse": r.LocDiffuse,
-		"matSpecular": r.LocSpecular, "matShininess": r.LocShininess, "diffuseTex": r.LocDiffuseTex, "useTexture": r.LocUseTexture,
+		"matSpecular": r.LocSpecular, "matShininess": r.LocShininess,
+		"diffuseTex": r.LocDiffuseTex, "useTexture": r.LocUseTexture,
+		"lightColor": r.LocLightColor, "lightIntensity": r.LocLightIntensity,
 	}
+
 	for n, loc := range names {
 		if loc == -1 {
 			fmt.Printf("WARN: uniform %s not found in program\n", n)
@@ -76,7 +85,8 @@ func NewRenderer(vertexSrc, fragmentSrc string, width, height int) *Renderer {
 	gl.Enable(gl.DEPTH_TEST)
 	gl.ClearColor(0.1, 0.1, 0.1, 1.0)
 	gl.Viewport(0, 0, int32(width), int32(height))
-
+	r.LightColor = [3]float32{1.0, 1.0, 1.0}
+	r.LightIntensity = 1.0
 	return r
 }
 

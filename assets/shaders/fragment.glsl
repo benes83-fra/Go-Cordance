@@ -15,6 +15,9 @@ uniform float matSpecular;
 uniform float matShininess;
 uniform vec3 lightDir;
 uniform vec3 viewPos;
+uniform vec3 lightColor;
+uniform float lightIntensity;
+
 
 // diffuse texture
 uniform sampler2D diffuseTex;
@@ -58,7 +61,8 @@ void main() {
     }
     vec3 specular = matSpecular * spec * vec3(1.0);
 
-    vec3 lighting = ambient + diffuse + specular;
+    vec3 lighting =ambient +  (diffuse + specular) * lightColor * lightIntensity;
+
 
     // Base color from material or diffuse texture
     vec4 base = BaseColor;

@@ -121,12 +121,35 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 
 		camPos := rs.CameraSystem.Position // from your Camera component
 		gl.Uniform3fv(rs.Renderer.LocViewPos, 1, &camPos[0])
+		// NEW: upload light color + intensity
+		gl.Uniform3f(
+			rs.Renderer.LocLightColor,
+			rs.Renderer.LightColor[0],
+			rs.Renderer.LightColor[1],
+			rs.Renderer.LightColor[2],
+		)
+
+		gl.Uniform1f(
+			rs.Renderer.LocLightIntensity,
+			rs.Renderer.LightIntensity,
+		)
 
 		gl.UniformMatrix4fv(rs.Renderer.LocModel, 1, false, &model[0])
 		gl.UniformMatrix4fv(rs.Renderer.LocView, 1, false, &view[0])
 		gl.UniformMatrix4fv(rs.Renderer.LocProj, 1, false, &proj[0])
 
 		// Upload material color
+		// Defaults
+		rs.Renderer.LightColor = [3]float32{1, 1, 1}
+		rs.Renderer.LightIntensity = 1.0
+
+		// If LightComponent exists on LightEntity, override
+		if rs.LightEntity != nil {
+			if lc, ok := rs.LightEntity.GetComponent((*LightComponent)(nil)).(*LightComponent); ok {
+				rs.Renderer.LightColor = lc.Color
+				rs.Renderer.LightIntensity = lc.Intensity
+			}
+		}
 
 		if mat != nil {
 			// normal material
