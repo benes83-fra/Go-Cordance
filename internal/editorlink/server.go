@@ -173,6 +173,9 @@ func buildSceneSnapshot(sc *scene.Scene) SceneSnapshot {
 		if ent.GetComponent((*ecs.ColliderPlane)(nil)) != nil {
 			view.Components = append(view.Components, "ColliderPlane")
 		}
+		if ent.GetComponent((*ecs.LightComponent)(nil)) != nil {
+			view.Components = append(view.Components, "Light")
+		}
 
 		snap.Entities = append(snap.Entities, view)
 	}

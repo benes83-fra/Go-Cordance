@@ -7,6 +7,7 @@ import (
 	"go-engine/Go-Cordance/internal/editorlink"
 	"log"
 	"math"
+	"sort"
 	"strconv"
 	"time"
 
@@ -144,8 +145,11 @@ func NewInspectorPanel() (
 			entInfo := st.Entities[st.SelectedIndex]
 			ecsWorld := world.(*ecs.World)
 			ecsEnt := ecsWorld.FindByID(entInfo.ID)
+			names := append([]string{}, entInfo.Components...)
+			sort.Strings(names)
+
 			if ecsEnt != nil {
-				for _, name := range entInfo.Components {
+				for _, name := range names {
 					constructor, ok := ecs.ComponentRegistry[name]
 					if !ok {
 						log.Printf("editor: no constructor for component %q in registry", name)

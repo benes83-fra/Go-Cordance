@@ -53,6 +53,31 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 		rs.LightDir[2] = float32(math.Sin(float64(angle)))
 		rs.LightDir[1] = -0.7 // keep some downward tilt
 	}
+	rs.Renderer.LightColor = [3]float32{1, 1, 1}
+	rs.Renderer.LightIntensity = 1.0
+
+	// Find first LightComponent in the scene
+	for _, e := range entities {
+		if lc, ok := e.GetComponent((*LightComponent)(nil)).(*LightComponent); ok {
+			rs.Renderer.LightColor = lc.Color
+			rs.Renderer.LightIntensity = lc.Intensity
+			break // one directional light for now
+		}
+	}
+
+	// Upload light uniforms ONCE per frame
+	gl.Uniform3fv(rs.Renderer.LocLightDir, 1, &rs.LightDir[0])
+	gl.Uniform3f(
+		rs.Renderer.LocLightColor,
+		rs.Renderer.LightColor[0],
+		rs.Renderer.LightColor[1],
+		rs.Renderer.LightColor[2],
+	)
+	gl.Uniform1f(rs.Renderer.LocLightIntensity, rs.Renderer.LightIntensity)
+
+	// Upload camera position once
+	camPos := rs.CameraSystem.Position
+	gl.Uniform3fv(rs.Renderer.LocViewPos, 1, &camPos[0])
 	for _, e := range entities {
 		var t *Transform
 		var mesh *Mesh
@@ -117,39 +142,12 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 
 		//lightDir := [3]float32{1.0, -0.7, -0.3}
 
-		gl.Uniform3fv(rs.Renderer.LocLightDir, 1, &rs.LightDir[0])
-
-		camPos := rs.CameraSystem.Position // from your Camera component
-		gl.Uniform3fv(rs.Renderer.LocViewPos, 1, &camPos[0])
-		// NEW: upload light color + intensity
-		gl.Uniform3f(
-			rs.Renderer.LocLightColor,
-			rs.Renderer.LightColor[0],
-			rs.Renderer.LightColor[1],
-			rs.Renderer.LightColor[2],
-		)
-
-		gl.Uniform1f(
-			rs.Renderer.LocLightIntensity,
-			rs.Renderer.LightIntensity,
-		)
-
 		gl.UniformMatrix4fv(rs.Renderer.LocModel, 1, false, &model[0])
 		gl.UniformMatrix4fv(rs.Renderer.LocView, 1, false, &view[0])
 		gl.UniformMatrix4fv(rs.Renderer.LocProj, 1, false, &proj[0])
 
 		// Upload material color
 		// Defaults
-		rs.Renderer.LightColor = [3]float32{1, 1, 1}
-		rs.Renderer.LightIntensity = 1.0
-
-		// If LightComponent exists on LightEntity, override
-		if rs.LightEntity != nil {
-			if lc, ok := rs.LightEntity.GetComponent((*LightComponent)(nil)).(*LightComponent); ok {
-				rs.Renderer.LightColor = lc.Color
-				rs.Renderer.LightIntensity = lc.Intensity
-			}
-		}
 
 		if mat != nil {
 			// normal material

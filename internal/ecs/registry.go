@@ -1,6 +1,7 @@
 package ecs
 
 var ComponentRegistry = map[string]func() Component{
+
 	"Mesh":           func() Component { return NewMesh("") },
 	"Material":       func() Component { return NewMaterial([4]float32{1, 1, 1, 1}) },
 	"RigidBody":      func() Component { return NewRigidBody(1) },
