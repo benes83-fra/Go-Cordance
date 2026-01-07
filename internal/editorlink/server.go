@@ -184,94 +184,45 @@ func buildSceneSnapshot(sc *scene.Scene) SceneSnapshot {
 	return snap
 }
 
-/*
-	func applySetComponent(sc *scene.Scene, m MsgSetComponent) {
-		ent := sc.World().FindByID(int64(m.EntityID))
-		if ent == nil {
-			log.Printf("game: SetComponent: entity %d not found", m.EntityID)
-			return
-		}
-
-		constructor, ok := ecs.ComponentRegistry[m.Name]
-		if !ok {
-			log.Printf("game: SetComponent: unknown component %s", m.Name)
-			return
-		}
-
-		comp := ent.GetComponent(constructor())
-		if comp == nil {
-			comp = constructor()
-			ent.AddComponent(comp)
-		}
-
-		if insp, ok := comp.(ecs.EditorInspectable); ok {
-			for key, val := range m.Fields {
-				insp.SetEditorField(key, val)
-			}
-		} else {
-			log.Printf("game: SetComponent: component %s is not EditorInspectable", m.Name)
-		}
-
-		// For most components, push updated snapshot back to editor.
-		// But for Light, the editor already knows the new values (it sent them),
-		// and we don't want to rebuild the inspector on every tweak.
-		if m.Name == "Light" {
-			return
-		}
-
-		if EditorConn != nil {
-			snap := buildSceneSnapshot(sc)
-			resp := MsgSceneSnapshot{Snapshot: snap}
-			if err := writeMsg(EditorConn, "SceneSnapshot", resp); err != nil {
-				log.Printf("editorlink: failed to send SceneSnapshot: %v", err)
-			}
-		}
-	}
-*/
 func applySetComponent(sc *scene.Scene, m MsgSetComponent) {
 	ent := sc.World().FindByID(int64(m.EntityID))
 	if ent == nil {
+		log.Printf("game: SetComponent: entity %d not found", m.EntityID)
 		return
 	}
 
+	// Find the component by name
 	constructor, ok := ecs.ComponentRegistry[m.Name]
 	if !ok {
+		log.Printf("game: SetComponent: unknown component %s", m.Name)
 		return
 	}
-
-	// Check if component existed before
-	existed := ent.GetComponent(constructor()) != nil
 
 	// Ensure the entity has the component
 	comp := ent.GetComponent(constructor())
 	if comp == nil {
+		// Component doesn't exist yet → create it
 		comp = constructor()
 		ent.AddComponent(comp)
 	}
+	// Push updated snapshot back to editor
 
 	// Apply fields
 	if insp, ok := comp.(ecs.EditorInspectable); ok {
 		for key, val := range m.Fields {
 			insp.SetEditorField(key, val)
 		}
+	} else {
+		log.Printf("game: SetComponent: component %s is not EditorInspectable", m.Name)
 	}
-
-	// Only send SceneSnapshot if component was added or removed
-	if !existed {
-		sendFullSnapshot(sc)
-	}
-}
-func sendFullSnapshot(sc *scene.Scene) {
-	if EditorConn == nil {
-		return
-	}
-	snap := buildSceneSnapshot(sc)
-	resp := MsgSceneSnapshot{Snapshot: snap}
-	if err := writeMsg(EditorConn, "SceneSnapshot", resp); err != nil {
-		log.Printf("editorlink: failed to send SceneSnapshot: %v", err)
+	if EditorConn != nil {
+		snap := buildSceneSnapshot(sc)
+		resp := MsgSceneSnapshot{Snapshot: snap}
+		if err := writeMsg(EditorConn, "SceneSnapshot", resp); err != nil {
+			log.Printf("editorlink: failed to send SceneSnapshot: %v", err)
+		}
 	}
 }
-
 func applyRemoveComponent(sc *scene.Scene, m MsgRemoveComponent) {
 	ent := sc.World().FindByID(int64(m.EntityID))
 	if ent == nil {

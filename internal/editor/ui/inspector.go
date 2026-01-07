@@ -436,7 +436,13 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 			// Special case: LightType dropdown
 			if name == "Type" {
 				options := []string{"Directional", "Point", "Spot"}
-				dropdown := widget.NewSelect(options, func(selected string) {
+				dropdown := widget.NewSelect(options, nil)
+
+				if v >= 0 && v < len(options) {
+					dropdown.SetSelected(options[v])
+
+				}
+				dropdown.OnChanged = func(selected string) {
 					var idx int
 					switch selected {
 					case "Directional":
@@ -445,29 +451,13 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 						idx = 1
 					case "Spot":
 						idx = 2
+
 					}
 					c.SetEditorField(name, idx)
 					sendComponentUpdate(entityID, c)
-				})
 
-				// Set initial value
-				if v >= 0 && v < len(options) {
-					dropdown.SetSelected(options[v])
 				}
-
 				box.Add(container.NewHBox(widget.NewLabel("Type"), dropdown))
-			} else {
-				// fallback: raw int entry
-				e := widget.NewEntry()
-				e.SetText(fmt.Sprintf("%d", value))
-				e.OnSubmitted = func(s string) {
-					i, err := strconv.Atoi(s)
-					if err == nil {
-						c.SetEditorField(name, i)
-						sendComponentUpdate(entityID, c)
-					}
-				}
-				box.Add(container.NewHBox(widget.NewLabel(name), e))
 			}
 
 		}
