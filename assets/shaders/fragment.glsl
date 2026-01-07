@@ -22,6 +22,10 @@ uniform int lightCount;
 uniform vec3 lightDir[MAX_LIGHTS];
 uniform vec3 lightColor[MAX_LIGHTS];
 uniform float lightIntensity[MAX_LIGHTS];
+uniform vec3 lightPos[MAX_LIGHTS];
+uniform float lightRange[MAX_LIGHTS];
+uniform float lightAngle[MAX_LIGHTS]; // degrees
+uniform int lightType[MAX_LIGHTS];    // 0=dir, 1=point, 2=spot
 
 
 
@@ -58,19 +62,67 @@ void main() {
     vec3 lighting = ambient;
 
     for (int i = 0; i < lightCount; i++) {
-        vec3 L = normalize(-lightDir[i]);
 
+        vec3 L;
+        float attenuation = 1.0;
+
+        if (lightType[i] == 0) {
+            // -------------------------
+            // Directional Light
+            // -------------------------
+            L = normalize(-lightDir[i]);
+        }
+        else {
+            // -------------------------
+            // Point or Spot Light
+            // -------------------------
+            vec3 toLight = lightPos[i] - FragPos;
+            float dist = length(toLight);
+            L = normalize(toLight);
+
+            // Attenuation (inverse square falloff)
+            attenuation = 1.0 / (1.0 + (dist / lightRange[i]) * (dist / lightRange[i]));
+        }
+
+        // -------------------------
+        // Spotlight cone falloff
+        // -------------------------
+        if (lightType[i] == 2) { // SPOTLIGHT
+            // Angle in degrees → cosine
+            float cutoff = cos(radians(lightAngle[i]));
+            float spotFactor = dot(L, normalize(-lightDir[i]));
+
+            if (spotFactor < cutoff) {
+                // Outside the cone → no contribution
+                continue;
+            }
+
+            // Smooth falloff inside the cone
+            float spotSmooth = (spotFactor - cutoff) / (1.0 - cutoff);
+            attenuation *= spotSmooth;
+
+        }
+
+        // -------------------------
         // Diffuse
+        // -------------------------
         float diff = max(dot(finalNormal, L), 0.0);
         vec3 diffuse = matDiffuse * diff * lightColor[i] * lightIntensity[i];
 
+        // -------------------------
         // Specular (Blinn-Phong)
+        // -------------------------
         vec3 H = normalize(L + viewDir);
         float spec = pow(max(dot(finalNormal, H), 0.0), matShininess);
         vec3 specular = matSpecular * spec * lightColor[i] * lightIntensity[i];
 
-        lighting += diffuse + specular;
-    }
+        // -------------------------
+        // Accumulate with attenuation
+        // -------------------------
+     lighting += (diffuse + specular) * attenuation;
+}
+
+
 
 
 

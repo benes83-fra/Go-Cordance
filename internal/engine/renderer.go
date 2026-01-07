@@ -29,6 +29,11 @@ type Renderer struct {
 
 	LightColor     [3]float32
 	LightIntensity float32
+	LocLightPos    [8]int32
+	LocLightRange  [8]int32
+	LocLightAngle  [8]int32
+	LocLightType   [8]int32
+
 	// new debug / normal map uniforms
 	LocNormalMap    int32
 	LocUseNormalMap int32
@@ -57,10 +62,18 @@ func (r *Renderer) InitUniforms() {
 		nameDir := fmt.Sprintf("lightDir[%d]\x00", i)
 		nameCol := fmt.Sprintf("lightColor[%d]\x00", i)
 		nameInt := fmt.Sprintf("lightIntensity[%d]\x00", i)
+		namePos := fmt.Sprintf("lightPos[%d]\x00", i)
+		nameRange := fmt.Sprintf("lightRange[%d]\x00", i)
+		nameAngle := fmt.Sprintf("lightAngle[%d]\x00", i)
+		nameType := fmt.Sprintf("lightType[%d]\x00", i)
 
 		r.LocLightDir[i] = gl.GetUniformLocation(r.Program, gl.Str(nameDir))
 		r.LocLightColor[i] = gl.GetUniformLocation(r.Program, gl.Str(nameCol))
 		r.LocLightIntensity[i] = gl.GetUniformLocation(r.Program, gl.Str(nameInt))
+		r.LocLightPos[i] = gl.GetUniformLocation(r.Program, gl.Str(namePos))
+		r.LocLightRange[i] = gl.GetUniformLocation(r.Program, gl.Str(nameRange))
+		r.LocLightAngle[i] = gl.GetUniformLocation(r.Program, gl.Str(nameAngle))
+		r.LocLightType[i] = gl.GetUniformLocation(r.Program, gl.Str(nameType))
 	}
 
 	//for debugging purpose

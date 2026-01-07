@@ -74,7 +74,8 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 	rs.Renderer.LightIntensity = 1.0
 
 	// Find first LightComponent in the scene
-	lights := make([]engine.LightData, 0)
+	// Collect all lights in the scene
+	lights := make([]engine.LightData, 0, 8)
 
 	for _, e := range entities {
 		lc, ok := e.GetComponent((*LightComponent)(nil)).(*LightComponent)
@@ -84,10 +85,15 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 
 		tr, _ := e.GetComponent((*Transform)(nil)).(*Transform)
 
-		// Compute direction from transform
-		dir := [3]float32{0, 0, -1} // default forward
+		// Defaults
+		dir := [3]float32{0, 0, -1}
+		pos := [3]float32{0, 0, 0}
 
 		if tr != nil {
+			// Position
+			pos = tr.Position
+
+			// Direction from rotation
 			q := mgl32.Quat{
 				W: tr.Rotation[0],
 				V: mgl32.Vec3{tr.Rotation[1], tr.Rotation[2], tr.Rotation[3]},
@@ -95,6 +101,8 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 			fwd := q.Rotate(mgl32.Vec3{0, 0, -1})
 			dir = [3]float32{fwd.X(), fwd.Y(), fwd.Z()}
 		}
+
+		// Special case: legacy orbital gizmo light
 		if rs.LightEntity != nil && e == rs.LightEntity {
 			dir = rs.LightDir
 		}
@@ -104,8 +112,13 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 			Color:     lc.Color,
 			Intensity: lc.Intensity,
 			Direction: dir,
+			Position:  pos,
+			Range:     lc.Range,
+			Angle:     lc.Angle,
 		})
 	}
+
+	// Upload light count
 	// Upload light count
 	gl.Uniform1i(rs.Renderer.LocLightCount, int32(len(lights)))
 
@@ -114,6 +127,11 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 		gl.Uniform3f(rs.Renderer.LocLightColor[i], L.Color[0], L.Color[1], L.Color[2])
 		gl.Uniform1f(rs.Renderer.LocLightIntensity[i], L.Intensity)
 		gl.Uniform3f(rs.Renderer.LocLightDir[i], L.Direction[0], L.Direction[1], L.Direction[2])
+
+		gl.Uniform3f(rs.Renderer.LocLightPos[i], L.Position[0], L.Position[1], L.Position[2])
+		gl.Uniform1f(rs.Renderer.LocLightRange[i], L.Range)
+		gl.Uniform1f(rs.Renderer.LocLightAngle[i], L.Angle)
+		gl.Uniform1i(rs.Renderer.LocLightType[i], L.Type)
 	}
 
 	// Upload camera position once
