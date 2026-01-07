@@ -14,6 +14,7 @@ type LightComponent struct {
 	Intensity float32
 	Range     float32 // for point/spot
 	Angle     float32 // for spot
+	version   uint64
 }
 
 func NewLightComponent() *LightComponent {
@@ -53,4 +54,7 @@ func (l *LightComponent) SetEditorField(name string, value any) {
 	case "Angle":
 		l.Angle = toFloat32(value)
 	}
+	l.version++
 }
+
+func (l *LightComponent) Version() uint64 { return l.version }

@@ -383,10 +383,11 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 		case float32:
 			e := widget.NewEntry()
 			e.SetText(fmt.Sprintf("%.3f", v))
-			e.OnChanged = func(s string) {
+			e.OnSubmitted = func(s string) {
 				c.SetEditorField(name, parse32(s))
 				sendComponentUpdate(entityID, c)
 			}
+
 			box.Add(container.NewHBox(widget.NewLabel(name), e))
 
 		case [3]float32:
@@ -398,18 +399,20 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 			y.SetText(fmt.Sprintf("%.3f", v[1]))
 			z.SetText(fmt.Sprintf("%.3f", v[2]))
 
-			x.OnChanged = func(s string) {
+			x.OnSubmitted = func(s string) {
 				v[0] = parse32(s)
 				c.SetEditorField(name, v)
 				sendComponentUpdate(entityID, c)
 			}
-			y.OnChanged = func(s string) {
-				v[1] = parse32(s)
+
+			y.OnSubmitted = func(s string) {
+				v[0] = parse32(s)
 				c.SetEditorField(name, v)
 				sendComponentUpdate(entityID, c)
 			}
-			z.OnChanged = func(s string) {
-				v[2] = parse32(s)
+
+			z.OnSubmitted = func(s string) {
+				v[0] = parse32(s)
 				c.SetEditorField(name, v)
 				sendComponentUpdate(entityID, c)
 			}
@@ -429,6 +432,44 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 				sendComponentUpdate(entityID, c)
 			}
 			box.Add(container.NewHBox(widget.NewLabel(name), e))
+		case int:
+			// Special case: LightType dropdown
+			if name == "Type" {
+				options := []string{"Directional", "Point", "Spot"}
+				dropdown := widget.NewSelect(options, func(selected string) {
+					var idx int
+					switch selected {
+					case "Directional":
+						idx = 0
+					case "Point":
+						idx = 1
+					case "Spot":
+						idx = 2
+					}
+					c.SetEditorField(name, idx)
+					sendComponentUpdate(entityID, c)
+				})
+
+				// Set initial value
+				if v >= 0 && v < len(options) {
+					dropdown.SetSelected(options[v])
+				}
+
+				box.Add(container.NewHBox(widget.NewLabel("Type"), dropdown))
+			} else {
+				// fallback: raw int entry
+				e := widget.NewEntry()
+				e.SetText(fmt.Sprintf("%d", value))
+				e.OnSubmitted = func(s string) {
+					i, err := strconv.Atoi(s)
+					if err == nil {
+						c.SetEditorField(name, i)
+						sendComponentUpdate(entityID, c)
+					}
+				}
+				box.Add(container.NewHBox(widget.NewLabel(name), e))
+			}
+
 		}
 	}
 

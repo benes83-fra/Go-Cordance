@@ -49,7 +49,7 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 
 	// Only use orbital light if NO LightComponents exist
 
-	if rs.OrbitalEnabled {
+	if rs.OrbitalEnabled && rs.LightEntity != nil {
 		angle := float32(glfw.GetTime())
 		rs.LightDir[0] = float32(math.Cos(float64(angle)))
 		rs.LightDir[2] = float32(math.Sin(float64(angle)))
@@ -103,7 +103,7 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 		}
 
 		// Special case: legacy orbital gizmo light
-		if rs.LightEntity != nil && e == rs.LightEntity {
+		if rs.LightEntity != nil && e == rs.LightEntity && lc.Type == LightDirectional {
 			dir = rs.LightDir
 		}
 
