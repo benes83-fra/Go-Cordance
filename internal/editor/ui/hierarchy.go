@@ -119,6 +119,7 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) *widget.List {
 				check.SetChecked(true)
 				// also make this the active selection in the multi-select structure
 				st.Selection.ActiveID = ent.ID
+				st.Selection.IDs = nil
 				// ensure active is included in selection IDs (optional: keep single-click as "make active only")
 				// If you prefer single-click to select only this entity, uncomment:
 				//st.Selection.IDs = []int64{ent.ID}

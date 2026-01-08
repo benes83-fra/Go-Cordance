@@ -241,9 +241,12 @@ func applyRemoveComponent(sc *scene.Scene, m MsgRemoveComponent) {
 		log.Printf("game: RemoveComponent: component %s not present", m.Name)
 		return
 	}
-	// Push updated snapshot back to editor
 
 	ent.RemoveComponent(comp)
+
+	// Push updated snapshot back to editor
+
+	log.Printf("game: sending SceneSnapshot after RemoveComponent %s on %d", m.Name, m.EntityID)
 	if EditorConn != nil {
 		snap := buildSceneSnapshot(sc)
 		resp := MsgSceneSnapshot{Snapshot: snap}

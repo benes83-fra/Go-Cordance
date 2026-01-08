@@ -172,6 +172,8 @@ func NewInspectorPanel() (
 
 			}
 			addBtn := widget.NewButton("Add Component", func() {
+				log.Printf("AddButton for entity %d (%s)", entInfo.ID, entInfo.Name)
+
 				showAddComponentDialog(ecsWorld, ecsEnt, entInfo.ID, func() {
 					rebuild(world, st, hierarchy)
 				})
@@ -376,8 +378,14 @@ func eulerToQuat(pitch, yaw, roll float32) mgl32.Quat {
 func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) fyne.CanvasObject {
 	fields := c.EditorFields()
 	box := container.NewVBox()
+	keys := make([]string, 0, len(fields))
+	for k := range fields {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
 
-	for name, value := range fields {
+	for _, name := range keys {
+		value := fields[name]
 		switch v := value.(type) {
 
 		case float32:
@@ -406,13 +414,13 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 			}
 
 			y.OnSubmitted = func(s string) {
-				v[0] = parse32(s)
+				v[1] = parse32(s)
 				c.SetEditorField(name, v)
 				sendComponentUpdate(entityID, c)
 			}
 
 			z.OnSubmitted = func(s string) {
-				v[0] = parse32(s)
+				v[2] = parse32(s)
 				c.SetEditorField(name, v)
 				sendComponentUpdate(entityID, c)
 			}
@@ -482,6 +490,7 @@ func sendComponentUpdate(entityID int64, c ecs.EditorInspectable) {
 	if editorlink.EditorConn == nil {
 		return
 	}
+	log.Printf("Adding Component %d: %s", entityID, c.EditorName())
 
 	msg := editorlink.MsgSetComponent{
 		EntityID: uint64(entityID),
@@ -494,12 +503,14 @@ func sendComponentUpdate(entityID int64, c ecs.EditorInspectable) {
 
 func showAddComponentDialog(world *ecs.World, ent *ecs.Entity, entityID int64, refresh func()) {
 	items := []string{}
+	log.Printf("showAddComponentDialog for entityID=%d", entityID)
 	for name := range ecs.ComponentRegistry {
 		proto := ecs.ComponentRegistry[name]()
 		if ent.GetComponent(proto) == nil {
 			items = append(items, name)
 		}
 	}
+	log.Printf(" -> len(items)=%d", len(items))
 
 	if len(items) == 0 {
 		dialog.ShowInformation("Add Component", "All components already added.", fyne.CurrentApp().Driver().AllWindows()[0])
@@ -544,6 +555,7 @@ func sendRemoveComponent(entityID int64, name string) {
 	if editorlink.EditorConn == nil {
 		return
 	}
+	log.Printf("Removing Component %d: %s", entityID, name)
 
 	msg := editorlink.MsgRemoveComponent{
 		EntityID: uint64(entityID),
@@ -551,4 +563,5 @@ func sendRemoveComponent(entityID int64, name string) {
 	}
 
 	go editorlink.WriteRemoveComponent(editorlink.EditorConn, msg)
+
 }

@@ -34,7 +34,7 @@ func (l *LightComponent) EditorName() string { return "Light" }
 func (l *LightComponent) EditorFields() map[string]any {
 	return map[string]any{
 		"Type":      int(l.Type),
-		"Color":     l.Color,
+		"Color":     [3]float32{l.Color[0], l.Color[1], l.Color[2]},
 		"Intensity": l.Intensity,
 		"Range":     l.Range,
 		"Angle":     l.Angle,

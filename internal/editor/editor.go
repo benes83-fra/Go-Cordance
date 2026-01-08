@@ -25,7 +25,7 @@ func Run(world *ecs.World) {
 	a.Settings().SetTheme(theme.DarkTheme())
 	win := a.NewWindow("Go-Cordance Editor")
 	win.Resize(fyne.NewSize(1000, 600))
-	startEditorLinkClient()
+	startEditorLinkClient(world)
 
 	// state
 	st := state.Global
@@ -117,7 +117,7 @@ func UpdateEntityTransform(id int64, pos bridge.Vec3, rot bridge.Vec4, scale bri
 		}
 	}
 }
-func startEditorLinkClient() {
+func startEditorLinkClient(world *ecs.World) {
 	conn, err := net.Dial("tcp", "localhost:7777")
 	if err != nil {
 		log.Fatalf("editor: cannot connect to game: %v", err)
@@ -128,10 +128,10 @@ func startEditorLinkClient() {
 	// Request initial snapshot
 	go editorlink.WriteRequestSceneSnapshot(conn)
 
-	go editorReadLoop(conn)
+	go editorReadLoop(conn, world)
 }
 
-func editorReadLoop(conn net.Conn) {
+func editorReadLoop(conn net.Conn, world *ecs.World) {
 	for {
 		msg, err := editorlink.ReadMsg(conn)
 		if err != nil {
@@ -183,9 +183,34 @@ func editorReadLoop(conn net.Conn) {
 			}
 
 			fyne.DoAndWait(func() {
+				SyncEditorWorld(world, ents)
 				UpdateEntities(ents)
 			})
 
 		}
+	}
+}
+
+// SyncEditorWorld rebuilds the editor's ECS world to match the snapshot.
+func SyncEditorWorld(world *ecs.World, ents []bridge.EntityInfo) {
+	// Clear the editor ECS
+	world.Entities = nil
+
+	// Rebuild entities
+	for _, e := range ents {
+		ent := ecs.NewEntity(e.ID)
+
+		// Add components based on snapshot
+		for _, cname := range e.Components {
+			constructor, ok := ecs.ComponentRegistry[cname]
+			if !ok {
+				log.Printf("editor: no constructor for component %q in registry", cname)
+				continue
+			}
+			comp := constructor()
+			ent.AddComponent(comp)
+		}
+
+		world.Entities = append(world.Entities, ent)
 	}
 }
