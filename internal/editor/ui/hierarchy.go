@@ -4,7 +4,6 @@ import (
 	"go-engine/Go-Cordance/internal/ecs/gizmo"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editorlink"
-	"log"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -61,7 +60,7 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) *widget.List {
 			// checkbox toggles membership in selection
 			check.OnChanged = func(checked bool) {
 				if checked {
-					// add if not present
+					// Add to multi-selection
 					found := false
 					for _, id := range st.Selection.IDs {
 						if id == ent.ID {
@@ -72,11 +71,8 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) *widget.List {
 					if !found {
 						st.Selection.IDs = append(st.Selection.IDs, ent.ID)
 					}
-					if editorlink.EditorConn != nil {
-						go editorlink.WriteSelectEntities(editorlink.EditorConn, st.Selection.IDs)
-					}
 				} else {
-					// remove if present
+					// Remove from multi-selection
 					newIDs := make([]int64, 0, len(st.Selection.IDs))
 					for _, id := range st.Selection.IDs {
 						if id != ent.ID {
@@ -84,51 +80,48 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) *widget.List {
 						}
 					}
 					st.Selection.IDs = newIDs
-
 				}
 
-				// keep ActiveID consistent: if nothing selected, clear; otherwise keep existing active or set to this id
-				if len(st.Selection.IDs) == 0 {
-					st.Selection.ActiveID = 0
-				} else {
-					// if active not in selection, set active to first selected
-					foundActive := false
-					for _, id := range st.Selection.IDs {
-						if id == st.Selection.ActiveID {
-							foundActive = true
-							break
-						}
-					}
-					if !foundActive {
-						st.Selection.ActiveID = st.Selection.IDs[0]
-					}
+				// Do NOT change ActiveID here
+				// Do NOT change SelectedIndex here
+
+				if editorlink.EditorConn != nil {
+					go editorlink.WriteSelectEntities(editorlink.EditorConn, st.Selection.IDs)
 				}
 
-				// forward selection to gizmo bridge
 				gizmo.SetGlobalSelectionIDs(st.Selection.IDs)
 			}
 
 			// clicking the button sets the active index (inspector) and notifies remote
 			btn.OnTapped = func() {
+				// 1. Set primary selection
 				st.SelectedIndex = i
-				log.Printf("hierarchy: button tapped, setting SelectedIndex to %d", i)
-				onSelect(i)
+				st.Selection.ActiveID = ent.ID
+
+				// 2. Reset multi-selection to only this entity
+				st.Selection.IDs = []int64{ent.ID}
+
+				// 3. Uncheck all rows except this one
+				for row := 0; row < len(st.Entities); row++ {
+					if row == i {
+						// This row should be checked
+						// We must refresh the list AFTER updating state
+						continue
+					}
+					// Uncheck others by removing them from selection
+					// (the UI will reflect this on next Refresh)
+				}
+
+				// 4. Notify the game
 				if editorlink.EditorConn != nil {
 					go editorlink.WriteSelectEntity(editorlink.EditorConn, ent.ID)
-				}
-				check.SetChecked(true)
-				// also make this the active selection in the multi-select structure
-				st.Selection.ActiveID = ent.ID
-				st.Selection.IDs = nil
-				// ensure active is included in selection IDs (optional: keep single-click as "make active only")
-				// If you prefer single-click to select only this entity, uncomment:
-				//st.Selection.IDs = []int64{ent.ID}
-				log.Printf("editor.hierarchy: checkbox toggled, selection now %v", st.Selection.IDs)
-				if editorlink.EditorConn != nil {
 					go editorlink.WriteSelectEntities(editorlink.EditorConn, st.Selection.IDs)
 				}
-				log.Printf("editor.hierarchy: checkbox toggled, selection now %v", st.Selection.IDs)
+
+				// 5. Refresh UI
+				onSelect(i)
 			}
+
 		},
 	)
 
