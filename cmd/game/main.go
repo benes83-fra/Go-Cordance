@@ -41,6 +41,20 @@ func main() {
 	renderer := engine.NewRenderer(vertexSrc, fragmentSrc, width, height)
 	renderer.InitUniforms()
 
+	// load shadow shader sources
+	shadowVertSrc, err := engine.LoadShaderSource("assets/shaders/shadow_vertex.glsl")
+	if err != nil {
+		log.Fatal(err)
+	}
+	shadowFragSrc, err := engine.LoadShaderSource("assets/shaders/shadow_fragment.glsl")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// initialize shadow resources (choose resolution)
+	shadowW, shadowH := 2048, 2048
+	renderer.InitShadow(shadowVertSrc, shadowFragSrc, shadowW, shadowH)
+
 	// Resize callback updates viewport
 	window.SetFramebufferSizeCallback(func(_ *glfw.Window, w, h int) {
 		if h == 0 {

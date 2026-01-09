@@ -27,6 +27,8 @@ uniform float lightRange[MAX_LIGHTS];
 uniform float lightAngle[MAX_LIGHTS]; // degrees
 uniform int lightType[MAX_LIGHTS];    // 0=dir, 1=point, 2=spot
 
+uniform sampler2D shadowMap;
+uniform mat4 lightSpaceMatrix;
 
 
 // diffuse texture
@@ -60,6 +62,27 @@ void main() {
 
     // Accumulate all lights
     vec3 lighting = ambient;
+    // --- SHADOW CALCULATION ---
+
+    // Transform fragment position into light space
+    vec4 lightSpacePos = lightSpaceMatrix * vec4(FragPos, 1.0);
+
+    // Perspective divide
+    vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
+
+    // Transform from [-1,1] to [0,1]
+    projCoords = projCoords * 0.5 + 0.5;
+
+    // Read depth from shadow map
+    float closestDepth = texture(shadowMap, projCoords.xy).r;
+
+    // Current fragment depth in light space
+    float currentDepth = projCoords.z;
+
+    // Shadow test (with small bias)
+    float bias = 0.005;
+    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+
 
     for (int i = 0; i < lightCount; i++) {
 
@@ -119,7 +142,8 @@ void main() {
         // -------------------------
         // Accumulate with attenuation
         // -------------------------
-     lighting += (diffuse + specular) * attenuation;
+     lighting += (diffuse + specular) * attenuation * (1.0 - shadow);
+
 }
 
 

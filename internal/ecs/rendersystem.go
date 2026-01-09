@@ -34,6 +34,99 @@ func NewRenderSystem(r *engine.Renderer, mm *engine.MeshManager, cs *CameraSyste
 }
 
 func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
+	// --- SHADOW PASS ----------------------------------------------------
+	// Only run if shadow resources are initialized
+	if rs.Renderer != nil && rs.Renderer.ShadowFBO != 0 && rs.Renderer.ShadowProgram != 0 {
+		// Choose scene center for shadow (use camera position as a simple center)
+		sceneCenter := mgl32.Vec3{rs.CameraSystem.Position[0], rs.CameraSystem.Position[1], rs.CameraSystem.Position[2]}
+
+		// Compute light direction vector (use first directional light or orbital)
+		lightDir := mgl32.Vec3{rs.LightDir[0], rs.LightDir[1], rs.LightDir[2]}
+
+		// extent controls orthographic box size (tweakable)
+		extent := float32(20.0)
+
+		lightSpace := engine.ComputeDirectionalLightSpaceMatrix(lightDir, sceneCenter, extent)
+
+		// Bind shadow FBO and render depth
+		gl.Viewport(0, 0, int32(rs.Renderer.ShadowWidth), int32(rs.Renderer.ShadowHeight))
+		gl.BindFramebuffer(gl.FRAMEBUFFER, rs.Renderer.ShadowFBO)
+		gl.Clear(gl.DEPTH_BUFFER_BIT)
+
+		gl.UseProgram(rs.Renderer.ShadowProgram)
+		// set lightSpace uniform on shadow program
+		locLS := gl.GetUniformLocation(rs.Renderer.ShadowProgram, gl.Str("lightSpaceMatrix\x00"))
+		gl.UniformMatrix4fv(locLS, 1, false, &lightSpace[0])
+
+		// Render all meshes to depth map (same iteration as main pass)
+		for _, e := range entities {
+			var t *Transform
+			var mesh *Mesh
+
+			for _, c := range e.Components {
+				switch v := c.(type) {
+				case *Transform:
+					t = v
+				case *Mesh:
+					mesh = v
+				}
+			}
+			if t == nil || mesh == nil {
+				continue
+			}
+
+			// Build model matrix (same as main pass)
+			model := mgl32.Translate3D(t.Position[0], t.Position[1], t.Position[2])
+			if t.Rotation != [4]float32{0, 0, 0, 0} {
+				q := mgl32.Quat{
+					W: t.Rotation[0],
+					V: mgl32.Vec3{t.Rotation[1], t.Rotation[2], t.Rotation[3]},
+				}
+				model = model.Mul4(q.Mat4())
+			}
+			sx, sy, sz := t.Scale[0], t.Scale[1], t.Scale[2]
+			if sx == 0 {
+				sx = 1
+			}
+			if sy == 0 {
+				sy = 1
+			}
+			if sz == 0 {
+				sz = 1
+			}
+			model = model.Mul4(mgl32.Scale3D(sx, sy, sz))
+
+			// upload model matrix to shadow shader
+			locModel := gl.GetUniformLocation(rs.Renderer.ShadowProgram, gl.Str("model\x00"))
+			gl.UniformMatrix4fv(locModel, 1, false, &model[0])
+
+			// draw mesh
+			vao := rs.MeshManager.GetVAO(mesh.ID)
+			gl.BindVertexArray(vao)
+			count := rs.MeshManager.GetCount(mesh.ID)
+			if mesh.ID == "line" {
+				gl.DrawElements(gl.LINES, count, gl.UNSIGNED_INT, gl.PtrOffset(0))
+			} else {
+				gl.DrawElements(gl.TRIANGLES, count, gl.UNSIGNED_INT, gl.PtrOffset(0))
+			}
+			gl.BindVertexArray(0)
+		}
+
+		// Unbind FBO and restore viewport
+		gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+		gl.Viewport(0, 0, int32(rs.Renderer.ScreenWidth), int32(rs.Renderer.ScreenHeight))
+
+		// Bind shadow map to a texture unit for the main pass (we'll use unit 2)
+		gl.ActiveTexture(gl.TEXTURE2)
+		gl.BindTexture(gl.TEXTURE_2D, rs.Renderer.ShadowTex)
+		// set uniform in main shader later (after gl.UseProgram for main shader)
+		// store lightSpace in a local variable for upload to main shader below
+		// (we'll upload it after switching to main program)
+		// keep lightSpace variable in scope by reusing it below
+		_ = lightSpace
+	}
+
+	// --- MAIN PASS (existing code) -------------------------------------
 	gl.UseProgram(rs.Renderer.Program)
 
 	//debug stuff

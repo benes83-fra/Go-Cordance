@@ -40,7 +40,21 @@ type Renderer struct {
 	LocFlipNormalG  int32
 	LocShowMode     int32
 
-	//imgui support
+	// shadow map
+	ShadowFBO    uint32
+	ShadowTex    uint32
+	ShadowWidth  int
+	ShadowHeight int
+
+	// shadow shader program (depth-only)
+	ShadowProgram uint32
+
+	// uniform locations
+	LocLightSpace int32
+	LocShadowMap  int32
+	// store screen size for viewport restore
+	ScreenWidth  int
+	ScreenHeight int
 }
 
 func (r *Renderer) InitUniforms() {
@@ -75,6 +89,9 @@ func (r *Renderer) InitUniforms() {
 		r.LocLightAngle[i] = gl.GetUniformLocation(r.Program, gl.Str(nameAngle))
 		r.LocLightType[i] = gl.GetUniformLocation(r.Program, gl.Str(nameType))
 	}
+	// main shader will sample shadow map and receive lightSpaceMatrix
+	r.LocLightSpace = gl.GetUniformLocation(r.Program, gl.Str("lightSpaceMatrix\x00"))
+	r.LocShadowMap = gl.GetUniformLocation(r.Program, gl.Str("shadowMap\x00"))
 
 	//for debugging purpose
 	// renderer.InitUniforms (add these lines)
@@ -104,7 +121,8 @@ func NewRenderer(vertexSrc, fragmentSrc string, width, height int) *Renderer {
 
 	// Compile shader program
 	r.Program = compileProgram(vertexSrc, fragmentSrc)
-
+	r.ScreenWidth = width
+	r.ScreenHeight = height
 	// GL state
 	gl.Enable(gl.DEPTH_TEST)
 	gl.ClearColor(0.1, 0.1, 0.1, 1.0)
@@ -174,4 +192,43 @@ func NewDebugRenderer(vertexSrc, fragmentSrc string) *DebugRenderer {
 		LocProj:  gl.GetUniformLocation(prog, gl.Str("projection\x00")),
 		LocColor: gl.GetUniformLocation(prog, gl.Str("debugColor\x00")),
 	}
+}
+
+// Create depth-only FBO + texture and compile shadow shader program.
+// Call this from main after NewRenderer.
+func (r *Renderer) InitShadow(shadowVertSrc, shadowFragSrc string, width, height int) {
+	r.ShadowWidth = width
+	r.ShadowHeight = height
+
+	// create depth texture
+	var tex uint32
+	gl.GenTextures(1, &tex)
+	gl.BindTexture(gl.TEXTURE_2D, tex)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT, int32(width), int32(height), 0, gl.DEPTH_COMPONENT, gl.FLOAT, nil)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_BORDER)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_BORDER)
+	border := []float32{1.0, 1.0, 1.0, 1.0}
+	gl.TexParameterfv(gl.TEXTURE_2D, gl.TEXTURE_BORDER_COLOR, &border[0])
+
+	// create FBO
+	var fbo uint32
+	gl.GenFramebuffers(1, &fbo)
+	gl.BindFramebuffer(gl.FRAMEBUFFER, fbo)
+	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, tex, 0)
+	gl.DrawBuffer(gl.NONE)
+	gl.ReadBuffer(gl.NONE)
+	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+
+	r.ShadowFBO = fbo
+	r.ShadowTex = tex
+
+	// compile shadow shader program
+	r.ShadowProgram = compileProgram(shadowVertSrc, shadowFragSrc)
+
+	// get uniform locations for shadow shader and main shader usage
+	r.LocLightSpace = gl.GetUniformLocation(r.ShadowProgram, gl.Str("lightSpaceMatrix\x00"))
+	// For main shader, we will set LocShadowMap on the main program (use InitUniforms or set later)
+	// But store a location name for convenience (we'll get it from main program in InitUniforms)
 }
