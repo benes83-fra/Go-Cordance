@@ -2,6 +2,7 @@ package ecs
 
 import (
 	"go-engine/Go-Cordance/internal/engine"
+	"log"
 	"math"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -47,18 +48,28 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 		extent := float32(20.0)
 
 		lightSpace := engine.ComputeDirectionalLightSpaceMatrix(lightDir, sceneCenter, extent)
-
+		log.Printf("lightSpace: %v", lightSpace)
 		// Bind shadow FBO and render depth
 		gl.Viewport(0, 0, int32(rs.Renderer.ShadowWidth), int32(rs.Renderer.ShadowHeight))
 		gl.BindFramebuffer(gl.FRAMEBUFFER, rs.Renderer.ShadowFBO)
+		status := gl.CheckFramebufferStatus(gl.FRAMEBUFFER)
+		if status != gl.FRAMEBUFFER_COMPLETE {
+			log.Printf("Shadow FBO incomplete: 0x%X", status)
+		}
+
 		gl.Clear(gl.DEPTH_BUFFER_BIT)
 
 		gl.UseProgram(rs.Renderer.ShadowProgram)
+		if rs.Renderer.LocShadowMap != -1 {
+			gl.Uniform1i(rs.Renderer.LocShadowMap, 2) // must match the texture unit you bound (GL_TEXTURE2)
+		}
+
 		// set lightSpace uniform on shadow program
 		locLS := gl.GetUniformLocation(rs.Renderer.ShadowProgram, gl.Str("lightSpaceMatrix\x00"))
 		gl.UniformMatrix4fv(locLS, 1, false, &lightSpace[0])
 
 		// Render all meshes to depth map (same iteration as main pass)
+		// inside your shadow pass, replace the draw block with this:
 		for _, e := range entities {
 			var t *Transform
 			var mesh *Mesh
@@ -99,18 +110,53 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 			// upload model matrix to shadow shader
 			locModel := gl.GetUniformLocation(rs.Renderer.ShadowProgram, gl.Str("model\x00"))
 			gl.UniformMatrix4fv(locModel, 1, false, &model[0])
-
-			// draw mesh
+			count := rs.MeshManager.GetCount(mesh.ID)
+			// draw mesh with diagnostics
+			// --- draw mesh with safe fallback (paste into your shadow pass loop) ---
 			vao := rs.MeshManager.GetVAO(mesh.ID)
 			gl.BindVertexArray(vao)
-			count := rs.MeshManager.GetCount(mesh.ID)
+
+			// upload model uniform already done above
+
+			// try DrawElements first
 			if mesh.ID == "line" {
 				gl.DrawElements(gl.LINES, count, gl.UNSIGNED_INT, gl.PtrOffset(0))
 			} else {
 				gl.DrawElements(gl.TRIANGLES, count, gl.UNSIGNED_INT, gl.PtrOffset(0))
 			}
+
+			// check for error
+			if err := gl.GetError(); err != gl.NO_ERROR {
+				if err == gl.INVALID_OPERATION {
+					// log and fallback to DrawArrays
+					log.Printf("[shadow-fallback] DrawElements failed for mesh=%s (EBO issue). Falling back to DrawArrays.", mesh.ID)
+					// Attempt DrawArrays using the same count as a quick fallback.
+					// (This is a temporary fallback to get depth output; see permanent fix below.)
+					if mesh.ID == "line" {
+						gl.DrawArrays(gl.LINES, 0, count)
+					} else {
+						gl.DrawArrays(gl.TRIANGLES, 0, count)
+					}
+					if err2 := gl.GetError(); err2 != gl.NO_ERROR {
+						log.Printf("[shadow-fallback] DrawArrays also failed for mesh=%s: 0x%X", mesh.ID, err2)
+					}
+				} else {
+					log.Printf("[shadow] GL error after draw mesh=%s: 0x%X", mesh.ID, err)
+				}
+			}
+
 			gl.BindVertexArray(0)
+
 		}
+
+		if err := gl.GetError(); err != gl.NO_ERROR {
+			log.Printf("GL error after shadow pass: 0x%X", err)
+		}
+		log.Printf("LocLightSpace(main)=%d LocShadowMap=%d LocModel(shadow)=%d",
+			rs.Renderer.LocLightSpace, rs.Renderer.LocShadowMap,
+			gl.GetUniformLocation(rs.Renderer.ShadowProgram, gl.Str("model\x00")))
+		log.Printf("ShadowProgram=%d ShadowFBO=%d ShadowTex=%d", rs.Renderer.ShadowProgram, rs.Renderer.ShadowFBO, rs.Renderer.ShadowTex)
+		log.Printf("MainProgram=%d LocLightSpace=%d LocShadowMap=%d", rs.Renderer.Program, rs.Renderer.LocLightSpace, rs.Renderer.LocShadowMap)
 
 		// Unbind FBO and restore viewport
 		gl.BindFramebuffer(gl.FRAMEBUFFER, 0)

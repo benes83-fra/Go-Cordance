@@ -13,16 +13,24 @@ type MeshManager struct {
 	counts map[string]int32
 
 	// new: track buffers so we can delete them
+	// new: track buffers so we can delete them
 	vbos map[string]uint32
 	ebos map[string]uint32
+
+	// new bookkeeping
+	indexTypes   map[string]uint32 // gl.UNSIGNED_INT or gl.UNSIGNED_SHORT
+	vertexCounts map[string]int32  // number of vertices (for DrawArrays fallback if needed)
+
 }
 
 func NewMeshManager() *MeshManager {
 	return &MeshManager{
-		vaos:   make(map[string]uint32),
-		counts: make(map[string]int32),
-		vbos:   make(map[string]uint32),
-		ebos:   make(map[string]uint32),
+		vaos:         make(map[string]uint32),
+		counts:       make(map[string]int32),
+		vbos:         make(map[string]uint32),
+		ebos:         make(map[string]uint32),
+		indexTypes:   make(map[string]uint32),
+		vertexCounts: make(map[string]int32),
 	}
 }
 
