@@ -110,42 +110,74 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 			// upload model matrix to shadow shader
 			locModel := gl.GetUniformLocation(rs.Renderer.ShadowProgram, gl.Str("model\x00"))
 			gl.UniformMatrix4fv(locModel, 1, false, &model[0])
-			count := rs.MeshManager.GetCount(mesh.ID)
+
 			// draw mesh with diagnostics
 			// --- draw mesh with safe fallback (paste into your shadow pass loop) ---
+			// --- draw mesh using recorded index type/count (shadow pass) ---
+			// common draw helper (paste inline where you draw)
 			vao := rs.MeshManager.GetVAO(mesh.ID)
 			gl.BindVertexArray(vao)
 
-			// upload model uniform already done above
+			// get bookkeeping
+			indexCount := rs.MeshManager.GetCount(mesh.ID)
+			indexType := rs.MeshManager.GetIndexType(mesh.ID)
+			vertexCount := rs.MeshManager.GetVertexCount(mesh.ID)
+			ebo := rs.MeshManager.GetEBOs(mesh.ID)
 
-			// try DrawElements first
-			if mesh.ID == "line" {
-				gl.DrawElements(gl.LINES, count, gl.UNSIGNED_INT, gl.PtrOffset(0))
-			} else {
-				gl.DrawElements(gl.TRIANGLES, count, gl.UNSIGNED_INT, gl.PtrOffset(0))
+			// compute bytes per index
+			bytesPerIndex := int32(4)
+			if indexType == gl.UNSIGNED_SHORT {
+				bytesPerIndex = 2
 			}
 
-			// check for error
-			if err := gl.GetError(); err != gl.NO_ERROR {
-				if err == gl.INVALID_OPERATION {
-					// log and fallback to DrawArrays
-					log.Printf("[shadow-fallback] DrawElements failed for mesh=%s (EBO issue). Falling back to DrawArrays.", mesh.ID)
-					// Attempt DrawArrays using the same count as a quick fallback.
-					// (This is a temporary fallback to get depth output; see permanent fix below.)
-					if mesh.ID == "line" {
-						gl.DrawArrays(gl.LINES, 0, count)
-					} else {
-						gl.DrawArrays(gl.TRIANGLES, 0, count)
-					}
-					if err2 := gl.GetError(); err2 != gl.NO_ERROR {
-						log.Printf("[shadow-fallback] DrawArrays also failed for mesh=%s: 0x%X", mesh.ID, err2)
-					}
+			// sanity check EBO size if present
+			var eboSize int32 = 0
+			if ebo != 0 {
+				gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo) // IMPORTANT: bind EBO while VAO is bound
+				gl.GetBufferParameteriv(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE, &eboSize)
+				// do NOT unbind the EBO here — keep it bound to the VAO if you want the VAO to remember it
+			}
+
+			// decide draw path
+			if indexCount > 0 && ebo != 0 && eboSize >= int32(indexCount)*bytesPerIndex && vertexCount > 0 {
+				// safe to draw indexed
+				if mesh.ID == "line" {
+					gl.DrawElements(gl.LINES, indexCount, indexType, gl.PtrOffset(0))
 				} else {
-					log.Printf("[shadow] GL error after draw mesh=%s: 0x%X", mesh.ID, err)
+					gl.DrawElements(gl.TRIANGLES, indexCount, indexType, gl.PtrOffset(0))
+				}
+			} else {
+				// fallback to DrawArrays only if no valid index buffer recorded
+				if mesh.ID == "line" {
+					gl.DrawArrays(gl.LINES, 0, vertexCount)
+				} else {
+					gl.DrawArrays(gl.TRIANGLES, 0, vertexCount)
 				}
 			}
 
+			// leave VAO bound/unbound as your code expects
 			gl.BindVertexArray(0)
+
+			// after the draw call and before gl.BindVertexArray(0)
+			if err := gl.GetError(); err != gl.NO_ERROR {
+				var eboSize int32
+				ebo := rs.MeshManager.GetEBOs(mesh.ID) // or use getter if ebos is private
+				gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+				gl.GetBufferParameteriv(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE, &eboSize)
+				gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0)
+
+				log.Printf("[shadow-diagnose] mesh=%s indexCount=%d indexType=%d vertexCount=%d ebo=%d eboSize=%d GLerr=0x%X",
+					mesh.ID,
+					rs.MeshManager.GetCount(mesh.ID),
+					rs.MeshManager.GetIndexType(mesh.ID),
+					rs.MeshManager.GetVertexCount(mesh.ID),
+					ebo,
+					eboSize,
+					err,
+				)
+			}
+
+			// upload model uniform already done above
 
 		}
 
@@ -174,6 +206,27 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 
 	// --- MAIN PASS (existing code) -------------------------------------
 	gl.UseProgram(rs.Renderer.Program)
+	// Bind shadow map sampler and upload lightSpaceMatrix to main shader
+	if rs.Renderer != nil && rs.Renderer.ShadowTex != 0 {
+		// Bind shadow texture to unit 2
+		gl.ActiveTexture(gl.TEXTURE2)
+		gl.BindTexture(gl.TEXTURE_2D, rs.Renderer.ShadowTex)
+
+		// Tell the main shader which texture unit the shadow map is bound to
+		if rs.Renderer.LocShadowMap != -1 {
+			gl.Uniform1i(rs.Renderer.LocShadowMap, 2)
+		}
+
+		// Upload lightSpaceMatrix to main shader (recompute or reuse)
+		if rs.Renderer.LocLightSpace != -1 {
+			// recompute lightSpace to ensure consistency (or store earlier and reuse)
+			sceneCenter := mgl32.Vec3{rs.CameraSystem.Position[0], rs.CameraSystem.Position[1], rs.CameraSystem.Position[2]}
+			lightDir := mgl32.Vec3{rs.LightDir[0], rs.LightDir[1], rs.LightDir[2]}
+			extent := float32(20.0)
+			lightSpace := engine.ComputeDirectionalLightSpaceMatrix(lightDir, sceneCenter, extent)
+			gl.UniformMatrix4fv(rs.Renderer.LocLightSpace, 1, false, &lightSpace[0])
+		}
+	}
 
 	//debug stuff
 	gl.Uniform1i(rs.Renderer.LocShowMode, rs.DebugShowMode)
@@ -374,16 +427,32 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 			gl.Uniform1i(rs.Renderer.LocUseNormalMap, 0)
 		}
 		// Draw
+		// --- draw mesh using recorded index type/count (main pass) ---
 		vao := rs.MeshManager.GetVAO(mesh.ID)
 		gl.BindVertexArray(vao)
-		count := rs.MeshManager.GetCount(mesh.ID)
-		//gl.DrawArrays(gl.TRIANGLES, 0, 3)
-		if mesh.ID == "line" {
-			gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
-			gl.DrawElements(gl.LINES, count, gl.UNSIGNED_INT, gl.PtrOffset(0))
-			gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
+
+		indexCount := rs.MeshManager.GetCount(mesh.ID)
+		indexType := rs.MeshManager.GetIndexType(mesh.ID)
+		vertexCount := rs.MeshManager.GetVertexCount(mesh.ID)
+
+		// Draw using recorded index type if indices exist
+		if indexCount > 0 {
+			if mesh.ID == "line" {
+				gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
+				gl.DrawElements(gl.LINES, indexCount, indexType, gl.PtrOffset(0))
+				gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
+			} else {
+				gl.DrawElements(gl.TRIANGLES, indexCount, indexType, gl.PtrOffset(0))
+			}
 		} else {
-			gl.DrawElements(gl.TRIANGLES, count, gl.UNSIGNED_INT, gl.PtrOffset(0))
+			// fallback to DrawArrays if no index buffer recorded
+			if mesh.ID == "line" {
+				gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
+				gl.DrawArrays(gl.LINES, 0, vertexCount)
+				gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
+			} else {
+				gl.DrawArrays(gl.TRIANGLES, 0, vertexCount)
+			}
 		}
 
 		gl.BindVertexArray(0)

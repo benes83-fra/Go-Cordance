@@ -70,10 +70,16 @@ func (mm *MeshManager) RegisterTriangle(id string) {
 
 	gl.BindVertexArray(0)
 
-	mm.vaos[id] = vao
+	mm.indexTypes[id] = gl.UNSIGNED_INT
+	mm.vertexCounts[id] = int32(len(vertices) / 3) // 3 floats per vertex
+	mm.counts[id] = int32(len(indices))
 	mm.vbos[id] = vbo
 	mm.ebos[id] = ebo
-	mm.counts[id] = int32(len(indices))
+	mm.vaos[id] = vao
+
+	// verify EBO size: 4 bytes per uint32 index
+	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
+
 }
 func (mm *MeshManager) RegisterLine(id string) {
 	// Two vertices: origin and unit Z
@@ -100,11 +106,16 @@ func (mm *MeshManager) RegisterLine(id string) {
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
 
 	gl.BindVertexArray(0)
-
-	mm.vaos[id] = vao
+	mm.indexTypes[id] = gl.UNSIGNED_INT
+	mm.vertexCounts[id] = int32(len(vertices) / 3) // 3 floats per vertex
+	mm.counts[id] = int32(len(indices))
 	mm.vbos[id] = vbo
 	mm.ebos[id] = ebo
-	mm.counts[id] = int32(len(indices))
+	mm.vaos[id] = vao
+
+	// verify EBO size: 4 bytes per uint32 index
+	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
+
 }
 
 func (mm *MeshManager) RegisterCube(id string) {
@@ -192,10 +203,15 @@ func (mm *MeshManager) RegisterCube(id string) {
 
 	gl.BindVertexArray(0)
 
-	mm.vaos[id] = vao
+	mm.indexTypes[id] = gl.UNSIGNED_INT
+	mm.vertexCounts[id] = int32(len(vertices) / 8)
+	mm.counts[id] = int32(len(indices))
 	mm.vbos[id] = vbo
 	mm.ebos[id] = ebo
-	mm.counts[id] = int32(len(indices))
+	mm.vaos[id] = vao
+
+	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
+
 }
 
 func (mm *MeshManager) RegisterWireCube(id string) {
@@ -289,10 +305,15 @@ func (mm *MeshManager) RegisterWireSphere(id string, slices, stacks int) {
 	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(3*4))
 	gl.BindVertexArray(0)
 
-	mm.vaos[id] = vao
+	mm.indexTypes[id] = gl.UNSIGNED_INT
+	mm.vertexCounts[id] = int32(len(vertices) / 3)
+	mm.counts[id] = int32(len(indices))
 	mm.vbos[id] = vbo
 	mm.ebos[id] = ebo
-	mm.counts[id] = int32(len(indices))
+	mm.vaos[id] = vao
+
+	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
+
 }
 
 func (mm *MeshManager) RegisterSphere(id string, slices, stacks int) {
@@ -350,10 +371,15 @@ func (mm *MeshManager) RegisterSphere(id string, slices, stacks int) {
 
 	gl.BindVertexArray(0)
 
-	mm.vaos[id] = vao
+	mm.indexTypes[id] = gl.UNSIGNED_INT
+	mm.vertexCounts[id] = int32(len(vertices) / 6)
+	mm.counts[id] = int32(len(indices))
 	mm.vbos[id] = vbo
 	mm.ebos[id] = ebo
-	mm.counts[id] = int32(len(indices))
+	mm.vaos[id] = vao
+
+	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
+
 }
 
 func (mm *MeshManager) GetVAO(id string) uint32 { return mm.vaos[id] }
@@ -435,10 +461,15 @@ func (mm *MeshManager) RegisterGizmoArrow(id string) {
 
 	gl.BindVertexArray(0)
 
-	mm.vaos[id] = vao
+	mm.indexTypes[id] = gl.UNSIGNED_INT
+	mm.vertexCounts[id] = int32(len(vertices) / 3)
+	mm.counts[id] = int32(len(indices))
 	mm.vbos[id] = vbo
 	mm.ebos[id] = ebo
-	mm.counts[id] = int32(len(indices))
+	mm.vaos[id] = vao
+
+	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
+
 }
 func (mm *MeshManager) RegisterGizmoPlane(id string) {
 	// Simple 1×1 square in XY plane, centered at origin
@@ -472,10 +503,15 @@ func (mm *MeshManager) RegisterGizmoPlane(id string) {
 
 	gl.BindVertexArray(0)
 
-	mm.vaos[id] = vao
+	mm.indexTypes[id] = gl.UNSIGNED_INT
+	mm.vertexCounts[id] = int32(len(vertices) / 3)
+	mm.counts[id] = int32(len(indices))
 	mm.vbos[id] = vbo
 	mm.ebos[id] = ebo
-	mm.counts[id] = int32(len(indices))
+	mm.vaos[id] = vao
+
+	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
+
 }
 func (mm *MeshManager) RegisterGizmoCircle(id string, segments int) {
 	var vertices []float32
@@ -507,8 +543,66 @@ func (mm *MeshManager) RegisterGizmoCircle(id string, segments int) {
 
 	gl.BindVertexArray(0)
 
-	mm.vaos[id] = vao
+	mm.indexTypes[id] = gl.UNSIGNED_INT
+	mm.vertexCounts[id] = int32(len(vertices) / 3)
+	mm.counts[id] = int32(len(indices))
 	mm.vbos[id] = vbo
 	mm.ebos[id] = ebo
-	mm.counts[id] = int32(len(indices))
+	mm.vaos[id] = vao
+
+	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
+
+}
+
+// --- helpers for index/vertex bookkeeping and EBO verification ---
+
+// SetMeshIndexInfo allows external code (glTF/OBJ importers) to register
+// the index type and vertex count for a mesh that was created elsewhere.
+func (mm *MeshManager) SetMeshIndexInfo(id string, indexType uint32, vertexCount int32) {
+	mm.indexTypes[id] = indexType
+	mm.vertexCounts[id] = vertexCount
+}
+
+// GetIndexType returns the recorded index type for a mesh (default UNSIGNED_INT).
+func (mm *MeshManager) GetIndexType(id string) uint32 {
+	if t, ok := mm.indexTypes[id]; ok {
+		return t
+	}
+	return gl.UNSIGNED_INT
+}
+
+// GetVertexCount returns the recorded vertex count for a mesh (fallbacks to index count).
+func (mm *MeshManager) GetVertexCount(id string) int32 {
+	if c, ok := mm.vertexCounts[id]; ok {
+		return c
+	}
+	// fallback: if we only have index count, return that (useful for DrawArrays fallback)
+	if c, ok := mm.counts[id]; ok {
+		return c
+	}
+	return 0
+}
+
+// verifyEBOSize logs a warning if the element buffer size doesn't match expected bytes.
+// bytesPerIndex should be 4 for uint32 indices, 2 for uint16 indices.
+func (mm *MeshManager) verifyEBOSize(ebo uint32, expectedBytes int32, meshID string) {
+	var eboSize int32
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+	gl.GetBufferParameteriv(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE, &eboSize)
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0)
+	if eboSize != expectedBytes {
+		// Use Printf/Log as appropriate in your project; keep it lightweight
+		// This warns you early if an index upload used a different element size.
+		// Do not panic here; just warn so you can inspect the importer.
+		// fmt.Printf is avoided to keep imports minimal; use log if already imported.
+		// If you prefer log.Printf, replace the next line with log.Printf.
+		println("Warning: EBO size mismatch for mesh", meshID, "got", eboSize, "expected", expectedBytes)
+	}
+}
+
+func (mm *MeshManager) GetEBOs(meshID string) uint32 {
+	if e, ok := mm.ebos[meshID]; ok {
+		return e
+	}
+	return 0
 }

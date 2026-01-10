@@ -197,6 +197,8 @@ func uploadMeshToGL(mm *MeshManager, id string, vertices []float32, indices []ui
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
 
+	// The importer builds vertices with this interleaved layout:
+	// pos(3), normal(3), uv(2), tangent(4) => 12 floats per vertex
 	stride := int32(12 * 4)
 	gl.EnableVertexAttribArray(0)
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, stride, gl.PtrOffset(0))
@@ -209,10 +211,27 @@ func uploadMeshToGL(mm *MeshManager, id string, vertices []float32, indices []ui
 
 	gl.BindVertexArray(0)
 
+	// Store GL objects and counts in MeshManager
 	mm.vaos[id] = vao
 	mm.vbos[id] = vbo
 	mm.ebos[id] = ebo
 	mm.counts[id] = int32(len(indices))
+
+	// Bookkeeping: index type and vertex count for reliable DrawElements
+	mm.indexTypes[id] = gl.UNSIGNED_INT
+	// 12 floats per vertex as above
+	mm.vertexCounts[id] = int32(len(vertices) / 12)
+
+	// Verify EBO size (warn if mismatch)
+	var eboSize int32
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+	gl.GetBufferParameteriv(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE, &eboSize)
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0)
+	expected := int32(len(indices) * 4) // uint32 indices -> 4 bytes each
+	if eboSize != expected {
+		// lightweight warning; replace with log.Printf if you prefer
+		println("Warning: EBO size mismatch for mesh", id, "got", eboSize, "expected", expected)
+	}
 }
 
 // ---------------------------
