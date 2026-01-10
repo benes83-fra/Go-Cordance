@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math"
 	"path/filepath"
 
@@ -200,15 +201,15 @@ func uploadMeshToGL(mm *MeshManager, id string, vertices []float32, indices []ui
 	// The importer builds vertices with this interleaved layout:
 	// pos(3), normal(3), uv(2), tangent(4) => 12 floats per vertex
 	stride := int32(12 * 4)
-	gl.EnableVertexAttribArray(0)
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, stride, gl.PtrOffset(0))
-	gl.EnableVertexAttribArray(1)
-	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, stride, gl.PtrOffset(3*4))
-	gl.EnableVertexAttribArray(2)
-	gl.VertexAttribPointer(2, 2, gl.FLOAT, false, stride, gl.PtrOffset(6*4))
-	gl.EnableVertexAttribArray(3)
-	gl.VertexAttribPointer(3, 4, gl.FLOAT, false, stride, gl.PtrOffset(8*4))
 
+	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, stride, 0)
+	gl.EnableVertexAttribArray(0)
+	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, stride, 3*4)
+	gl.EnableVertexAttribArray(1)
+	gl.VertexAttribPointerWithOffset(2, 2, gl.FLOAT, false, stride, 6*4)
+	gl.EnableVertexAttribArray(2)
+	gl.VertexAttribPointerWithOffset(3, 4, gl.FLOAT, false, stride, 8*4)
+	gl.EnableVertexAttribArray(3)
 	gl.BindVertexArray(0)
 
 	// Store GL objects and counts in MeshManager
@@ -232,6 +233,23 @@ func uploadMeshToGL(mm *MeshManager, id string, vertices []float32, indices []ui
 		// lightweight warning; replace with log.Printf if you prefer
 		println("Warning: EBO size mismatch for mesh", id, "got", eboSize, "expected", expected)
 	}
+	// compute vertexCount from interleaved layout (12 floats per vertex for importer)
+	vertexCount := int32(len(vertices) / 12)
+
+	// validate max index
+	var maxIdx uint32 = 0
+	for _, idx := range indices {
+		if idx > maxIdx {
+			maxIdx = idx
+		}
+	}
+	if int(maxIdx) >= int(vertexCount) {
+		log.Printf("ERROR: mesh %s has max index %d >= vertexCount %d — aborting upload", id, maxIdx, vertexCount)
+		// Option A: return an error so caller can fix the mesh
+		// return fmt.Errorf("mesh %s: max index %d >= vertexCount %d", id, maxIdx, vertexCount)
+		// Option B: clamp or convert indices (not recommended silently). For now, abort upload.
+	}
+
 }
 
 // ---------------------------

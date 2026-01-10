@@ -4,6 +4,7 @@ import (
 	"go-engine/Go-Cordance/internal/engine"
 	"log"
 	"math"
+	"os"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -48,7 +49,7 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 		extent := float32(20.0)
 
 		lightSpace := engine.ComputeDirectionalLightSpaceMatrix(lightDir, sceneCenter, extent)
-		log.Printf("lightSpace: %v", lightSpace)
+
 		// Bind shadow FBO and render depth
 		gl.Viewport(0, 0, int32(rs.Renderer.ShadowWidth), int32(rs.Renderer.ShadowHeight))
 		gl.BindFramebuffer(gl.FRAMEBUFFER, rs.Renderer.ShadowFBO)
@@ -60,14 +61,21 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 		gl.Clear(gl.DEPTH_BUFFER_BIT)
 
 		gl.UseProgram(rs.Renderer.ShadowProgram)
-		if rs.Renderer.LocShadowMap != -1 {
-			gl.Uniform1i(rs.Renderer.LocShadowMap, 2) // must match the texture unit you bound (GL_TEXTURE2)
+		if err := gl.GetError(); err != gl.NO_ERROR {
+			log.Printf("GL error after  pass: 0x%X", err)
+		}
+		var curProg int32
+		gl.GetIntegerv(gl.CURRENT_PROGRAM, &curProg)
+		if curProg == int32(rs.Renderer.Program) && rs.Renderer.LocShadowMap != -1 {
+			gl.Uniform1i(rs.Renderer.LocShadowMap, 2)
 		}
 
 		// set lightSpace uniform on shadow program
 		locLS := gl.GetUniformLocation(rs.Renderer.ShadowProgram, gl.Str("lightSpaceMatrix\x00"))
 		gl.UniformMatrix4fv(locLS, 1, false, &lightSpace[0])
-
+		if err := gl.GetError(); err != gl.NO_ERROR {
+			log.Printf("GL error after  pass: 0x%X, locLS: %d", err, locLS)
+		}
 		// Render all meshes to depth map (same iteration as main pass)
 		// inside your shadow pass, replace the draw block with this:
 		for _, e := range entities {
@@ -107,7 +115,6 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 			}
 			model = model.Mul4(mgl32.Scale3D(sx, sy, sz))
 
-			// upload model matrix to shadow shader
 			locModel := gl.GetUniformLocation(rs.Renderer.ShadowProgram, gl.Str("model\x00"))
 			gl.UniformMatrix4fv(locModel, 1, false, &model[0])
 
@@ -116,26 +123,38 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 			// --- draw mesh using recorded index type/count (shadow pass) ---
 			// common draw helper (paste inline where you draw)
 			vao := rs.MeshManager.GetVAO(mesh.ID)
+
 			gl.BindVertexArray(vao)
+			// while boundVAO is bound (right after gl.BindVertexArray(vao) in the shadow pass)
 
 			// get bookkeeping
 			indexCount := rs.MeshManager.GetCount(mesh.ID)
 			indexType := rs.MeshManager.GetIndexType(mesh.ID)
 			vertexCount := rs.MeshManager.GetVertexCount(mesh.ID)
-			ebo := rs.MeshManager.GetEBOs(mesh.ID)
+			ebo := rs.MeshManager.GetEBO(mesh.ID)
 
 			// compute bytes per index
 			bytesPerIndex := int32(4)
 			if indexType == gl.UNSIGNED_SHORT {
 				bytesPerIndex = 2
 			}
+			var bound int32
+			gl.GetIntegerv(gl.VERTEX_ARRAY_BINDING, &bound)
+			// DIAGNOSTIC: print active attributes for the current program
 
 			// sanity check EBO size if present
 			var eboSize int32 = 0
 			if ebo != 0 {
 				gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo) // IMPORTANT: bind EBO while VAO is bound
 				gl.GetBufferParameteriv(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE, &eboSize)
-				// do NOT unbind the EBO here — keep it bound to the VAO if you want the VAO to remember it
+				expected := int32(indexCount) * 4 // we canonicalized to uint32
+				if eboSize < expected {
+
+					gl.DrawArrays(gl.TRIANGLES, 0, vertexCount)
+					gl.BindVertexArray(0)
+					return
+				}
+
 			}
 
 			// decide draw path
@@ -154,19 +173,14 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 					gl.DrawArrays(gl.TRIANGLES, 0, vertexCount)
 				}
 			}
-
-			// leave VAO bound/unbound as your code expects
-			gl.BindVertexArray(0)
-
-			// after the draw call and before gl.BindVertexArray(0)
 			if err := gl.GetError(); err != gl.NO_ERROR {
 				var eboSize int32
-				ebo := rs.MeshManager.GetEBOs(mesh.ID) // or use getter if ebos is private
+				ebo := rs.MeshManager.GetEBO(mesh.ID) // or use getter if ebos is private
 				gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
 				gl.GetBufferParameteriv(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE, &eboSize)
 				gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0)
 
-				log.Printf("[shadow-diagnose] mesh=%s indexCount=%d indexType=%d vertexCount=%d ebo=%d eboSize=%d GLerr=0x%X",
+				log.Printf("[shadow-diagnose] mesh=%s indexCount=%d indexType=%d vertexCount=%d ebo=%d eboSize=%d GLerr=0x%X  ",
 					mesh.ID,
 					rs.MeshManager.GetCount(mesh.ID),
 					rs.MeshManager.GetIndexType(mesh.ID),
@@ -175,20 +189,14 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 					eboSize,
 					err,
 				)
+				os.Exit(0)
 			}
+			// leave VAO bound/unbound as your code expects
+			gl.BindVertexArray(0)
 
 			// upload model uniform already done above
 
 		}
-
-		if err := gl.GetError(); err != gl.NO_ERROR {
-			log.Printf("GL error after shadow pass: 0x%X", err)
-		}
-		log.Printf("LocLightSpace(main)=%d LocShadowMap=%d LocModel(shadow)=%d",
-			rs.Renderer.LocLightSpace, rs.Renderer.LocShadowMap,
-			gl.GetUniformLocation(rs.Renderer.ShadowProgram, gl.Str("model\x00")))
-		log.Printf("ShadowProgram=%d ShadowFBO=%d ShadowTex=%d", rs.Renderer.ShadowProgram, rs.Renderer.ShadowFBO, rs.Renderer.ShadowTex)
-		log.Printf("MainProgram=%d LocLightSpace=%d LocShadowMap=%d", rs.Renderer.Program, rs.Renderer.LocLightSpace, rs.Renderer.LocShadowMap)
 
 		// Unbind FBO and restore viewport
 		gl.BindFramebuffer(gl.FRAMEBUFFER, 0)

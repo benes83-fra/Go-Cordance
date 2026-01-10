@@ -2,6 +2,7 @@
 package engine
 
 import (
+	"log"
 	"math"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -65,8 +66,8 @@ func (mm *MeshManager) RegisterTriangle(id string) {
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
 
 	// Vertex attribute
+	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, 3*4, 0)
 	gl.EnableVertexAttribArray(0)
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
 
 	gl.BindVertexArray(0)
 
@@ -102,8 +103,8 @@ func (mm *MeshManager) RegisterLine(id string) {
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
 
+	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, 3*4, 0)
 	gl.EnableVertexAttribArray(0)
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
 
 	gl.BindVertexArray(0)
 	mm.indexTypes[id] = gl.UNSIGNED_INT
@@ -180,6 +181,18 @@ func (mm *MeshManager) RegisterCube(id string) {
 	gl.GenBuffers(1, &ebo)
 
 	gl.BindVertexArray(vao)
+	// validate indices: ensure max index < vertexCount
+	vertexCount := int32(len(vertices) / 8) // 8 floats per vertex for cube
+	var maxIdx uint32 = 0
+	for _, idx := range indices {
+		if idx > maxIdx {
+			maxIdx = idx
+		}
+	}
+	if int(maxIdx) >= int(vertexCount) {
+		log.Printf("ERROR: RegisterCube(%s) maxIndex=%d >= vertexCount=%d", id, maxIdx, vertexCount)
+		return
+	}
 
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
@@ -190,18 +203,18 @@ func (mm *MeshManager) RegisterCube(id string) {
 	stride := int32(8 * 4) // 8 floats per vertex
 
 	// position
+	// set attribute pointers using offset overloads (safe under Go 1.14+)
+	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, stride, 0)
 	gl.EnableVertexAttribArray(0)
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, stride, gl.PtrOffset(0))
-
-	// normal
+	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, stride, 3*4)
 	gl.EnableVertexAttribArray(1)
-	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, stride, gl.PtrOffset(3*4))
-
-	// uv
+	gl.VertexAttribPointerWithOffset(2, 2, gl.FLOAT, false, stride, 6*4)
 	gl.EnableVertexAttribArray(2)
-	gl.VertexAttribPointer(2, 2, gl.FLOAT, false, stride, gl.PtrOffset(6*4))
+	gl.EnableVertexAttribArray(2)
 
-	gl.BindVertexArray(0)
+	// now query the VAO state while still bound
+	// POST-REG full diagnostic - place while VAO still bound, right after setting pointers
+	// DIAG: place immediately after each VertexAttribPointerWithOffset call (while VAO still bound)
 
 	mm.indexTypes[id] = gl.UNSIGNED_INT
 	mm.vertexCounts[id] = int32(len(vertices) / 8)
@@ -246,10 +259,11 @@ func (mm *MeshManager) RegisterWireCube(id string) {
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
 
+	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, 3*4, 0)
 	gl.EnableVertexAttribArray(0)
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
+	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, 6*4, 3*4)
 	gl.EnableVertexAttribArray(1)
-	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(3*4))
+
 	gl.BindVertexArray(0)
 
 	mm.vaos[id] = vao
@@ -298,11 +312,12 @@ func (mm *MeshManager) RegisterWireSphere(id string, slices, stacks int) {
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
 
+	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, 3*4, 0)
 	gl.EnableVertexAttribArray(0)
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
 
+	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, 6*4, 3*4)
 	gl.EnableVertexAttribArray(1)
-	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(3*4))
+
 	gl.BindVertexArray(0)
 
 	mm.indexTypes[id] = gl.UNSIGNED_INT
@@ -362,12 +377,12 @@ func (mm *MeshManager) RegisterSphere(id string, slices, stacks int) {
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
 
 	// Position attribute
+	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, 6*4, 0)
 	gl.EnableVertexAttribArray(0)
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(0))
 
 	// Normal attribute
+	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, 6*4, 3*4)
 	gl.EnableVertexAttribArray(1)
-	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(3*4))
 
 	gl.BindVertexArray(0)
 
@@ -456,8 +471,8 @@ func (mm *MeshManager) RegisterGizmoArrow(id string) {
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
 
 	// position attribute only (location 0)
+	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, 3*4, 0)
 	gl.EnableVertexAttribArray(0)
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
 
 	gl.BindVertexArray(0)
 
@@ -498,8 +513,8 @@ func (mm *MeshManager) RegisterGizmoPlane(id string) {
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
 
+	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, 3*4, 0)
 	gl.EnableVertexAttribArray(0)
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
 
 	gl.BindVertexArray(0)
 
@@ -538,8 +553,8 @@ func (mm *MeshManager) RegisterGizmoCircle(id string, segments int) {
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
 
+	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, 3*4, 0)
 	gl.EnableVertexAttribArray(0)
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, gl.PtrOffset(0))
 
 	gl.BindVertexArray(0)
 
@@ -600,9 +615,13 @@ func (mm *MeshManager) verifyEBOSize(ebo uint32, expectedBytes int32, meshID str
 	}
 }
 
-func (mm *MeshManager) GetEBOs(meshID string) uint32 {
+func (mm *MeshManager) GetEBO(meshID string) uint32 {
 	if e, ok := mm.ebos[meshID]; ok {
 		return e
 	}
 	return 0
+}
+
+func (mm *MeshManager) GetVBO(meshID string) uint32 {
+	return mm.vbos[meshID]
 }

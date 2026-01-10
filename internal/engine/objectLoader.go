@@ -3,6 +3,7 @@ package engine
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -210,14 +211,16 @@ func (mm *MeshManager) RegisterOBJ(id, path string) error {
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
 
 	stride := int32(12 * 4)
+
+	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, stride, 0)
 	gl.EnableVertexAttribArray(0)
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, stride, gl.PtrOffset(0))
+	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, stride, (3 * 4))
 	gl.EnableVertexAttribArray(1)
-	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, stride, gl.PtrOffset(3*4))
+	gl.VertexAttribPointerWithOffset(2, 2, gl.FLOAT, false, stride, 6*4)
 	gl.EnableVertexAttribArray(2)
-	gl.VertexAttribPointer(2, 2, gl.FLOAT, false, stride, gl.PtrOffset(6*4))
+	gl.VertexAttribPointerWithOffset(3, 4, gl.FLOAT, false, stride, 8*4)
+
 	gl.EnableVertexAttribArray(3)
-	gl.VertexAttribPointer(3, 4, gl.FLOAT, false, stride, gl.PtrOffset(8*4))
 	gl.BindVertexArray(0)
 
 	mm.vaos[id] = vao
@@ -227,6 +230,20 @@ func (mm *MeshManager) RegisterOBJ(id, path string) error {
 	mm.indexTypes[id] = gl.UNSIGNED_INT
 	mm.vertexCounts[id] = int32(len(vertices) / 12) // OBJ code builds 12-float interleaved vertices
 	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
+	// compute vertexCount for OBJ (you build 12-float interleaved vertices)
+	vertexCount := int32(len(vertices) / 12)
+
+	// validate indices
+	var maxIdx uint32 = 0
+	for _, idx := range indices {
+		if idx > maxIdx {
+			maxIdx = idx
+		}
+	}
+	if int(maxIdx) >= int(vertexCount) {
+		log.Printf("ERROR: OBJ mesh %s has max index %d >= vertexCount %d", id, maxIdx, vertexCount)
+		return fmt.Errorf("OBJ mesh %s: max index %d >= vertexCount %d", id, maxIdx, vertexCount)
+	}
 
 	return nil
 }
