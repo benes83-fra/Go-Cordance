@@ -179,11 +179,13 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 					Scale:    bridge.Vec3(e.Scale),
 
 					Components: e.Components, // <-- NEW
+
 				}
+
 			}
 
 			fyne.DoAndWait(func() {
-				SyncEditorWorld(world, ents)
+				//SyncEditorWorld(world, ents)
 				UpdateEntities(ents)
 			})
 
@@ -191,6 +193,7 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 	}
 }
 
+/*
 // SyncEditorWorld rebuilds the editor's ECS world to match the snapshot.
 func SyncEditorWorld(world *ecs.World, ents []bridge.EntityInfo) {
 	// Clear the editor ECS
@@ -208,9 +211,11 @@ func SyncEditorWorld(world *ecs.World, ents []bridge.EntityInfo) {
 				continue
 			}
 			comp := constructor()
+			log.Printf("editor: Snapshot Components %v", comp)
 			ent.AddComponent(comp)
 		}
 
 		world.Entities = append(world.Entities, ent)
 	}
 }
+*/

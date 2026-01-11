@@ -185,7 +185,15 @@ void main() {
         // -------------------------
         // Accumulate with attenuation
         // -------------------------
-     lighting += (diffuse + specular) * attenuation * (1.0 - shadow);
+        float shadowFactor = 1.0;
+
+        // Only directional lights use the directional shadow map
+        if (lightType[i] == 0) { // 0 = directional
+            shadowFactor = 1.0 - shadow;
+        }
+
+        lighting += (diffuse + specular) * attenuation * shadowFactor;
+
 
 }
 

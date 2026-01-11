@@ -55,6 +55,7 @@ func (l *LightComponent) SetEditorField(name string, value any) {
 		l.Angle = toFloat32(value)
 	}
 	l.version++
+
 }
 
 func (l *LightComponent) Version() uint64 { return l.version }
