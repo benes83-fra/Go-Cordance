@@ -2,9 +2,9 @@ package ecs
 
 import (
 	"go-engine/Go-Cordance/internal/engine"
+	"go-engine/Go-Cordance/internal/glutil"
 	"log"
 	"math"
-	"os"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -38,6 +38,8 @@ func NewRenderSystem(r *engine.Renderer, mm *engine.MeshManager, cs *CameraSyste
 func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 	// --- SHADOW PASS ----------------------------------------------------
 	// Only run if shadow resources are initialized
+	glutil.ClearGLErrors()
+
 	if rs.Renderer != nil && rs.Renderer.ShadowFBO != 0 && rs.Renderer.ShadowProgram != 0 {
 		// Choose scene center for shadow (use camera position as a simple center)
 		sceneCenter := mgl32.Vec3{rs.CameraSystem.Position[0], rs.CameraSystem.Position[1], rs.CameraSystem.Position[2]}
@@ -60,22 +62,20 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 
 		gl.Clear(gl.DEPTH_BUFFER_BIT)
 
-		gl.UseProgram(rs.Renderer.ShadowProgram)
-		if err := gl.GetError(); err != gl.NO_ERROR {
-			log.Printf("GL error after  pass: 0x%X", err)
-		}
-		var curProg int32
-		gl.GetIntegerv(gl.CURRENT_PROGRAM, &curProg)
-		if curProg == int32(rs.Renderer.Program) && rs.Renderer.LocShadowMap != -1 {
-			gl.Uniform1i(rs.Renderer.LocShadowMap, 2)
-		}
+		glutil.RunGLChecked("ShadowPass: UseProgram+Uniforms", func() {
+			gl.UseProgram(rs.Renderer.ShadowProgram)
 
-		// set lightSpace uniform on shadow program
-		locLS := gl.GetUniformLocation(rs.Renderer.ShadowProgram, gl.Str("lightSpaceMatrix\x00"))
-		gl.UniformMatrix4fv(locLS, 1, false, &lightSpace[0])
-		if err := gl.GetError(); err != gl.NO_ERROR {
-			log.Printf("GL error after  pass: 0x%X, locLS: %d", err, locLS)
-		}
+			// Only set sampler uniforms if the main program is bound
+			var curProg int32
+			gl.GetIntegerv(gl.CURRENT_PROGRAM, &curProg)
+			if curProg == int32(rs.Renderer.Program) && rs.Renderer.LocShadowMap != -1 {
+				gl.Uniform1i(rs.Renderer.LocShadowMap, 2)
+			}
+
+			locLS := gl.GetUniformLocation(rs.Renderer.ShadowProgram, gl.Str("lightSpaceMatrix\x00"))
+			gl.UniformMatrix4fv(locLS, 1, false, &lightSpace[0])
+		})
+
 		// Render all meshes to depth map (same iteration as main pass)
 		// inside your shadow pass, replace the draw block with this:
 		for _, e := range entities {
@@ -124,7 +124,6 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 			// common draw helper (paste inline where you draw)
 			vao := rs.MeshManager.GetVAO(mesh.ID)
 
-			gl.BindVertexArray(vao)
 			// while boundVAO is bound (right after gl.BindVertexArray(vao) in the shadow pass)
 
 			// get bookkeeping
@@ -157,42 +156,29 @@ func (rs *RenderSystem) Update(_ float32, entities []*Entity) {
 
 			}
 
-			// decide draw path
-			if indexCount > 0 && ebo != 0 && eboSize >= int32(indexCount)*bytesPerIndex && vertexCount > 0 {
-				// safe to draw indexed
-				if mesh.ID == "line" {
-					gl.DrawElements(gl.LINES, indexCount, indexType, gl.PtrOffset(0))
-				} else {
-					gl.DrawElements(gl.TRIANGLES, indexCount, indexType, gl.PtrOffset(0))
-				}
-			} else {
-				// fallback to DrawArrays only if no valid index buffer recorded
-				if mesh.ID == "line" {
-					gl.DrawArrays(gl.LINES, 0, vertexCount)
-				} else {
-					gl.DrawArrays(gl.TRIANGLES, 0, vertexCount)
-				}
-			}
-			if err := gl.GetError(); err != gl.NO_ERROR {
-				var eboSize int32
-				ebo := rs.MeshManager.GetEBO(mesh.ID) // or use getter if ebos is private
-				gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
-				gl.GetBufferParameteriv(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE, &eboSize)
-				gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0)
+			glutil.RunGLChecked("ShadowPass: draw "+mesh.ID, func() {
+				gl.BindVertexArray(vao)
 
-				log.Printf("[shadow-diagnose] mesh=%s indexCount=%d indexType=%d vertexCount=%d ebo=%d eboSize=%d GLerr=0x%X  ",
-					mesh.ID,
-					rs.MeshManager.GetCount(mesh.ID),
-					rs.MeshManager.GetIndexType(mesh.ID),
-					rs.MeshManager.GetVertexCount(mesh.ID),
-					ebo,
-					eboSize,
-					err,
-				)
-				os.Exit(0)
-			}
-			// leave VAO bound/unbound as your code expects
-			gl.BindVertexArray(0)
+				if ebo != 0 {
+					gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+				}
+
+				if indexCount > 0 && ebo != 0 && eboSize >= int32(indexCount)*bytesPerIndex {
+					if mesh.ID == "line" {
+						gl.DrawElements(gl.LINES, indexCount, indexType, gl.PtrOffset(0))
+					} else {
+						gl.DrawElements(gl.TRIANGLES, indexCount, indexType, gl.PtrOffset(0))
+					}
+				} else {
+					if mesh.ID == "line" {
+						gl.DrawArrays(gl.LINES, 0, vertexCount)
+					} else {
+						gl.DrawArrays(gl.TRIANGLES, 0, vertexCount)
+					}
+				}
+
+				gl.BindVertexArray(0)
+			})
 
 			// upload model uniform already done above
 
