@@ -41,20 +41,77 @@ func (rs *RenderSystem) RenderShadowPass(entities []*Entity) {
 	if rs.Renderer.ShadowFBO == 0 || rs.Renderer.ShadowProgram == 0 {
 		return
 	}
+	// Pick a shadow-casting light (first found for now)
+	var shadowLight *LightComponent
+	var shadowTransform *Transform
+
+	for _, e := range entities {
+		lc, ok := e.GetComponent((*LightComponent)(nil)).(*LightComponent)
+		if !ok {
+			continue
+		}
+		tr, _ := e.GetComponent((*Transform)(nil)).(*Transform)
+
+		// For now: allow directional and spot to cast shadows
+		if lc.Type == LightDirectional || lc.Type == LightSpot {
+			shadowLight = lc
+			shadowTransform = tr
+			break
+		}
+	}
+
+	if shadowLight == nil || shadowTransform == nil {
+		// no suitable light → skip shadow pass
+		return
+	}
 
 	// --- Compute lightSpace ---
-	sceneCenter := mgl32.Vec3{
-		rs.CameraSystem.Position[0],
-		rs.CameraSystem.Position[1],
-		rs.CameraSystem.Position[2],
+
+	var lightSpace mgl32.Mat4
+
+	switch shadowLight.Type {
+	case LightDirectional:
+		{
+			lightDir := mgl32.Vec3{
+				rs.LightDir[0],
+				rs.LightDir[1],
+				rs.LightDir[2],
+			}
+			sceneCenter := mgl32.Vec3{
+				rs.CameraSystem.Position[0],
+				rs.CameraSystem.Position[1],
+				rs.CameraSystem.Position[2],
+			}
+			extent := float32(20.0)
+			lightSpace = engine.ComputeDirectionalLightSpaceMatrix(lightDir, sceneCenter, extent)
+		}
+	case LightSpot:
+		{
+			pos := mgl32.Vec3{
+				shadowTransform.Position[0],
+				shadowTransform.Position[1],
+				shadowTransform.Position[2],
+			}
+			q := mgl32.Quat{
+				W: shadowTransform.Rotation[0],
+				V: mgl32.Vec3{shadowTransform.Rotation[1], shadowTransform.Rotation[2], shadowTransform.Rotation[3]},
+			}
+			dir := q.Rotate(mgl32.Vec3{0, 0, -1})
+
+			fov := shadowLight.Angle * (math.Pi / 180.0) * 2 // cone full angle
+			aspect := float32(1.0)
+			near := float32(0.1)
+			far := shadowLight.Range
+
+			proj := mgl32.Perspective(fov, aspect, near, far)
+			view := mgl32.LookAtV(pos, pos.Add(dir), mgl32.Vec3{0, 1, 0})
+
+			lightSpace = proj.Mul4(view)
+		}
+	default:
+		// unsupported type for now
+		return
 	}
-	lightDir := mgl32.Vec3{
-		rs.LightDir[0],
-		rs.LightDir[1],
-		rs.LightDir[2],
-	}
-	extent := float32(20.0)
-	lightSpace := engine.ComputeDirectionalLightSpaceMatrix(lightDir, sceneCenter, extent)
 
 	// --- Bind FBO ---
 	gl.Viewport(0, 0, int32(rs.Renderer.ShadowWidth), int32(rs.Renderer.ShadowHeight))
@@ -377,10 +434,40 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		indexCount := rs.MeshManager.GetCount(mesh.ID)
 		indexType := rs.MeshManager.GetIndexType(mesh.ID)
 		vertexCount := rs.MeshManager.GetVertexCount(mesh.ID)
+		ebo := rs.MeshManager.GetEBO(mesh.ID)
+
+		// Basic sanity: VAO must be valid
+		if vao == 0 {
+			log.Printf("SKIP draw: mesh=%s has VAO=0", mesh.ID)
+			return
+		}
 
 		gl.BindVertexArray(vao)
 
 		if indexCount > 0 {
+			if ebo == 0 {
+				log.Printf("SKIP indexed draw: mesh=%s has indexCount=%d but no EBO", mesh.ID, indexCount)
+				gl.BindVertexArray(0)
+				continue
+			}
+
+			bytesPerIndex := int32(4)
+			if indexType == gl.UNSIGNED_SHORT {
+				bytesPerIndex = 2
+			}
+
+			var eboSize int32
+			gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+			gl.GetBufferParameteriv(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE, &eboSize)
+
+			required := int32(indexCount) * bytesPerIndex
+			if eboSize < required {
+				log.Printf("SKIP draw: mesh=%s indexCount=%d (%d bytes) but EBO size=%d bytes",
+					mesh.ID, indexCount, required, eboSize)
+				gl.BindVertexArray(0)
+				continue
+			}
+
 			if mesh.ID == "line" {
 				gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
 				gl.DrawElements(gl.LINES, indexCount, indexType, gl.PtrOffset(0))
