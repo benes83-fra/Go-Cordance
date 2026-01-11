@@ -50,8 +50,9 @@ type Renderer struct {
 	ShadowProgram uint32
 
 	// uniform locations
-	LocLightSpace int32
-	LocShadowMap  int32
+	LocLightSpace    int32
+	LocShadowMap     int32
+	LocShadowMapSize int32
 	// store screen size for viewport restore
 	ScreenWidth  int
 	ScreenHeight int
@@ -92,6 +93,7 @@ func (r *Renderer) InitUniforms() {
 	// main shader will sample shadow map and receive lightSpaceMatrix
 	r.LocLightSpace = gl.GetUniformLocation(r.Program, gl.Str("lightSpaceMatrix\x00"))
 	r.LocShadowMap = gl.GetUniformLocation(r.Program, gl.Str("shadowMap\x00"))
+	r.LocShadowMapSize = gl.GetUniformLocation(r.Program, gl.Str("uShadowMapSize\x00"))
 
 	//for debugging purpose
 	// renderer.InitUniforms (add these lines)

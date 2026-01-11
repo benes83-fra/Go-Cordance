@@ -29,7 +29,7 @@ uniform int lightType[MAX_LIGHTS];    // 0=dir, 1=point, 2=spot
 
 uniform sampler2D shadowMap;
 uniform mat4 lightSpaceMatrix;
-
+uniform vec2 uShadowMapSize;
 
 // diffuse texture
 uniform sampler2D diffuseTex;
@@ -38,6 +38,48 @@ uniform bool useTexture;
 // normal map (optional)
 uniform sampler2D normalMap;
 uniform bool useNormalMap;
+    // (width, height) of the shadow map
+
+
+float computeShadowPCF(vec4 lightSpacePos)
+{
+    // perspective divide
+    vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
+
+    // transform from [-1,1] to [0,1]
+    vec2 uv = projCoords.xy * 0.5 + 0.5;
+    float currentDepth = projCoords.z * 0.5 + 0.5;
+
+    // outside the light frustum -> treat as lit (no shadow)
+    if (uv.x < 0.0 || uv.x > 1.0 ||
+        uv.y < 0.0 || uv.y > 1.0 ||
+        currentDepth < 0.0 || currentDepth > 1.0) {
+        return 0.0;
+    }
+
+    // basic bias to reduce shadow acne (tweak as needed)
+    float bias = 0.0008;
+
+    // texel size in UV space
+    vec2 texelSize = 1.0 / uShadowMapSize;
+
+    // 3x3 kernel around current uv
+    float shadow = 0.0;
+    int samples = 0;
+
+    for (int y = -1; y <= 1; ++y) {
+        for (int x = -1; x <= 1; ++x) {
+            vec2 offset = vec2(x, y) * texelSize;
+            float closestDepth = texture(shadowMap, uv + offset).r;
+            shadow += currentDepth - bias > closestDepth ? 1.0 : 0.0;
+            samples++;
+        }
+    }
+
+    // average result: 0.0 = fully lit, 1.0 = fully shadowed
+    return shadow / float(samples);
+}
+
 
 void main() {
     // Reconstruct TBN
@@ -74,14 +116,15 @@ void main() {
     projCoords = projCoords * 0.5 + 0.5;
 
     // Read depth from shadow map
-    float closestDepth = texture(shadowMap, projCoords.xy).r;
+  /*  float closestDepth = texture(shadowMap, projCoords.xy).r;
 
     // Current fragment depth in light space
     float currentDepth = projCoords.z;
 
     // Shadow test (with small bias)
-    float bias = 0.005;
-    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+    float bias = 0.005;*/
+    float shadow = computeShadowPCF(lightSpacePos);
+
 
 
     for (int i = 0; i < lightCount; i++) {
@@ -159,3 +202,6 @@ void main() {
     // Compose final color; keep alpha from base
     FragColor = vec4(base.rgb * lighting, base.a);
 }
+
+
+

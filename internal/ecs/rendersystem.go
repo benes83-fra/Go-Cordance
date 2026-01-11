@@ -191,6 +191,13 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		if rs.Renderer.LocShadowMap != -1 {
 			gl.Uniform1i(rs.Renderer.LocShadowMap, 2)
 		}
+		if rs.Renderer.LocShadowMapSize != -1 {
+			gl.Uniform2f(
+				rs.Renderer.LocShadowMapSize,
+				float32(rs.Renderer.ShadowWidth),
+				float32(rs.Renderer.ShadowHeight),
+			)
+		}
 		// --- Rebuild and upload lights (from old Update) ---
 		rs.Renderer.LightColor = [3]float32{1, 1, 1}
 		rs.Renderer.LightIntensity = 1.0
@@ -225,19 +232,19 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 			if rs.LightEntity != nil && e == rs.LightEntity && lc.Type == LightDirectional {
 				dir = rs.LightDir
 			}
-			if len(lights) == 0 {
-				lights = append(lights, engine.LightData{
-					Type:      int32(lc.Type),
-					Color:     lc.Color,
-					Intensity: lc.Intensity,
-					Direction: dir,
-					Position:  pos,
-					Range:     lc.Range,
-					Angle:     lc.Angle,
-				})
-			}
+
+			lights = append(lights, engine.LightData{
+				Type:      int32(lc.Type),
+				Color:     lc.Color,
+				Intensity: lc.Intensity,
+				Direction: dir,
+				Position:  pos,
+				Range:     lc.Range,
+				Angle:     lc.Angle,
+			})
 
 		}
+		// After collecting all lights:
 
 		// Upload light count
 		gl.Uniform1i(rs.Renderer.LocLightCount, int32(len(lights)))
