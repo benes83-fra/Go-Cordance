@@ -39,17 +39,36 @@ func (rs *RenderSystem) computeShadowLightSpace(entities []*Entity) (mgl32.Mat4,
 	var shadowLight *LightComponent
 	var shadowTransform *Transform
 
+	// -----------------------------------------
+	// FIRST PASS: explicit shadow-casting light
+	// -----------------------------------------
 	for _, e := range entities {
 		lc, ok := e.GetComponent((*LightComponent)(nil)).(*LightComponent)
-		if !ok {
+		if !ok || !lc.CastsShadows {
 			continue
 		}
 		tr, _ := e.GetComponent((*Transform)(nil)).(*Transform)
+		shadowLight = lc
+		shadowTransform = tr
+		break
+	}
 
-		if lc.Type == LightDirectional || lc.Type == LightSpot {
-			shadowLight = lc
-			shadowTransform = tr
-			break
+	// -----------------------------------------
+	// FALLBACK: old behavior (first dir/spot)
+	// -----------------------------------------
+	if shadowLight == nil {
+		for _, e := range entities {
+			lc, ok := e.GetComponent((*LightComponent)(nil)).(*LightComponent)
+			if !ok {
+				continue
+			}
+			tr, _ := e.GetComponent((*Transform)(nil)).(*Transform)
+
+			if lc.Type == LightDirectional || lc.Type == LightSpot {
+				shadowLight = lc
+				shadowTransform = tr
+				break
+			}
 		}
 	}
 
@@ -57,6 +76,9 @@ func (rs *RenderSystem) computeShadowLightSpace(entities []*Entity) (mgl32.Mat4,
 		return mgl32.Ident4(), false
 	}
 
+	// -----------------------------------------
+	// Compute light-space matrix (unchanged)
+	// -----------------------------------------
 	var lightSpace mgl32.Mat4
 
 	switch shadowLight.Type {
@@ -73,6 +95,7 @@ func (rs *RenderSystem) computeShadowLightSpace(entities []*Entity) (mgl32.Mat4,
 		}
 		extent := float32(20.0)
 		lightSpace = engine.ComputeDirectionalLightSpaceMatrix(lightDir, sceneCenter, extent)
+
 	case LightSpot:
 		pos := mgl32.Vec3{
 			shadowTransform.Position[0],
@@ -81,7 +104,11 @@ func (rs *RenderSystem) computeShadowLightSpace(entities []*Entity) (mgl32.Mat4,
 		}
 		q := mgl32.Quat{
 			W: shadowTransform.Rotation[0],
-			V: mgl32.Vec3{shadowTransform.Rotation[1], shadowTransform.Rotation[2], shadowTransform.Rotation[3]},
+			V: mgl32.Vec3{
+				shadowTransform.Rotation[1],
+				shadowTransform.Rotation[2],
+				shadowTransform.Rotation[3],
+			},
 		}
 		dir := q.Rotate(mgl32.Vec3{0, 0, -1})
 
@@ -94,6 +121,7 @@ func (rs *RenderSystem) computeShadowLightSpace(entities []*Entity) (mgl32.Mat4,
 		view := mgl32.LookAtV(pos, pos.Add(dir), mgl32.Vec3{0, 1, 0})
 
 		lightSpace = proj.Mul4(view)
+
 	default:
 		return mgl32.Ident4(), false
 	}

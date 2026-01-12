@@ -431,7 +431,25 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 				container.NewHBox(widget.NewLabel("Y"), y),
 				container.NewHBox(widget.NewLabel("Z"), z),
 			))
+		case bool:
+			chk := widget.NewCheck(name, nil)
+			chk.SetChecked(v)
+			log.Printf("Checkbox init: %s = %v (entity %d)", name, v, entityID)
 
+			last := v
+			chk.OnChanged = func(v bool) {
+				log.Printf("Checkbox changed: %s = %v (entity %d)", name, v, entityID)
+
+				if v == last {
+					return
+				}
+				last = v
+				c.SetEditorField(name, v)
+				sendComponentUpdate(entityID, c)
+
+			}
+
+			box.Add(chk)
 		case string:
 			e := widget.NewEntry()
 			e.SetText(v)
@@ -490,8 +508,7 @@ func sendComponentUpdate(entityID int64, c ecs.EditorInspectable) {
 	if editorlink.EditorConn == nil {
 		return
 	}
-	log.Printf("Adding Component %d: %s", entityID, c.EditorName())
-
+	log.Printf("Component: %d  with Name: %s set to: %v", entityID, c.EditorName(), c.EditorFields())
 	msg := editorlink.MsgSetComponent{
 		EntityID: uint64(entityID),
 		Name:     c.EditorName(),

@@ -41,32 +41,25 @@ uniform bool useNormalMap;
     // (width, height) of the shadow map
 
 
-float computeShadowPCF(vec4 lightSpacePos)
+float computeShadowPCF(vec4 lightSpacePos, vec3 normal, vec3 lightDirWS)
 {
-    // perspective divide
     vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
-
-    // transform from [-1,1] to [0,1]
     vec2 uv = projCoords.xy * 0.5 + 0.5;
     float currentDepth = projCoords.z * 0.5 + 0.5;
 
-    // outside the light frustum -> treat as lit (no shadow)
     if (uv.x < 0.0 || uv.x > 1.0 ||
         uv.y < 0.0 || uv.y > 1.0 ||
         currentDepth < 0.0 || currentDepth > 1.0) {
         return 0.0;
     }
 
-    // basic bias to reduce shadow acne (tweak as needed)
-    float bias = 0.0008;
+    float ndotl = max(dot(normalize(normal), normalize(lightDirWS)), 0.0);
+    float bias = mix(0.002, 0.0002, ndotl); // more bias at grazing angles
 
-    // texel size in UV space
     vec2 texelSize = 1.0 / uShadowMapSize;
 
-    // 3x3 kernel around current uv
     float shadow = 0.0;
     int samples = 0;
-
     for (int y = -1; y <= 1; ++y) {
         for (int x = -1; x <= 1; ++x) {
             vec2 offset = vec2(x, y) * texelSize;
@@ -76,9 +69,9 @@ float computeShadowPCF(vec4 lightSpacePos)
         }
     }
 
-    // average result: 0.0 = fully lit, 1.0 = fully shadowed
     return shadow / float(samples);
 }
+
 
 
 void main() {
@@ -123,7 +116,7 @@ void main() {
 
     // Shadow test (with small bias)
     float bias = 0.005;*/
-    float shadow = computeShadowPCF(lightSpacePos);
+   
 
 
 
@@ -131,6 +124,7 @@ void main() {
 
         vec3 L;
         float attenuation = 1.0;
+        float shadow = computeShadowPCF(lightSpacePos, finalNormal,-lightDir[i]);
 
         if (lightType[i] == 0) {
             // -------------------------

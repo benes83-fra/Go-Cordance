@@ -9,21 +9,23 @@ const (
 )
 
 type LightComponent struct {
-	Type      LightType
-	Color     [3]float32
-	Intensity float32
-	Range     float32 // for point/spot
-	Angle     float32 // for spot
-	version   uint64
+	Type         LightType
+	Color        [3]float32
+	Intensity    float32
+	Range        float32 // for point/spot
+	Angle        float32 // for spot
+	version      uint64
+	CastsShadows bool
 }
 
 func NewLightComponent() *LightComponent {
 	return &LightComponent{
-		Type:      LightDirectional,
-		Color:     [3]float32{1, 1, 1},
-		Intensity: 1.0,
-		Range:     10.0,
-		Angle:     30.0,
+		Type:         LightDirectional,
+		Color:        [3]float32{1, 1, 1},
+		Intensity:    1.0,
+		Range:        10.0,
+		Angle:        30.0,
+		CastsShadows: false,
 	}
 }
 
@@ -33,11 +35,12 @@ func (l *LightComponent) EditorName() string { return "Light" }
 
 func (l *LightComponent) EditorFields() map[string]any {
 	return map[string]any{
-		"Type":      int(l.Type),
-		"Color":     [3]float32{l.Color[0], l.Color[1], l.Color[2]},
-		"Intensity": l.Intensity,
-		"Range":     l.Range,
-		"Angle":     l.Angle,
+		"Type":         int(l.Type),
+		"Color":        [3]float32{l.Color[0], l.Color[1], l.Color[2]},
+		"Intensity":    l.Intensity,
+		"Range":        l.Range,
+		"Angle":        l.Angle,
+		"CastsShadows": l.CastsShadows,
 	}
 }
 
@@ -53,6 +56,8 @@ func (l *LightComponent) SetEditorField(name string, value any) {
 		l.Range = toFloat32(value)
 	case "Angle":
 		l.Angle = toFloat32(value)
+	case "CastsShadows":
+		l.CastsShadows = value.(bool)
 	}
 	l.version++
 
