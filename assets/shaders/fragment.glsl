@@ -182,8 +182,9 @@ void main() {
         float shadowFactor = 1.0;
 
         // Only directional lights use the directional shadow map
-        if (lightType[i] == 0) { // 0 = directional
-            shadowFactor = 1.0 - shadow;
+       if (lightType[i] == 0 || lightType[i] == 2) { 
+        // directional OR spot 
+        shadowFactor = 1.0 - shadow; 
         }
 
         lighting += (diffuse + specular) * attenuation * shadowFactor;
