@@ -131,6 +131,10 @@ func handleConn(conn net.Conn, sc *scene.Scene) {
 				continue
 			}
 			applyRemoveComponent(sc, m)
+		case "SetEditorFlag":
+			var m MsgSetEditorFlag
+			json.Unmarshal(msg.Data, &m)
+			gizmo.SetGlobalShowLightGizmos(m.ShowLightGizmos)
 
 		default:
 			log.Printf("editorlink: unknown msg type %q", msg.Type)

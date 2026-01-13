@@ -12,6 +12,7 @@ import (
 
 	"sync"
 
+	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -56,6 +57,19 @@ func NewGizmoRenderSystem(r *engine.DebugRenderer, mm *engine.MeshManager, cs *e
 }
 
 func (gs *GizmoRenderSystem) SetCameraSystem(cs *ecs.CameraSystem) { gs.CameraSystem = cs }
+
+func (gs *GizmoRenderSystem) SetShowLightGizmos(v bool) {
+	gs.ShowLightGizmos = v
+}
+
+func SetGlobalShowLightGizmos(v bool) {
+	globalGizmoMu.Lock()
+	defer globalGizmoMu.Unlock()
+
+	if globalGizmo != nil {
+		globalGizmo.SetShowLightGizmos(v)
+	}
+}
 
 func (gs *GizmoRenderSystem) Update(_ float32, _ []*ecs.Entity, selected *ecs.Entity) {
 	if !gs.Enabled || gs.CameraSystem == nil || selected == nil {
@@ -173,8 +187,8 @@ func (gs *GizmoRenderSystem) Update(_ float32, _ []*ecs.Entity, selected *ecs.En
 	}
 
 	// --- LIGHT GIZMOS (optional) ---
-	if state.Global.ShowLightGizmos {
-		gs.renderSpotlightGizmos()
+	if gs.ShowLightGizmos {
+		gs.renderSpotlightGizmos(view, proj)
 	}
 }
 
@@ -300,8 +314,9 @@ func SetGlobalSelectionIDs(ids []int64) {
 	}
 }
 
-func (gs *GizmoRenderSystem) renderSpotlightGizmos() {
+func (gs *GizmoRenderSystem) renderSpotlightGizmos(view, proj mgl32.Mat4) {
 	if gs.World == nil || gs.CameraSystem == nil {
+		log.Printf("Nothing to be seen here")
 		return
 	}
 
@@ -316,11 +331,11 @@ func (gs *GizmoRenderSystem) renderSpotlightGizmos() {
 			continue
 		}
 
-		gs.drawSpotlightCone(tr, lc)
+		gs.drawSpotlightCone(tr, lc, view, proj)
 	}
 }
 
-func (gs *GizmoRenderSystem) drawSpotlightCone(tr *ecs.Transform, lc *ecs.LightComponent) {
+func (gs *GizmoRenderSystem) drawSpotlightCone(tr *ecs.Transform, lc *ecs.LightComponent, view, proj mgl32.Mat4) {
 	// Position and direction
 	pos := mgl32.Vec3{tr.Position[0], tr.Position[1], tr.Position[2]}
 	q := mgl32.Quat{
@@ -328,7 +343,7 @@ func (gs *GizmoRenderSystem) drawSpotlightCone(tr *ecs.Transform, lc *ecs.LightC
 		V: mgl32.Vec3{tr.Rotation[1], tr.Rotation[2], tr.Rotation[3]},
 	}
 	dir := q.Rotate(mgl32.Vec3{0, 0, -1}) // assuming -Z is forward
-
+	log.Printf("Drawing a line")
 	// Spotlight parameters
 	angleRad := lc.Angle * (math.Pi / 180.0)
 	length := lc.Range
@@ -364,11 +379,14 @@ func (gs *GizmoRenderSystem) drawSpotlightCone(tr *ecs.Transform, lc *ecs.LightC
 			// lines from origin to rim
 		view := gs.CameraSystem.View
 		proj := gs.CameraSystem.Projection
-
+		gl.Disable(gl.DEPTH_TEST)
 		gs.Renderer.DrawLine(pos, circlePoint, color, view, proj)
-
+		gl.Enable(gl.DEPTH_TEST)
 		if i > 0 {
+			gl.Disable(gl.DEPTH_TEST)
 			gs.Renderer.DrawLine(prev, circlePoint, color, view, proj)
+			gl.Enable(gl.DEPTH_TEST)
+
 		}
 
 		prev = circlePoint

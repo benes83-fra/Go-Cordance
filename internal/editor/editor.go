@@ -31,7 +31,7 @@ func Run(world *ecs.World) {
 	// state
 	st := state.Global
 	st.Foldout = map[string]bool{"Position": true, "Rotation": true, "Scale": true}
-	st.ShowLightGizmos = false
+	st.ShowLightGizmos = true
 	var hierarchyWidget *widget.List
 	// Create inspector first so we have the rebuild function available.
 	inspectorContainer, inspectorRebuild := ui.NewInspectorPanel()
@@ -55,7 +55,10 @@ func Run(world *ecs.World) {
 	// toolbar / settings row
 	showGizmosCheck := widget.NewCheck("Show Light Gizmos", func(v bool) {
 		st.ShowLightGizmos = v
+		log.Printf("ShowLightGizmos set to %v", v)
+		editorlink.WriteSetEditorFlag(editorlink.EditorConn, editorlink.MsgSetEditorFlag{ShowLightGizmos: v})
 	})
+
 	showGizmosCheck.SetChecked(st.ShowLightGizmos)
 
 	viewportColumn := container.NewVBox(

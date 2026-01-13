@@ -69,6 +69,10 @@ type MsgRemoveComponent struct {
 	Name     string
 }
 
+type MsgSetEditorFlag struct {
+	ShowLightGizmos bool
+}
+
 func readMsg(conn net.Conn) (Msg, error) {
 	var m Msg
 	r := bufio.NewReader(conn)
@@ -152,4 +156,8 @@ func WriteSetComponent(conn net.Conn, msg MsgSetComponent) error {
 
 func WriteRemoveComponent(conn net.Conn, msg MsgRemoveComponent) error {
 	return writeMsg(conn, "RemoveComponent", msg)
+}
+
+func WriteSetEditorFlag(conn net.Conn, msg MsgSetEditorFlag) error {
+	return writeMsg(conn, "SetEditorFlag", msg)
 }
