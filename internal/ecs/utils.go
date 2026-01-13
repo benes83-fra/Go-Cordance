@@ -97,6 +97,10 @@ func toInt(v any) int {
 		return int(n)
 	case uint64:
 		return int(n)
+	case float32:
+		return int(n)
+	case float64:
+		return int(n)
 	case string:
 		i, _ := strconv.ParseInt(n, 0, 0)
 		return int(i)

@@ -12,7 +12,6 @@ import (
 
 	"sync"
 
-	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -322,7 +321,13 @@ func (gs *GizmoRenderSystem) renderSpotlightGizmos(view, proj mgl32.Mat4) {
 
 	for _, e := range gs.World.Entities {
 		lc, ok := e.GetComponent((*ecs.LightComponent)(nil)).(*ecs.LightComponent)
-		if !ok || lc.Type != ecs.LightSpot {
+		if !ok {
+			continue
+		}
+
+		log.Printf("light entity %d: Type=%v (expect=%v)", e.ID, lc.Type, ecs.LightSpot)
+
+		if lc.Type != ecs.LightSpot {
 			continue
 		}
 
@@ -331,8 +336,10 @@ func (gs *GizmoRenderSystem) renderSpotlightGizmos(view, proj mgl32.Mat4) {
 			continue
 		}
 
+		log.Printf("calling drawSpotlightCone for entity %d", e.ID)
 		gs.drawSpotlightCone(tr, lc, view, proj)
 	}
+
 }
 
 func (gs *GizmoRenderSystem) drawSpotlightCone(tr *ecs.Transform, lc *ecs.LightComponent, view, proj mgl32.Mat4) {
@@ -379,13 +386,13 @@ func (gs *GizmoRenderSystem) drawSpotlightCone(tr *ecs.Transform, lc *ecs.LightC
 			// lines from origin to rim
 		view := gs.CameraSystem.View
 		proj := gs.CameraSystem.Projection
-		gl.Disable(gl.DEPTH_TEST)
+		//	gl.Disable(gl.DEPTH_TEST)
 		gs.Renderer.DrawLine(pos, circlePoint, color, view, proj)
-		gl.Enable(gl.DEPTH_TEST)
+		//	gl.Enable(gl.DEPTH_TEST)
 		if i > 0 {
-			gl.Disable(gl.DEPTH_TEST)
+			//	gl.Disable(gl.DEPTH_TEST)
 			gs.Renderer.DrawLine(prev, circlePoint, color, view, proj)
-			gl.Enable(gl.DEPTH_TEST)
+			//	gl.Enable(gl.DEPTH_TEST)
 
 		}
 
