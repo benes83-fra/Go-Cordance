@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 type Renderer struct {
@@ -183,17 +184,61 @@ type DebugRenderer struct {
 	LocView  int32
 	LocProj  int32
 	LocColor int32
+
+	lineVAO uint32
+	lineVBO uint32
 }
 
 func NewDebugRenderer(vertexSrc, fragmentSrc string) *DebugRenderer {
-	prog := compileProgram(vertexSrc, fragmentSrc) // reuse your shader compile helper
-	return &DebugRenderer{
+	prog := compileProgram(vertexSrc, fragmentSrc)
+
+	dr := &DebugRenderer{
 		Program:  prog,
 		LocModel: gl.GetUniformLocation(prog, gl.Str("model\x00")),
 		LocView:  gl.GetUniformLocation(prog, gl.Str("view\x00")),
 		LocProj:  gl.GetUniformLocation(prog, gl.Str("projection\x00")),
 		LocColor: gl.GetUniformLocation(prog, gl.Str("debugColor\x00")),
 	}
+
+	// Create VAO/VBO for a single line segment
+	gl.GenVertexArrays(1, &dr.lineVAO)
+	gl.GenBuffers(1, &dr.lineVBO)
+
+	gl.BindVertexArray(dr.lineVAO)
+	gl.BindBuffer(gl.ARRAY_BUFFER, dr.lineVBO)
+
+	// allocate space for 2 vec3 positions (start + end)
+	gl.BufferData(gl.ARRAY_BUFFER, 6*4, nil, gl.DYNAMIC_DRAW)
+
+	gl.EnableVertexAttribArray(0)
+	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, 3*4, 0)
+
+	gl.BindVertexArray(0)
+
+	return dr
+}
+func (dr *DebugRenderer) DrawLine(start, end mgl32.Vec3, color mgl32.Vec3, view, proj mgl32.Mat4) {
+	gl.UseProgram(dr.Program)
+
+	// Upload uniforms
+	model := mgl32.Ident4()
+	gl.UniformMatrix4fv(dr.LocView, 1, false, &view[0])
+	gl.UniformMatrix4fv(dr.LocProj, 1, false, &proj[0])
+	gl.UniformMatrix4fv(dr.LocModel, 1, false, &model[0])
+	gl.Uniform3fv(dr.LocColor, 1, &color[0])
+
+	// Upload line vertices
+	verts := []float32{
+		start.X(), start.Y(), start.Z(),
+		end.X(), end.Y(), end.Z(),
+	}
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, dr.lineVBO)
+	gl.BufferSubData(gl.ARRAY_BUFFER, 0, len(verts)*4, gl.Ptr(verts))
+
+	gl.BindVertexArray(dr.lineVAO)
+	gl.DrawArrays(gl.LINES, 0, 2)
+	gl.BindVertexArray(0)
 }
 
 // Create depth-only FBO + texture and compile shadow shader program.

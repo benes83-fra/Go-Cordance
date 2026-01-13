@@ -5,13 +5,14 @@ import (
 )
 
 type EditorState struct {
-	Entities      []bridge.EntityInfo
-	SelectedID    int64
-	SelectedIndex int
-	Foldout       map[string]bool
-	RefreshUI     func() // <-- add this
-	Selection     Selection
-	SplitOffset   float64
+	Entities        []bridge.EntityInfo
+	SelectedID      int64
+	SelectedIndex   int
+	Foldout         map[string]bool
+	RefreshUI       func() // <-- add this
+	Selection       Selection
+	SplitOffset     float64
+	ShowLightGizmos bool
 }
 
 func NewEditorState() *EditorState {

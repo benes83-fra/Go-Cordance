@@ -6,6 +6,7 @@ import (
 	"go-engine/Go-Cordance/internal/editor/undo"
 	"go-engine/Go-Cordance/internal/engine"
 	"log"
+	"math"
 
 	"go-engine/Go-Cordance/internal/ecs"
 
@@ -39,6 +40,7 @@ type GizmoRenderSystem struct {
 	dragStartRayOrigin mgl32.Vec3
 	dragStartRayDir    mgl32.Vec3
 	dragStartEntityPos mgl32.Vec3
+	ShowLightGizmos    bool
 }
 
 func NewGizmoRenderSystem(r *engine.DebugRenderer, mm *engine.MeshManager, cs *ecs.CameraSystem) *GizmoRenderSystem {
@@ -153,6 +155,7 @@ func (gs *GizmoRenderSystem) Update(_ float32, _ []*ecs.Entity, selected *ecs.En
 	}
 
 	// --- RENDER ---
+	// --- RENDER ---
 	view := gs.CameraSystem.View
 	proj := gs.CameraSystem.Projection
 
@@ -169,6 +172,10 @@ func (gs *GizmoRenderSystem) Update(_ float32, _ []*ecs.Entity, selected *ecs.En
 		gs.renderScaleHandles(gizmoOrigin, gizmoScale, view, proj)
 	}
 
+	// --- LIGHT GIZMOS (optional) ---
+	if state.Global.ShowLightGizmos {
+		gs.renderSpotlightGizmos()
+	}
 }
 
 // ...
@@ -290,5 +297,80 @@ func SetGlobalSelectionIDs(ids []int64) {
 	log.Printf("gizmo: SetGlobalSelectionIDs called with IDs = %v", ids)
 	if globalGizmo != nil {
 		globalGizmo.SetSelectionIDs(ids)
+	}
+}
+
+func (gs *GizmoRenderSystem) renderSpotlightGizmos() {
+	if gs.World == nil || gs.CameraSystem == nil {
+		return
+	}
+
+	for _, e := range gs.World.Entities {
+		lc, ok := e.GetComponent((*ecs.LightComponent)(nil)).(*ecs.LightComponent)
+		if !ok || lc.Type != ecs.LightSpot {
+			continue
+		}
+
+		tr, _ := e.GetComponent((*ecs.Transform)(nil)).(*ecs.Transform)
+		if tr == nil {
+			continue
+		}
+
+		gs.drawSpotlightCone(tr, lc)
+	}
+}
+
+func (gs *GizmoRenderSystem) drawSpotlightCone(tr *ecs.Transform, lc *ecs.LightComponent) {
+	// Position and direction
+	pos := mgl32.Vec3{tr.Position[0], tr.Position[1], tr.Position[2]}
+	q := mgl32.Quat{
+		W: tr.Rotation[0],
+		V: mgl32.Vec3{tr.Rotation[1], tr.Rotation[2], tr.Rotation[3]},
+	}
+	dir := q.Rotate(mgl32.Vec3{0, 0, -1}) // assuming -Z is forward
+
+	// Spotlight parameters
+	angleRad := lc.Angle * (math.Pi / 180.0)
+	length := lc.Range
+	if length <= 0 {
+		return
+	}
+
+	// Radius of the cone at the end
+	radius := float32(math.Tan(float64(angleRad))) * length
+
+	// Center of the cone end
+	end := pos.Add(dir.Mul(length))
+
+	// Choose a color (e.g. yellow)
+	color := mgl32.Vec3{1, 1, 0}
+
+	const segments = 16
+	// Build an orthonormal basis for the circle plane
+	up := mgl32.Vec3{0, 1, 0}
+	if math.Abs(float64(dir.Dot(up))) > 0.99 {
+		up = mgl32.Vec3{1, 0, 0}
+	}
+	right := dir.Cross(up).Normalize()
+	up = right.Cross(dir).Normalize()
+
+	var prev mgl32.Vec3
+	for i := 0; i <= segments; i++ {
+		a := float32(i) * 2 * math.Pi / segments
+		circlePoint := end.
+			Add(right.Mul(radius * float32(math.Cos(float64(a))))).
+			Add(up.Mul(radius * float32(math.Sin(float64(a)))))
+
+			// lines from origin to rim
+		view := gs.CameraSystem.View
+		proj := gs.CameraSystem.Projection
+
+		gs.Renderer.DrawLine(pos, circlePoint, color, view, proj)
+
+		if i > 0 {
+			gs.Renderer.DrawLine(prev, circlePoint, color, view, proj)
+		}
+
+		prev = circlePoint
 	}
 }

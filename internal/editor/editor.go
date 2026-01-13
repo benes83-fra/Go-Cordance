@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -30,6 +31,7 @@ func Run(world *ecs.World) {
 	// state
 	st := state.Global
 	st.Foldout = map[string]bool{"Position": true, "Rotation": true, "Scale": true}
+	st.ShowLightGizmos = false
 	var hierarchyWidget *widget.List
 	// Create inspector first so we have the rebuild function available.
 	inspectorContainer, inspectorRebuild := ui.NewInspectorPanel()
@@ -50,8 +52,19 @@ func Run(world *ecs.World) {
 	// viewport placeholder
 	viewport := widget.NewLabel("Viewport Placeholder")
 
+	// toolbar / settings row
+	showGizmosCheck := widget.NewCheck("Show Light Gizmos", func(v bool) {
+		st.ShowLightGizmos = v
+	})
+	showGizmosCheck.SetChecked(st.ShowLightGizmos)
+
+	viewportColumn := container.NewVBox(
+		container.NewHBox(showGizmosCheck, layout.NewSpacer()),
+		viewport,
+	)
+
 	left := container.NewMax(hierarchyWidget)
-	center := container.NewVBox(viewport)
+	center := container.NewVBox(viewportColumn)
 	right := container.NewVBox(inspectorContainer)
 
 	split := container.NewHSplit(container.NewVSplit(left, center), right)
