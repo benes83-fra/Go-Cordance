@@ -3,6 +3,7 @@
 
 in vec3 FragPos;
 in vec3 Normal;
+in vec4 LightSpacePos;
 in vec3 Tangent;
 in float TangentW;
 in vec2 TexCoord;
@@ -30,6 +31,7 @@ uniform int lightType[MAX_LIGHTS];    // 0=dir, 1=point, 2=spot
 uniform sampler2D shadowMap;
 uniform mat4 lightSpaceMatrix;
 uniform vec2 uShadowMapSize;
+uniform int shadowLightIndex;
 
 // diffuse texture
 uniform sampler2D diffuseTex;
@@ -124,8 +126,10 @@ void main() {
 
         vec3 L;
         float attenuation = 1.0;
-        float shadow = computeShadowPCF(lightSpacePos, finalNormal,-lightDir[i]);
-
+        float shadow = 1.0;
+        if (shadowLightIndex >= 0 && i == shadowLightIndex && (lightType[i] == 0 || lightType[i] == 2)) { 
+            shadow = computeShadowPCF(lightSpacePos, finalNormal, -lightDir[i]);
+        }
         if (lightType[i] == 0) {
             // -------------------------
             // Directional Light
@@ -182,9 +186,9 @@ void main() {
         float shadowFactor = 1.0;
 
         // Only directional lights use the directional shadow map
-       if (lightType[i] == 0 || lightType[i] == 2) { 
+        if (i == shadowLightIndex && (lightType[i] == 0 || lightType[i] == 2)) {
         // directional OR spot 
-        shadowFactor = 1.0 - shadow; 
+            shadowFactor = 1.0 - shadow; 
         }
 
         lighting += (diffuse + specular) * attenuation * shadowFactor;

@@ -35,13 +35,12 @@ func NewRenderSystem(r *engine.Renderer, mm *engine.MeshManager, cs *CameraSyste
 	}
 }
 
-func (rs *RenderSystem) computeShadowLightSpace(entities []*Entity) (mgl32.Mat4, bool) {
+func (rs *RenderSystem) computeShadowLightSpace(entities []*Entity) (mgl32.Mat4, int, bool) {
 	var shadowLight *LightComponent
 	var shadowTransform *Transform
+	shadowIndex := -1
 
-	// -----------------------------------------
 	// FIRST PASS: explicit shadow-casting light
-	// -----------------------------------------
 	for _, e := range entities {
 		lc, ok := e.GetComponent((*LightComponent)(nil)).(*LightComponent)
 		if !ok || !lc.CastsShadows {
@@ -53,9 +52,7 @@ func (rs *RenderSystem) computeShadowLightSpace(entities []*Entity) (mgl32.Mat4,
 		break
 	}
 
-	// -----------------------------------------
-	// FALLBACK: old behavior (first dir/spot)
-	// -----------------------------------------
+	// FALLBACK: first dir/spot
 	if shadowLight == nil {
 		for _, e := range entities {
 			lc, ok := e.GetComponent((*LightComponent)(nil)).(*LightComponent)
@@ -73,12 +70,10 @@ func (rs *RenderSystem) computeShadowLightSpace(entities []*Entity) (mgl32.Mat4,
 	}
 
 	if shadowLight == nil || shadowTransform == nil {
-		return mgl32.Ident4(), false
+		return mgl32.Ident4(), -1, false
 	}
 
-	// -----------------------------------------
 	// Compute light-space matrix (unchanged)
-	// -----------------------------------------
 	var lightSpace mgl32.Mat4
 
 	switch shadowLight.Type {
@@ -123,10 +118,29 @@ func (rs *RenderSystem) computeShadowLightSpace(entities []*Entity) (mgl32.Mat4,
 		lightSpace = proj.Mul4(view)
 
 	default:
-		return mgl32.Ident4(), false
+		return mgl32.Ident4(), -1, false
 	}
 
-	return lightSpace, true
+	// Find index of this light in the uploaded array
+	// (we recompute the same order as in RenderMainPass)
+	idx := 0
+	for _, e := range entities {
+		lc, ok := e.GetComponent((*LightComponent)(nil)).(*LightComponent)
+		if !ok {
+			continue
+		}
+		if lc == shadowLight {
+			shadowIndex = idx
+			break
+		}
+		idx++
+	}
+
+	if shadowIndex == -1 {
+		return mgl32.Ident4(), -1, false
+	}
+	log.Printf("ShadowIndex %d", shadowIndex)
+	return lightSpace, shadowIndex, true
 }
 
 func (rs *RenderSystem) RenderShadowPass(entities []*Entity) {
@@ -136,7 +150,7 @@ func (rs *RenderSystem) RenderShadowPass(entities []*Entity) {
 		return
 	}
 	// Pick a shadow-casting light (first found for now)
-	lightSpace, ok := rs.computeShadowLightSpace(entities)
+	lightSpace, _, ok := rs.computeShadowLightSpace(entities)
 	if !ok {
 		return
 	}
@@ -336,6 +350,7 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 
 		// Upload each light
 		for i, L := range lights {
+			log.Printf("Light[%d] type=%d pos=%v", i, L.Type, L.Position)
 			gl.Uniform3f(rs.Renderer.LocLightColor[i], L.Color[0], L.Color[1], L.Color[2])
 			gl.Uniform1f(rs.Renderer.LocLightIntensity[i], L.Intensity)
 			gl.Uniform3f(rs.Renderer.LocLightDir[i], L.Direction[0], L.Direction[1], L.Direction[2])
@@ -351,10 +366,16 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		gl.Uniform3fv(rs.Renderer.LocViewPos, 1, &camPos[0])
 
 		// Upload lightSpace
-		if rs.Renderer.LocLightSpace != -1 {
-			lightSpace, ok := rs.computeShadowLightSpace(entities)
+		if rs.Renderer.LocLightSpace != -1 || rs.Renderer.LocShadowLightIndex != -1 {
+			lightSpace, shadowIndex, ok := rs.computeShadowLightSpace(entities)
 			if ok {
-				gl.UniformMatrix4fv(rs.Renderer.LocLightSpace, 1, false, &lightSpace[0])
+				log.Printf("Shadow light index = %d", shadowIndex)
+				if rs.Renderer.LocLightSpace != -1 {
+					gl.UniformMatrix4fv(rs.Renderer.LocLightSpace, 1, false, &lightSpace[0])
+				}
+				if rs.Renderer.LocShadowLightIndex != -1 {
+					gl.Uniform1i(rs.Renderer.LocShadowLightIndex, int32(shadowIndex))
+				}
 			}
 		}
 

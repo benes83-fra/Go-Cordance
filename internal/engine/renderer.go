@@ -3,6 +3,7 @@ package engine
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
@@ -51,9 +52,10 @@ type Renderer struct {
 	ShadowProgram uint32
 
 	// uniform locations
-	LocLightSpace    int32
-	LocShadowMap     int32
-	LocShadowMapSize int32
+	LocLightSpace       int32
+	LocShadowMap        int32
+	LocShadowMapSize    int32
+	LocShadowLightIndex int32
 	// store screen size for viewport restore
 	ScreenWidth  int
 	ScreenHeight int
@@ -102,6 +104,7 @@ func (r *Renderer) InitUniforms() {
 	r.LocUseNormalMap = gl.GetUniformLocation(r.Program, gl.Str("useNormalMap\x00"))
 	r.LocFlipNormalG = gl.GetUniformLocation(r.Program, gl.Str("flipNormalGreen\x00"))
 	r.LocShowMode = gl.GetUniformLocation(r.Program, gl.Str("showMode\x00"))
+	r.LocShadowLightIndex = gl.GetUniformLocation(r.Program, gl.Str("shadowLightIndex\x00"))
 
 	names := map[string]int32{
 		"model": r.LocModel, "view": r.LocView, "projection": r.LocProj,
@@ -110,6 +113,7 @@ func (r *Renderer) InitUniforms() {
 		"matSpecular": r.LocSpecular, "matShininess": r.LocShininess,
 		"diffuseTex": r.LocDiffuseTex, "useTexture": r.LocUseTexture,
 	}
+	log.Println("LocLightSpace =", r.LocLightSpace, "LocShadowLightIndex =", r.LocShadowLightIndex)
 
 	for n, loc := range names {
 		if loc == -1 {
@@ -275,7 +279,7 @@ func (r *Renderer) InitShadow(shadowVertSrc, shadowFragSrc string, width, height
 	r.ShadowProgram = compileProgram(shadowVertSrc, shadowFragSrc)
 
 	// get uniform locations for shadow shader and main shader usage
-	r.LocLightSpace = gl.GetUniformLocation(r.ShadowProgram, gl.Str("lightSpaceMatrix\x00"))
+
 	// For main shader, we will set LocShadowMap on the main program (use InitUniforms or set later)
 	// But store a location name for convenience (we'll get it from main program in InitUniforms)
 }
