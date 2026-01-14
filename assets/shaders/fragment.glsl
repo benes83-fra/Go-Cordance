@@ -194,7 +194,7 @@ void main() {
         lighting += (diffuse + specular) * attenuation * shadowFactor;
 
 
-}
+    }
 
 
 
