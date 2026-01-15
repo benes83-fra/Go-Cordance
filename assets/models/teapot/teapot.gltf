@@ -31,9 +31,10 @@
 				{
 					"attributes":{
 						"POSITION":0,
-						"NORMAL":1
+						"NORMAL":1,
+						"TEXCOORD_0":2
 					},
-					"indices":2
+					"indices":3
 				}
 			]
 		}
@@ -42,7 +43,7 @@
 		{
 			"bufferView":0,
 			"componentType":5126,
-			"count":14071,
+			"count":18929,
 			"max":[
 				3.881129026412964,
 				3.560149908065796,
@@ -58,11 +59,17 @@
 		{
 			"bufferView":1,
 			"componentType":5126,
-			"count":14071,
+			"count":18929,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":2,
+			"componentType":5126,
+			"count":18929,
+			"type":"VEC2"
+		},
+		{
+			"bufferView":3,
 			"componentType":5123,
 			"count":18960,
 			"type":"SCALAR"
@@ -71,26 +78,32 @@
 	"bufferViews":[
 		{
 			"buffer":0,
-			"byteLength":168852,
+			"byteLength":227148,
 			"byteOffset":0,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":168852,
-			"byteOffset":168852,
+			"byteLength":227148,
+			"byteOffset":227148,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":151432,
+			"byteOffset":454296,
 			"target":34962
 		},
 		{
 			"buffer":0,
 			"byteLength":37920,
-			"byteOffset":337704,
+			"byteOffset":605728,
 			"target":34963
 		}
 	],
 	"buffers":[
 		{
-			"byteLength":375624,
+			"byteLength":643648,
 			"uri":"teapot.bin"
 		}
 	]
