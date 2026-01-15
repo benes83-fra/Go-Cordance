@@ -8,16 +8,19 @@
       "id": 3,
       "components": {
         "Material": {
-          "ambient": 1.3,
+          "ambient": 0.3,
           "baseColor": [
             0.8,
             0.8,
-            0.8,
+            0.9,
             1
           ],
           "diffuse": 0.8,
           "shininess": 0,
           "specular": 0.2
+        },
+        "Mesh": {
+          "id": "cube"
         },
         "Transform": {
           "position": [
