@@ -55,24 +55,6 @@ func (rs *RenderSystem) computeShadowLightSpace(entities []*Entity) (mgl32.Mat4,
 		break
 	}
 
-	// FALLBACK: first directional or spot
-	if shadowLight == nil {
-		for i, e := range entities {
-			lc, ok := e.GetComponent((*LightComponent)(nil)).(*LightComponent)
-			if !ok {
-				continue
-			}
-			tr, _ := e.GetComponent((*Transform)(nil)).(*Transform)
-
-			if lc.Type == LightDirectional || lc.Type == LightSpot {
-				shadowLight = lc
-				shadowTransform = tr
-				shadowIndex = i
-				break
-			}
-		}
-	}
-
 	if shadowLight == nil || shadowTransform == nil {
 		return mgl32.Ident4(), -1, false
 	}
