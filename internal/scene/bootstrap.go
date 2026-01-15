@@ -18,11 +18,17 @@ func BootstrapScene() (*Scene, map[string]*ecs.Entity) {
 
 	// Ground
 	ground := sc.AddEntity()
-	ground.AddComponent(ecs.NewTransform([3]float32{0, 0, 0}))
+	ground.AddComponent(&ecs.Transform{
+		Position: [3]float32{0, -2, 0},
+		Scale:    [3]float32{50, 0.1, 50},
+	})
 	ground.AddComponent(ecs.NewColliderPlane(-2.0))
 	ground.AddComponent(ecs.NewName("Ground Floor"))
-	named["ground"] = ground
-
+	ground.AddComponent(&ecs.Material{BaseColor: [4]float32{0.8, 0.8, 0.8, 1},
+		Ambient:  1.3,
+		Diffuse:  0.8,
+		Specular: 0.2,
+	})
 	// Cube 1
 	cube1 := sc.AddEntity()
 	cube1.AddComponent(ecs.NewTransform([3]float32{0.0, 4.0, 0.0}))
