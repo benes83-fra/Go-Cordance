@@ -64,13 +64,27 @@ func (rs *RenderSystem) computeShadowLightSpace(entities []*Entity) (mgl32.Mat4,
 
 	switch shadowLight.Type {
 	case LightDirectional:
-		lightDir := mgl32.Vec3{rs.LightDir[0], rs.LightDir[1], rs.LightDir[2]}
-		sceneCenter := mgl32.Vec3{
+		// derive direction from the shadow light's transform, not rs.LightDir
+		q := mgl32.Quat{
+			W: shadowTransform.Rotation[0],
+			V: mgl32.Vec3{
+				shadowTransform.Rotation[1],
+				shadowTransform.Rotation[2],
+				shadowTransform.Rotation[3],
+			},
+		}
+		fwd := q.Rotate(mgl32.Vec3{0, 0, -1})
+		lightDir := fwd.Normalize()
+
+		camPos := mgl32.Vec3{
 			rs.CameraSystem.Position[0],
 			rs.CameraSystem.Position[1],
 			rs.CameraSystem.Position[2],
 		}
-		extent := float32(20.0)
+		// you can keep your offset if you like it:
+		sceneCenter := camPos.Sub(lightDir.Mul(20))
+		extent := float32(50.0)
+
 		lightSpace = engine.ComputeDirectionalLightSpaceMatrix(lightDir, sceneCenter, extent)
 
 	case LightSpot:
@@ -259,6 +273,9 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 
 		// Collect lights
 		lights := make([]engine.LightData, 0, 8)
+		shadowLightIdx := -1
+		var shadowLight *LightComponent
+		var shadowTransform *Transform
 
 		for _, e := range entities {
 			lc, ok := e.GetComponent((*LightComponent)(nil)).(*LightComponent)
@@ -287,7 +304,7 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 			if rs.LightEntity != nil && e == rs.LightEntity && lc.Type == LightDirectional {
 				dir = rs.LightDir
 			}
-
+			idx := len(lights)
 			lights = append(lights, engine.LightData{
 				Type:      int32(lc.Type),
 				Color:     lc.Color,
@@ -297,6 +314,11 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 				Range:     lc.Range,
 				Angle:     lc.Angle,
 			})
+			if shadowLightIdx == -1 && lc.CastsShadows && (lc.Type == LightDirectional || lc.Type == LightSpot) {
+				shadowLightIdx = idx
+				shadowLight = lc
+				shadowTransform = tr
+			}
 
 		}
 		// After collecting all lights:
@@ -322,15 +344,15 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		gl.Uniform3fv(rs.Renderer.LocViewPos, 1, &camPos[0])
 
 		// Upload lightSpace
-		if rs.Renderer.LocLightSpace != -1 || rs.Renderer.LocShadowLightIndex != -1 {
-			lightSpace, shadowIndex, ok := rs.computeShadowLightSpace(entities)
+		if shadowLightIdx >= 0 && shadowLight != nil && shadowTransform != nil {
+			lightSpace, _, ok := rs.computeShadowLightSpace(entities)
 			if ok {
-				log.Printf("Shadow light index = %d", shadowIndex)
+				log.Printf("Shadow light index = %d", shadowLightIdx)
 				if rs.Renderer.LocLightSpace != -1 {
 					gl.UniformMatrix4fv(rs.Renderer.LocLightSpace, 1, false, &lightSpace[0])
 				}
 				if rs.Renderer.LocShadowLightIndex != -1 {
-					gl.Uniform1i(rs.Renderer.LocShadowLightIndex, int32(shadowIndex))
+					gl.Uniform1i(rs.Renderer.LocShadowLightIndex, int32(shadowLightIdx))
 				}
 			}
 		}
@@ -522,37 +544,4 @@ func (rs *RenderSystem) UpdateLightGizmos() {
 			}
 		}
 	}
-}
-
-func (rs *RenderSystem) computeLightSpaceFor(lc *LightComponent, tr *Transform) mgl32.Mat4 {
-	switch lc.Type {
-	case LightDirectional:
-		lightDir := mgl32.Vec3{rs.LightDir[0], rs.LightDir[1], rs.LightDir[2]}
-		sceneCenter := mgl32.Vec3{
-			rs.CameraSystem.Position[0],
-			rs.CameraSystem.Position[1],
-			rs.CameraSystem.Position[2],
-		}
-		extent := float32(20.0)
-		return engine.ComputeDirectionalLightSpaceMatrix(lightDir, sceneCenter, extent)
-
-	case LightSpot:
-		pos := mgl32.Vec3{tr.Position[0], tr.Position[1], tr.Position[2]}
-		q := mgl32.Quat{
-			W: tr.Rotation[0],
-			V: mgl32.Vec3{tr.Rotation[1], tr.Rotation[2], tr.Rotation[3]},
-		}
-		dir := q.Rotate(mgl32.Vec3{0, 0, -1})
-
-		fov := lc.Angle * (math.Pi / 180.0) * 2
-		aspect := float32(1.0)
-		near := float32(0.1)
-		far := lc.Range
-
-		proj := mgl32.Perspective(fov, aspect, near, far)
-		view := mgl32.LookAtV(pos, pos.Add(dir), mgl32.Vec3{0, 1, 0})
-		return proj.Mul4(view)
-	}
-
-	return mgl32.Ident4()
 }

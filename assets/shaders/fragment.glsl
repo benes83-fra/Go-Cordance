@@ -56,9 +56,10 @@ float computeShadowPCF(vec4 lightSpacePos, vec3 normal, vec3 lightDirWS)
     }
 
     float ndotl = max(dot(normalize(normal), normalize(lightDirWS)), 0.0);
-    float bias = mix(0.002, 0.0002, ndotl); // more bias at grazing angles
+   float bias = mix(0.0005, 0.00005, ndotl);
+// more bias at grazing angles
 
-    vec2 texelSize = 1.0 / uShadowMapSize;
+    vec2 texelSize = 0.7 / uShadowMapSize;
 
     float shadow = 0.0;
     int samples = 0;
