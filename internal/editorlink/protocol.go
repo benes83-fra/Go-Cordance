@@ -72,6 +72,10 @@ type MsgRemoveComponent struct {
 type MsgSetEditorFlag struct {
 	ShowLightGizmos bool
 }
+type MsgTextureList struct {
+	Names []string
+	IDs   []uint32
+}
 
 func readMsg(conn net.Conn) (Msg, error) {
 	var m Msg

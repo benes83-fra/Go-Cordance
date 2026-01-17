@@ -177,6 +177,18 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 					state.Global.RefreshUI() // rebuild inspector ONCE
 				}
 			})
+		case "TextureList":
+			var m editorlink.MsgTextureList
+			if err := json.Unmarshal(msg.Data, &m); err != nil {
+				log.Printf("editor: bad TextureList Message %v", err)
+				continue
+			}
+
+			fyne.DoAndWait(func() {
+				state.Global.TextureNames = m.Names
+				state.Global.TextureIDs = m.IDs
+			})
+
 		case "SceneSnapshot":
 			var snap editorlink.MsgSceneSnapshot
 			if err := json.Unmarshal(msg.Data, &snap); err != nil {

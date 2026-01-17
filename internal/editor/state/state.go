@@ -13,14 +13,19 @@ type EditorState struct {
 	Selection       Selection
 	SplitOffset     float64
 	ShowLightGizmos bool
+	TextureNames    []string
+	TextureIDs      []uint32
 }
 
 func NewEditorState() *EditorState {
 	return &EditorState{
 		Entities:      []bridge.EntityInfo{},
 		SelectedIndex: -1,
+		TextureNames:  []string{},
+		TextureIDs:    []uint32{},
 	}
 }
+
 func New() *EditorState {
 	return &EditorState{
 		Entities:      []bridge.EntityInfo{},

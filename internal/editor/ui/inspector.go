@@ -434,6 +434,39 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 				container.NewHBox(widget.NewLabel("Y"), y),
 				container.NewHBox(widget.NewLabel("Z"), z),
 			))
+		case [4]float32:
+			r := widget.NewEntry()
+			g := widget.NewEntry()
+			b := widget.NewEntry()
+			a := widget.NewEntry()
+
+			r.SetText(fmt.Sprintf("%.3f", v[0]))
+			g.SetText(fmt.Sprintf("%.3f", v[1]))
+			b.SetText(fmt.Sprintf("%.3f", v[2]))
+			a.SetText(fmt.Sprintf("%.3f", v[3]))
+
+			apply := func() {
+				v[0] = parse32(r.Text)
+				v[1] = parse32(g.Text)
+				v[2] = parse32(b.Text)
+				v[3] = parse32(a.Text)
+				c.SetEditorField(name, v)
+				sendComponentUpdate(entityID, c)
+			}
+
+			r.OnSubmitted = func(_ string) { apply() }
+			g.OnSubmitted = func(_ string) { apply() }
+			b.OnSubmitted = func(_ string) { apply() }
+			a.OnSubmitted = func(_ string) { apply() }
+
+			box.Add(container.NewVBox(
+				widget.NewLabel(name),
+				container.NewHBox(widget.NewLabel("R"), r),
+				container.NewHBox(widget.NewLabel("G"), g),
+				container.NewHBox(widget.NewLabel("B"), b),
+				container.NewHBox(widget.NewLabel("A"), a),
+			))
+
 		case bool:
 			initial := v
 			chk := widget.NewCheck(name, nil)
@@ -464,6 +497,23 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 				sendComponentUpdate(entityID, c)
 			}
 			box.Add(container.NewHBox(widget.NewLabel(name), e))
+		case uint32:
+			if name == "TextureID" {
+				if fields["UseTexture"].(bool) {
+					options := state.Global.TextureNames
+					dropdown := widget.NewSelect(options, func(selected string) {
+						id := lookupTextureID(selected)
+						c.SetEditorField("TextureID", id)
+						sendComponentUpdate(entityID, c)
+					})
+
+					// Preselect current texture
+					dropdown.SetSelected(lookupTextureName(v))
+
+					box.Add(container.NewHBox(widget.NewLabel("Texture"), dropdown))
+				}
+			}
+
 		case int:
 			// Special case: LightType dropdown
 			if name == "Type" {
@@ -621,4 +671,20 @@ func sendRemoveComponent(entityID int64, name string) {
 
 	go editorlink.WriteRemoveComponent(editorlink.EditorConn, msg)
 
+}
+func lookupTextureID(name string) uint32 {
+	for i, n := range state.Global.TextureNames {
+		if n == name {
+			return state.Global.TextureIDs[i]
+		}
+	}
+	return 0
+}
+func lookupTextureName(id uint32) string {
+	for i, tid := range state.Global.TextureIDs {
+		if tid == id {
+			return state.Global.TextureNames[i]
+		}
+	}
+	return ""
 }
