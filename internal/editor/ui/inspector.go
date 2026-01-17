@@ -149,6 +149,8 @@ func NewInspectorPanel() (
 			sort.Strings(names)
 
 			if ecsEnt != nil {
+
+				sort.Strings(names)
 				for _, name := range names {
 					constructor, ok := ecs.ComponentRegistry[name]
 					if !ok {
@@ -174,9 +176,10 @@ func NewInspectorPanel() (
 			addBtn := widget.NewButton("Add Component", func() {
 				log.Printf("AddButton for entity %d (%s)", entInfo.ID, entInfo.Name)
 
-				showAddComponentDialog(ecsWorld, ecsEnt, entInfo.ID, func() {
+				showAddComponentDialog(ecsWorld, ecsEnt, entInfo.ID, entInfo.Components, func() {
 					rebuild(world, st, hierarchy)
 				})
+
 			})
 
 			right.Add(addBtn)
@@ -491,6 +494,22 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 
 	removeBtn := widget.NewButtonWithIcon("", theme.DeleteIcon(), func() {
 		sendRemoveComponent(entityID, c.EditorName())
+
+		// --- NEW: update editor snapshot ---
+		for i := range state.Global.Entities {
+			if state.Global.Entities[i].ID == entityID {
+				comps := state.Global.Entities[i].Components
+				newList := make([]string, 0, len(comps))
+				for _, cname := range comps {
+					if cname != c.EditorName() {
+						newList = append(newList, cname)
+					}
+				}
+				state.Global.Entities[i].Components = newList
+				break
+			}
+		}
+
 		refresh()
 	})
 
@@ -518,15 +537,22 @@ func sendComponentUpdate(entityID int64, c ecs.EditorInspectable) {
 	go editorlink.WriteSetComponent(editorlink.EditorConn, msg)
 }
 
-func showAddComponentDialog(world *ecs.World, ent *ecs.Entity, entityID int64, refresh func()) {
+func showAddComponentDialog(world *ecs.World, ent *ecs.Entity, entityID int64, components []string, refresh func()) {
 	items := []string{}
 	log.Printf("showAddComponentDialog for entityID=%d", entityID)
+	// Build a set of existing components from the snapshot
+	existing := map[string]bool{}
+	for _, cname := range components {
+		existing[cname] = true
+	}
+
+	// Show only components NOT in the snapshot
 	for name := range ecs.ComponentRegistry {
-		proto := ecs.ComponentRegistry[name]()
-		if ent.GetComponent(proto) == nil {
+		if !existing[name] {
 			items = append(items, name)
 		}
 	}
+
 	log.Printf(" -> len(items)=%d", len(items))
 
 	if len(items) == 0 {
@@ -543,12 +569,23 @@ func showAddComponentDialog(world *ecs.World, ent *ecs.Entity, entityID int64, r
 			newComp := constructor()
 			ent.AddComponent(newComp)
 
+			// --- NEW: update editor snapshot ---
+			for i := range state.Global.Entities {
+				if state.Global.Entities[i].ID == entityID {
+					state.Global.Entities[i].Components = append(
+						state.Global.Entities[i].Components,
+						compName,
+					)
+					break
+				}
+			}
+
 			if insp, ok := newComp.(ecs.EditorInspectable); ok {
 				sendComponentUpdate(entityID, insp)
 			}
 
 			dlg.Hide()
-			refresh() // <--- forces inspector to rebuild
+			refresh()
 		})
 
 		buttons.Add(btn)
