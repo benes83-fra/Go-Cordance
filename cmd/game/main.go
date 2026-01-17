@@ -249,9 +249,17 @@ func main() {
 	// We look up entities by name in the map returned by BootstrapScene.
 	if e, ok := named["cube1"]; ok {
 		e.AddComponent(crateTex)
+		mat := e.GetComponent((*ecs.Material)(nil)).(*ecs.Material)
+		mat.UseTexture = true
+		mat.TextureID = crateTex.ID
+
 	}
 	if e, ok := named["cube2"]; ok {
 		e.AddComponent(teaTex)
+		mat := e.GetComponent((*ecs.Material)(nil)).(*ecs.Material)
+		mat.UseTexture = true
+		mat.TextureID = teaTex.ID
+
 	}
 	if _, ok := named["metalCube"]; ok {
 		// metalCube used a material already in bootstrap; optionally add textures
