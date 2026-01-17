@@ -507,13 +507,6 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 	}
 }
 
-func boolToInt(b bool) int32 {
-	if b {
-		return 1
-	}
-	return 0
-}
-
 func (rs *RenderSystem) UpdateLightGizmos() {
 	// Orbital light motion
 	if rs.OrbitalEnabled && rs.LightEntity != nil {

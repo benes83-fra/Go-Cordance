@@ -7,6 +7,11 @@ type Material struct {
 	Diffuse   float32    // diffuse multiplier
 	Specular  float32    // specular multiplier
 	Shininess float32    // specular exponent
+
+	UseTexture bool
+	TextureID  uint32
+	UseNormal  bool
+	NormalID   uint32
 }
 
 func NewMaterial(color [4]float32) *Material {
@@ -25,11 +30,13 @@ func (m *Material) EditorName() string { return "Material" }
 
 func (m *Material) EditorFields() map[string]any {
 	return map[string]any{
-		"BaseColor": m.BaseColor,
-		"Ambient":   m.Ambient,
-		"Diffuse":   m.Diffuse,
-		"Specular":  m.Specular,
-		"Shininess": m.Shininess,
+		"BaseColor":  m.BaseColor,
+		"Ambient":    m.Ambient,
+		"Diffuse":    m.Diffuse,
+		"Specular":   m.Specular,
+		"Shininess":  m.Shininess,
+		"UseTexture": m.UseTexture,
+		"UseNormal":  m.UseNormal,
 	}
 }
 
@@ -45,5 +52,9 @@ func (m *Material) SetEditorField(name string, value any) {
 		m.Specular = toFloat32(value)
 	case "Shininess":
 		m.Shininess = toFloat32(value)
+	case "UseTexture":
+		m.UseNormal = toBool(value)
+	case "UseNormal":
+		m.UseNormal = toBool(value)
 	}
 }

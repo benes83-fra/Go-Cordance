@@ -110,3 +110,41 @@ func toInt(v any) int {
 	}
 
 }
+
+func toBool(v any) bool {
+
+	switch n := v.(type) {
+	case int:
+		return IntToBool(n)
+	case uint:
+		return IntToBool(int(n))
+	case bool:
+		return n
+	case string:
+		if n == "true" {
+			return true
+		} else {
+			return false
+		}
+	case float32:
+		return IntToBool(int(n))
+	default:
+		return false
+	}
+
+}
+
+func IntToBool(n int) bool {
+	if n == 1 {
+		return true
+	} else {
+		return false
+	}
+}
+
+func boolToInt(b bool) int32 {
+	if b {
+		return 1
+	}
+	return 0
+}
