@@ -73,8 +73,8 @@ type MsgSetEditorFlag struct {
 	ShowLightGizmos bool
 }
 type MsgTextureList struct {
-	Names []string
-	IDs   []uint32
+	Names []string `json:"names"`
+	IDs   []uint32 `json:"ids"`
 }
 
 func readMsg(conn net.Conn) (Msg, error) {
@@ -164,4 +164,12 @@ func WriteRemoveComponent(conn net.Conn, msg MsgRemoveComponent) error {
 
 func WriteSetEditorFlag(conn net.Conn, msg MsgSetEditorFlag) error {
 	return writeMsg(conn, "SetEditorFlag", msg)
+}
+func WriteTextureList(conn net.Conn, names []string, ids []uint32) error {
+
+	msg := MsgTextureList{
+		Names: names,
+		IDs:   ids,
+	}
+	return writeMsg(conn, "TextureList", msg)
 }

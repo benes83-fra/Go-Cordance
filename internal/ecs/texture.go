@@ -11,3 +11,13 @@ func NewTexture(id uint32) *Texture {
 func (av *Texture) Update(dt float32) {
 	_ = dt
 }
+
+var (
+	TextureNames []string
+	TextureIDs   []uint32
+)
+
+func RegisterTexture(name string, id uint32) {
+	TextureNames = append(TextureNames, name)
+	TextureIDs = append(TextureIDs, id)
+}

@@ -500,6 +500,7 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 		case uint32:
 			if name == "TextureID" {
 				if fields["UseTexture"].(bool) {
+					texName := lookupTextureName(uint32(v))
 					options := state.Global.TextureNames
 					dropdown := widget.NewSelect(options, func(selected string) {
 						id := lookupTextureID(selected)
@@ -508,8 +509,9 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 					})
 
 					// Preselect current texture
-					dropdown.SetSelected(lookupTextureName(v))
-
+					if texName != "" {
+						dropdown.SetSelected(lookupTextureName(v))
+					}
 					box.Add(container.NewHBox(widget.NewLabel("Texture"), dropdown))
 				}
 			}

@@ -99,12 +99,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	ecs.RegisterTexture("Crate", texID)
 	texID2, err := engine.LoadTexture("assets/textures/teapot_diffuse.png")
 	if err != nil {
 		fmt.Println("Could not load :", texID2)
 		log.Fatal(err)
 	}
-
+	ecs.RegisterTexture("Teapot", texID2)
 	// Load GLTF materials info (runtime)
 	mats, err := engine.LoadGLTFMaterials("sofa", "assets/models/sofa/sofa.gltf")
 	if err != nil {
@@ -295,7 +296,7 @@ func main() {
 		scale [3]float32,
 	) {
 		if editorlink.EditorConn != nil {
-			editorlink.WriteTransformFromGame(
+			go editorlink.WriteTransformFromGame(
 				editorlink.EditorConn,
 				int64(id),
 				pos,
@@ -315,7 +316,9 @@ func main() {
 			go editorlink.WriteSetTransformFinal(editorlink.EditorConn, msg)
 		}
 	}
-
+	if editorlink.EditorConn != nil {
+		go editorlink.WriteTextureList(editorlink.EditorConn, ecs.TextureNames, ecs.TextureIDs)
+	}
 	// Main loop
 	last := glfw.GetTime()
 	for !window.ShouldClose() {
