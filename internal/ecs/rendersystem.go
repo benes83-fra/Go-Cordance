@@ -428,9 +428,18 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		gl.Uniform1f(rs.Renderer.LocShininess, mat.Shininess)
 
 		// Diffuse texture
-		if tex != nil {
+		boundTexture := uint32(0)
+		useTex := false
+		if mat.UseTexture && mat.TextureID != 0 {
+			boundTexture = mat.TextureID
+			useTex = true
+		} else if tex != nil && tex.ID != 0 {
+			boundTexture = tex.ID
+			useTex = true
+		}
+		if useTex {
 			gl.ActiveTexture(gl.TEXTURE0)
-			gl.BindTexture(gl.TEXTURE_2D, tex.ID)
+			gl.BindTexture(gl.TEXTURE_2D, boundTexture)
 			gl.Uniform1i(rs.Renderer.LocDiffuseTex, 0)
 			gl.Uniform1i(rs.Renderer.LocUseTexture, 1)
 		} else {

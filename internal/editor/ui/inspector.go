@@ -565,6 +565,9 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 
 				}
 				dropdown.OnChanged = func(selected string) {
+					if state.Global.IsRebuilding {
+						return
+					}
 					var idx int
 					switch selected {
 					case "Directional":
