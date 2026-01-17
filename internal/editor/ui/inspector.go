@@ -435,19 +435,22 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 				container.NewHBox(widget.NewLabel("Z"), z),
 			))
 		case bool:
+			initial := v
 			chk := widget.NewCheck(name, nil)
 			chk.SetChecked(v)
 			log.Printf("Checkbox init: %s = %v (entity %d)", name, v, entityID)
 
-			last := v
-			chk.OnChanged = func(v bool) {
-				log.Printf("Checkbox changed: %s = %v (entity %d)", name, v, entityID)
+			last := initial
+			fieldName := name
 
-				if v == last {
+			chk.OnChanged = func(newVal bool) {
+				log.Printf("Checkbox changed: %s = %v (entity %d)", name, newVal, entityID)
+
+				if newVal == last {
 					return
 				}
-				last = v
-				c.SetEditorField(name, v)
+				last = newVal
+				c.SetEditorField(fieldName, newVal)
 				sendComponentUpdate(entityID, c)
 
 			}

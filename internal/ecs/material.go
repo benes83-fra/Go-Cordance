@@ -53,7 +53,7 @@ func (m *Material) SetEditorField(name string, value any) {
 	case "Shininess":
 		m.Shininess = toFloat32(value)
 	case "UseTexture":
-		m.UseNormal = toBool(value)
+		m.UseTexture = toBool(value)
 	case "UseNormal":
 		m.UseNormal = toBool(value)
 	}
