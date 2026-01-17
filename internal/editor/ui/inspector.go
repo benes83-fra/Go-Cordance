@@ -114,7 +114,8 @@ func NewInspectorPanel() (
 	// OnChanged handlers will be set inside rebuild so they capture st.SelectedIndex correctly.
 	rebuild = func(world interface{}, st *state.EditorState, hierarchy *widget.List) {
 		root.Objects = nil
-
+		st.IsRebuilding = true
+		defer func() { st.IsRebuilding = false }()
 		if st.Foldout == nil {
 			st.Foldout = map[string]bool{
 				"Position": true,
@@ -395,6 +396,9 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 			e := widget.NewEntry()
 			e.SetText(fmt.Sprintf("%.3f", v))
 			e.OnSubmitted = func(s string) {
+				if state.Global.IsRebuilding {
+					return
+				}
 				c.SetEditorField(name, parse32(s))
 				sendComponentUpdate(entityID, c)
 			}
@@ -411,18 +415,27 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 			z.SetText(fmt.Sprintf("%.3f", v[2]))
 
 			x.OnSubmitted = func(s string) {
+				if state.Global.IsRebuilding {
+					return
+				}
 				v[0] = parse32(s)
 				c.SetEditorField(name, v)
 				sendComponentUpdate(entityID, c)
 			}
 
 			y.OnSubmitted = func(s string) {
+				if state.Global.IsRebuilding {
+					return
+				}
 				v[1] = parse32(s)
 				c.SetEditorField(name, v)
 				sendComponentUpdate(entityID, c)
 			}
 
 			z.OnSubmitted = func(s string) {
+				if state.Global.IsRebuilding {
+					return
+				}
 				v[2] = parse32(s)
 				c.SetEditorField(name, v)
 				sendComponentUpdate(entityID, c)
@@ -446,6 +459,9 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 			a.SetText(fmt.Sprintf("%.3f", v[3]))
 
 			apply := func() {
+				if state.Global.IsRebuilding {
+					return
+				}
 				v[0] = parse32(r.Text)
 				v[1] = parse32(g.Text)
 				v[2] = parse32(b.Text)
@@ -477,6 +493,9 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 			fieldName := name
 
 			chk.OnChanged = func(newVal bool) {
+				if state.Global.IsRebuilding {
+					return
+				}
 				log.Printf("Checkbox changed: %s = %v (entity %d)", name, newVal, entityID)
 
 				if newVal == last {
@@ -493,6 +512,9 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 			e := widget.NewEntry()
 			e.SetText(v)
 			e.OnChanged = func(s string) {
+				if state.Global.IsRebuilding {
+					return
+				}
 				c.SetEditorField(name, s)
 				sendComponentUpdate(entityID, c)
 			}
@@ -502,16 +524,32 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 				if fields["UseTexture"].(bool) {
 					texName := lookupTextureName(uint32(v))
 					options := state.Global.TextureNames
-					dropdown := widget.NewSelect(options, func(selected string) {
+
+					// 1. Create dropdown with no callback yet
+					dropdown := widget.NewSelect(options, nil)
+
+					// 2. Preselect current texture WITHOUT triggering a send
+					if texName != "" {
+						dropdown.SetSelected(texName)
+					}
+
+					// 3. Now wire the callback for real user changes
+					currentID := v
+					dropdown.OnChanged = func(selected string) {
+						if state.Global.IsRebuilding {
+							return
+						}
+
 						id := lookupTextureID(selected)
+						if id == currentID {
+							// avoid spamming identical updates
+							return
+						}
+						currentID = id
 						c.SetEditorField("TextureID", id)
 						sendComponentUpdate(entityID, c)
-					})
-
-					// Preselect current texture
-					if texName != "" {
-						dropdown.SetSelected(lookupTextureName(v))
 					}
+
 					box.Add(container.NewHBox(widget.NewLabel("Texture"), dropdown))
 				}
 			}

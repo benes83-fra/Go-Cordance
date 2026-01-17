@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 )
 
@@ -171,5 +172,6 @@ func WriteTextureList(conn net.Conn, names []string, ids []uint32) error {
 		Names: names,
 		IDs:   ids,
 	}
+	log.Printf("Texture List Msg: %v", msg)
 	return writeMsg(conn, "TextureList", msg)
 }

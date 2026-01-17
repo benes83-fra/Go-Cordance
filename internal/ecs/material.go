@@ -37,6 +37,7 @@ func (m *Material) EditorFields() map[string]any {
 		"Shininess":  m.Shininess,
 		"UseTexture": m.UseTexture,
 		"UseNormal":  m.UseNormal,
+		"TextureID":  m.TextureID,
 	}
 }
 
@@ -56,5 +57,7 @@ func (m *Material) SetEditorField(name string, value any) {
 		m.UseTexture = toBool(value)
 	case "UseNormal":
 		m.UseNormal = toBool(value)
+	case "TextureID":
+		m.TextureID = uint32(toInt(value))
 	}
 }

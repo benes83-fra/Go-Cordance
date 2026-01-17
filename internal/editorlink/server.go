@@ -33,6 +33,10 @@ func StartServer(addr string, sc *scene.Scene) {
 		EditorConn = conn
 		log.Printf("editorlink: editor connected from %s", conn.RemoteAddr())
 		go handleConn(conn, sc)
+		// After EditorConn = conn
+		go WriteTextureList(conn, ecs.TextureNames, ecs.TextureIDs)
+		log.Printf("game: sent texture list to editor: %v", ecs.TextureNames)
+
 	}
 }
 

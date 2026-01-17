@@ -316,9 +316,7 @@ func main() {
 			go editorlink.WriteSetTransformFinal(editorlink.EditorConn, msg)
 		}
 	}
-	if editorlink.EditorConn != nil {
-		go editorlink.WriteTextureList(editorlink.EditorConn, ecs.TextureNames, ecs.TextureIDs)
-	}
+
 	// Main loop
 	last := glfw.GetTime()
 	for !window.ShouldClose() {

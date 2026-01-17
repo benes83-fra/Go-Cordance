@@ -15,6 +15,7 @@ type EditorState struct {
 	ShowLightGizmos bool
 	TextureNames    []string
 	TextureIDs      []uint32
+	IsRebuilding    bool
 }
 
 func NewEditorState() *EditorState {
