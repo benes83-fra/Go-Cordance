@@ -174,6 +174,12 @@ func (mm *MeshManager) RegisterCube(id string) {
 		// Bottom
 		20, 21, 22, 22, 23, 20,
 	}
+	vertexCount := int32(len(vertices) / 8)
+	vertices12 := make([]float32, vertexCount*12)
+	for i := 0; i < int(vertexCount); i++ {
+		copy(vertices12[i*12:], vertices[i*8:i*8+8]) // tangent(3) + w(1) will be filled in next
+	}
+	computeTangents(vertices12, indices)
 
 	var vao, vbo, ebo uint32
 	gl.GenVertexArrays(1, &vao)
@@ -182,7 +188,7 @@ func (mm *MeshManager) RegisterCube(id string) {
 
 	gl.BindVertexArray(vao)
 	// validate indices: ensure max index < vertexCount
-	vertexCount := int32(len(vertices) / 8) // 8 floats per vertex for cube
+	// 8 floats per vertex for cube
 	var maxIdx uint32 = 0
 	for _, idx := range indices {
 		if idx > maxIdx {
@@ -195,13 +201,15 @@ func (mm *MeshManager) RegisterCube(id string) {
 	}
 
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
+	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices12), gl.STATIC_DRAW)
 
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
 
-	stride := int32(8 * 4) // 8 floats per vertex
-
+	stride := int32(12 * 4) // 8 floats per vertex
+	/*if stride == 12 {
+		computeTangents(vertices, indices)
+	}*/
 	// position
 	// set attribute pointers using offset overloads (safe under Go 1.14+)
 	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, stride, 0)
@@ -210,14 +218,16 @@ func (mm *MeshManager) RegisterCube(id string) {
 	gl.EnableVertexAttribArray(1)
 	gl.VertexAttribPointerWithOffset(2, 2, gl.FLOAT, false, stride, 6*4)
 	gl.EnableVertexAttribArray(2)
-	gl.EnableVertexAttribArray(2)
+	gl.VertexAttribPointerWithOffset(3, 4, gl.FLOAT, false, stride, 8*4)
+	gl.EnableVertexAttribArray(3)
 
+	gl.BindVertexArray(0)
 	// now query the VAO state while still bound
 	// POST-REG full diagnostic - place while VAO still bound, right after setting pointers
 	// DIAG: place immediately after each VertexAttribPointerWithOffset call (while VAO still bound)
 
 	mm.indexTypes[id] = gl.UNSIGNED_INT
-	mm.vertexCounts[id] = int32(len(vertices) / 8)
+	mm.vertexCounts[id] = int32(len(vertices) / 12)
 	mm.counts[id] = int32(len(indices))
 	mm.vbos[id] = vbo
 	mm.ebos[id] = ebo
@@ -329,6 +339,85 @@ func (mm *MeshManager) RegisterWireSphere(id string, slices, stacks int) {
 
 	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
 
+}
+
+func (mm *MeshManager) RegisterCube8(id string) {
+	vertices := []float32{
+		// pos           normal        uv
+		-0.5, -0.5, 0.5, 0, 0, 1, 0, 0,
+		0.5, -0.5, 0.5, 0, 0, 1, 1, 0,
+		0.5, 0.5, 0.5, 0, 0, 1, 1, 1,
+		-0.5, 0.5, 0.5, 0, 0, 1, 0, 1,
+
+		0.5, -0.5, -0.5, 0, 0, -1, 0, 0,
+		-0.5, -0.5, -0.5, 0, 0, -1, 1, 0,
+		-0.5, 0.5, -0.5, 0, 0, -1, 1, 1,
+		0.5, 0.5, -0.5, 0, 0, -1, 0, 1,
+
+		-0.5, -0.5, -0.5, -1, 0, 0, 0, 0,
+		-0.5, -0.5, 0.5, -1, 0, 0, 1, 0,
+		-0.5, 0.5, 0.5, -1, 0, 0, 1, 1,
+		-0.5, 0.5, -0.5, -1, 0, 0, 0, 1,
+
+		0.5, -0.5, 0.5, 1, 0, 0, 0, 0,
+		0.5, -0.5, -0.5, 1, 0, 0, 1, 0,
+		0.5, 0.5, -0.5, 1, 0, 0, 1, 1,
+		0.5, 0.5, 0.5, 1, 0, 0, 0, 1,
+
+		-0.5, 0.5, 0.5, 0, 1, 0, 0, 0,
+		0.5, 0.5, 0.5, 0, 1, 0, 1, 0,
+		0.5, 0.5, -0.5, 0, 1, 0, 1, 1,
+		-0.5, 0.5, -0.5, 0, 1, 0, 0, 1,
+
+		-0.5, -0.5, -0.5, 0, -1, 0, 0, 0,
+		0.5, -0.5, -0.5, 0, -1, 0, 1, 0,
+		0.5, -0.5, 0.5, 0, -1, 0, 1, 1,
+		-0.5, -0.5, 0.5, 0, -1, 0, 0, 1,
+	}
+
+	indices := []uint32{
+		0, 1, 2, 2, 3, 0,
+		4, 5, 6, 6, 7, 4,
+		8, 9, 10, 10, 11, 8,
+		12, 13, 14, 14, 15, 12,
+		16, 17, 18, 18, 19, 16,
+		20, 21, 22, 22, 23, 20,
+	}
+
+	var vao, vbo, ebo uint32
+	gl.GenVertexArrays(1, &vao)
+	gl.GenBuffers(1, &vbo)
+	gl.GenBuffers(1, &ebo)
+
+	gl.BindVertexArray(vao)
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
+
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
+
+	stride := int32(8 * 4)
+
+	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, stride, 0)
+	gl.EnableVertexAttribArray(0)
+
+	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, stride, 3*4)
+	gl.EnableVertexAttribArray(1)
+
+	gl.VertexAttribPointerWithOffset(2, 2, gl.FLOAT, false, stride, 6*4)
+	gl.EnableVertexAttribArray(2)
+
+	gl.BindVertexArray(0)
+
+	mm.vaos[id] = vao
+	mm.vbos[id] = vbo
+	mm.ebos[id] = ebo
+	mm.counts[id] = int32(len(indices))
+	mm.indexTypes[id] = gl.UNSIGNED_INT
+	mm.vertexCounts[id] = int32(len(vertices) / 8)
+
+	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
 }
 
 func (mm *MeshManager) RegisterSphere(id string, slices, stacks int) {

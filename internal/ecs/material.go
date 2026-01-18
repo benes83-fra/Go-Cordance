@@ -12,6 +12,8 @@ type Material struct {
 	TextureID  uint32
 	UseNormal  bool
 	NormalID   uint32
+
+	Dirty bool
 }
 
 func NewMaterial(color [4]float32) *Material {
@@ -60,4 +62,6 @@ func (m *Material) SetEditorField(name string, value any) {
 	case "TextureID":
 		m.TextureID = uint32(toInt(value))
 	}
+	m.Dirty = true
+
 }

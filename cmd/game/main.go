@@ -66,6 +66,7 @@ func main() {
 	// Mesh manager and registrations (runtime)
 	meshMgr := engine.NewMeshManager()
 	meshMgr.RegisterTriangle("triangle")
+	meshMgr.RegisterCube8("Cube8")
 	meshMgr.RegisterCube("cube")
 	meshMgr.RegisterCube("cube24")
 	meshMgr.RegisterWireCube("wire_cube")
@@ -274,6 +275,7 @@ func main() {
 		mat := e.GetComponent((*ecs.Material)(nil)).(*ecs.Material)
 		mat.UseTexture = true
 		mat.TextureID = teaTex.ID
+
 		// optionally add normal map later if available
 	}
 

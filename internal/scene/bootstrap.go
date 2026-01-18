@@ -23,7 +23,7 @@ func BootstrapScene() (*Scene, map[string]*ecs.Entity) {
 		Scale:    [3]float32{50, 0.1, 50},
 	})
 	ground.AddComponent(ecs.NewColliderPlane(-2.0))
-	ground.AddComponent(ecs.NewMesh("cube"))
+	ground.AddComponent(ecs.NewMesh("Cube8"))
 	ground.AddComponent(ecs.NewName("Ground Floor"))
 	ground.AddComponent(&ecs.Material{BaseColor: [4]float32{0.8, 0.8, 0.9, 1},
 		Ambient:  0.3,

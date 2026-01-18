@@ -415,6 +415,11 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		gl.UniformMatrix4fv(rs.Renderer.LocProj, 1, false, &proj[0])
 
 		// Material
+		if mat.Dirty {
+			log.Printf("Material updated on entity %d", e.ID)
+			mat.Dirty = false
+		}
+
 		gl.Uniform4fv(rs.Renderer.LocBaseCol, 1, &mat.BaseColor[0])
 		if uint64(e.ID) == rs.SelectedEntity {
 			highlight := [4]float32{1, 1, 0, 1}
@@ -435,6 +440,8 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		} else {
 			gl.Uniform1i(rs.Renderer.LocUseTexture, 0)
 		}
+
+		// Upload material only if dirty
 
 		// Normal map
 		if normalMapComp != nil && normalMapComp.ID != 0 {
