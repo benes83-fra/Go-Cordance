@@ -488,6 +488,82 @@ func (mm *MeshManager) RegisterPlane(id string) {
 
 	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
 }
+func (mm *MeshManager) RegisterPlaneDoubleSided(id string) {
+	// Base vertices: pos(3), normal(3), uv(2)
+	baseVerts := []float32{
+		// FRONT FACE (normal +Y)
+		-0.5, 0, -0.5, 0, 1, 0, 0, 0,
+		0.5, 0, -0.5, 0, 1, 0, 1, 0,
+		0.5, 0, 0.5, 0, 1, 0, 1, 1,
+		-0.5, 0, 0.5, 0, 1, 0, 0, 1,
+
+		// BACK FACE (normal -Y)
+		-0.5, 0, 0.5, 0, -1, 0, 0, 0,
+		0.5, 0, 0.5, 0, -1, 0, 1, 0,
+		0.5, 0, -0.5, 0, -1, 0, 1, 1,
+		-0.5, 0, -0.5, 0, -1, 0, 0, 1,
+	}
+
+	indices := []uint32{
+		// FRONT
+		0, 1, 2,
+		2, 3, 0,
+
+		// BACK (winding reversed)
+		4, 5, 6,
+		6, 7, 4,
+	}
+
+	// Expand to 12 floats per vertex
+	vertexCount := len(baseVerts) / 8
+	verts12 := make([]float32, vertexCount*12)
+
+	for i := 0; i < vertexCount; i++ {
+		copy(verts12[i*12:], baseVerts[i*8:i*8+8])
+		// tangent.xyz + w will be filled by computeTangents
+	}
+
+	computeTangents(verts12, indices)
+
+	// Upload to GL
+	var vao, vbo, ebo uint32
+	gl.GenVertexArrays(1, &vao)
+	gl.GenBuffers(1, &vbo)
+	gl.GenBuffers(1, &ebo)
+
+	gl.BindVertexArray(vao)
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+	gl.BufferData(gl.ARRAY_BUFFER, len(verts12)*4, gl.Ptr(verts12), gl.STATIC_DRAW)
+
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
+
+	stride := int32(12 * 4)
+
+	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, stride, 0)
+	gl.EnableVertexAttribArray(0)
+
+	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, stride, 3*4)
+	gl.EnableVertexAttribArray(1)
+
+	gl.VertexAttribPointerWithOffset(2, 2, gl.FLOAT, false, stride, 6*4)
+	gl.EnableVertexAttribArray(2)
+
+	gl.VertexAttribPointerWithOffset(3, 4, gl.FLOAT, false, stride, 8*4)
+	gl.EnableVertexAttribArray(3)
+
+	gl.BindVertexArray(0)
+
+	mm.vaos[id] = vao
+	mm.vbos[id] = vbo
+	mm.ebos[id] = ebo
+	mm.counts[id] = int32(len(indices))
+	mm.indexTypes[id] = gl.UNSIGNED_INT
+	mm.vertexCounts[id] = int32(vertexCount)
+
+	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
+}
 
 func (mm *MeshManager) RegisterSphere(id string, slices, stacks int) {
 	var baseVerts []float32
@@ -748,6 +824,136 @@ func (mm *MeshManager) RegisterGizmoCircle(id string, segments int) {
 
 	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
 
+}
+func (mm *MeshManager) RegisterBillboardQuad(id string) {
+	// pos(3), normal(3), uv(2)
+	baseVerts := []float32{
+		// XY plane facing +Z
+		-0.5, -0.5, 0, 0, 0, 1, 0, 0,
+		0.5, -0.5, 0, 0, 0, 1, 1, 0,
+		0.5, 0.5, 0, 0, 0, 1, 1, 1,
+		-0.5, 0.5, 0, 0, 0, 1, 0, 1,
+	}
+
+	indices := []uint32{
+		0, 1, 2,
+		2, 3, 0,
+	}
+
+	// Expand to 12 floats per vertex
+	vertexCount := len(baseVerts) / 8
+	verts12 := make([]float32, vertexCount*12)
+
+	for i := 0; i < vertexCount; i++ {
+		copy(verts12[i*12:], baseVerts[i*8:i*8+8])
+	}
+
+	computeTangents(verts12, indices)
+
+	// Upload to GL
+	var vao, vbo, ebo uint32
+	gl.GenVertexArrays(1, &vao)
+	gl.GenBuffers(1, &vbo)
+	gl.GenBuffers(1, &ebo)
+
+	gl.BindVertexArray(vao)
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+	gl.BufferData(gl.ARRAY_BUFFER, len(verts12)*4, gl.Ptr(verts12), gl.STATIC_DRAW)
+
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
+
+	stride := int32(12 * 4)
+
+	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, stride, 0)
+	gl.EnableVertexAttribArray(0)
+
+	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, stride, 3*4)
+	gl.EnableVertexAttribArray(1)
+
+	gl.VertexAttribPointerWithOffset(2, 2, gl.FLOAT, false, stride, 6*4)
+	gl.EnableVertexAttribArray(2)
+
+	gl.VertexAttribPointerWithOffset(3, 4, gl.FLOAT, false, stride, 8*4)
+	gl.EnableVertexAttribArray(3)
+
+	gl.BindVertexArray(0)
+
+	mm.vaos[id] = vao
+	mm.vbos[id] = vbo
+	mm.ebos[id] = ebo
+	mm.counts[id] = int32(len(indices))
+	mm.indexTypes[id] = gl.UNSIGNED_INT
+	mm.vertexCounts[id] = int32(vertexCount)
+
+	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
+}
+
+func (mm *MeshManager) RegisterSinglePlane(id string) {
+	// Base vertices: pos(3), normal(3), uv(2)
+	baseVerts := []float32{
+		//   x     y    z     nx ny nz    u   v
+		-0.5, 0, -0.5, 0, 1, 0, 0, 0,
+		0.5, 0, -0.5, 0, 1, 0, 1, 0,
+		0.5, 0, 0.5, 0, 1, 0, 1, 1,
+		-0.5, 0, 0.5, 0, 1, 0, 0, 1,
+	}
+
+	indices := []uint32{
+		0, 1, 2,
+		2, 3, 0,
+	}
+
+	// Expand to 12 floats per vertex (pos3, normal3, uv2, tangent3, w1)
+	vertexCount := len(baseVerts) / 8
+	verts12 := make([]float32, vertexCount*12)
+
+	for i := 0; i < vertexCount; i++ {
+		copy(verts12[i*12:], baseVerts[i*8:i*8+8])
+		// tangent.xyz + w will be filled by computeTangents
+	}
+
+	computeTangents(verts12, indices)
+
+	// Upload to GL
+	var vao, vbo, ebo uint32
+	gl.GenVertexArrays(1, &vao)
+	gl.GenBuffers(1, &vbo)
+	gl.GenBuffers(1, &ebo)
+
+	gl.BindVertexArray(vao)
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+	gl.BufferData(gl.ARRAY_BUFFER, len(verts12)*4, gl.Ptr(verts12), gl.STATIC_DRAW)
+
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
+
+	stride := int32(12 * 4)
+
+	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, stride, 0)
+	gl.EnableVertexAttribArray(0)
+
+	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, stride, 3*4)
+	gl.EnableVertexAttribArray(1)
+
+	gl.VertexAttribPointerWithOffset(2, 2, gl.FLOAT, false, stride, 6*4)
+	gl.EnableVertexAttribArray(2)
+
+	gl.VertexAttribPointerWithOffset(3, 4, gl.FLOAT, false, stride, 8*4)
+	gl.EnableVertexAttribArray(3)
+
+	gl.BindVertexArray(0)
+
+	mm.vaos[id] = vao
+	mm.vbos[id] = vbo
+	mm.ebos[id] = ebo
+	mm.counts[id] = int32(len(indices))
+	mm.indexTypes[id] = gl.UNSIGNED_INT
+	mm.vertexCounts[id] = int32(vertexCount)
+
+	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
 }
 
 // --- helpers for index/vertex bookkeeping and EBO verification ---

@@ -9,4 +9,5 @@ var ComponentRegistry = map[string]func() Component{
 	"ColliderPlane":  func() Component { return NewColliderPlane(0) },
 	"ColliderAABB":   func() Component { return NewColliderAABB([3]float32{0.5, 0.5, 0.5}) },
 	"Light":          func() Component { return NewLightComponent() },
+	"Billboad":       func() Component { return NewBillboard() },
 }

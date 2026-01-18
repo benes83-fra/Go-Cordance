@@ -68,6 +68,7 @@ func main() {
 	meshMgr.RegisterTriangle("triangle")
 	meshMgr.RegisterCube8("Cube8")
 	meshMgr.RegisterCube("cube")
+	meshMgr.RegisterPlane("plane")
 	meshMgr.RegisterCube("cube24")
 	meshMgr.RegisterWireCube("wire_cube")
 	meshMgr.RegisterWireSphere("wire_sphere", 16, 16)
@@ -76,6 +77,7 @@ func main() {
 	meshMgr.RegisterGizmoArrow("gizmo_arrow")
 	meshMgr.RegisterGizmoPlane("gizmo_plane")
 	meshMgr.RegisterGizmoCircle("gizmo_circle", 64)
+	meshMgr.RegisterBillboardQuad("billboardQuad")
 
 	// Load GLTF meshes that require runtime resources
 	if err := meshMgr.RegisterGLTF("teapot", "assets/models/teapot/teapot.gltf"); err != nil {
