@@ -370,7 +370,7 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		var t *Transform
 		var mesh *Mesh
 		var mat *Material
-		var tex *Texture
+
 		var normalMapComp *NormalMap
 
 		for _, c := range e.Components {
@@ -381,8 +381,6 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 				mesh = v
 			case *Material:
 				mat = v
-			case *Texture:
-				tex = v
 			case *NormalMap:
 				normalMapComp = v
 			}
@@ -428,18 +426,10 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		gl.Uniform1f(rs.Renderer.LocShininess, mat.Shininess)
 
 		// Diffuse texture
-		boundTexture := uint32(0)
-		useTex := false
-		if mat.UseTexture && mat.TextureID != 0 {
-			boundTexture = mat.TextureID
-			useTex = true
-		} else if tex != nil && tex.ID != 0 {
-			boundTexture = tex.ID
-			useTex = true
-		}
-		if useTex {
+
+		if mat.TextureID != 0 {
 			gl.ActiveTexture(gl.TEXTURE0)
-			gl.BindTexture(gl.TEXTURE_2D, boundTexture)
+			gl.BindTexture(gl.TEXTURE_2D, mat.TextureID)
 			gl.Uniform1i(rs.Renderer.LocDiffuseTex, 0)
 			gl.Uniform1i(rs.Renderer.LocUseTexture, 1)
 		} else {

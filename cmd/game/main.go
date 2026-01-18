@@ -248,14 +248,14 @@ func main() {
 	// Bind runtime-only resources to entities created by the bootstrap.
 	// We look up entities by name in the map returned by BootstrapScene.
 	if e, ok := named["cube1"]; ok {
-		e.AddComponent(crateTex)
+		//e.AddComponent(crateTex)
 		mat := e.GetComponent((*ecs.Material)(nil)).(*ecs.Material)
 		mat.UseTexture = true
 		mat.TextureID = crateTex.ID
 
 	}
 	if e, ok := named["cube2"]; ok {
-		e.AddComponent(teaTex)
+		//	e.AddComponent(teaTex)
 		mat := e.GetComponent((*ecs.Material)(nil)).(*ecs.Material)
 		mat.UseTexture = true
 		mat.TextureID = teaTex.ID
@@ -271,7 +271,9 @@ func main() {
 	}
 	// Attach textures to teapot if present
 	if e, ok := named["teapot"]; ok {
-		e.AddComponent(teaTex)
+		mat := e.GetComponent((*ecs.Material)(nil)).(*ecs.Material)
+		mat.UseTexture = true
+		mat.TextureID = teaTex.ID
 		// optionally add normal map later if available
 	}
 
