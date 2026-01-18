@@ -421,27 +421,32 @@ func (mm *MeshManager) RegisterCube8(id string) {
 }
 
 func (mm *MeshManager) RegisterSphere(id string, slices, stacks int) {
-	var vertices []float32
+	var baseVerts []float32
 	var indices []uint32
 
-	// Generate vertices with normals
+	// --- Generate base vertices: pos(3), normal(3), uv(2) = 8 floats ---
 	for i := 0; i <= stacks; i++ {
-		phi := float32(i) * (3.14159 / float32(stacks)) // latitude
+		phi := float32(i) * (math.Pi / float32(stacks)) // latitude
+		v := float32(i) / float32(stacks)
+
 		for j := 0; j <= slices; j++ {
-			theta := float32(j) * (2.0 * 3.14159 / float32(slices)) // longitude
+			theta := float32(j) * (2.0 * math.Pi / float32(slices)) // longitude
+			u := float32(j) / float32(slices)
 
 			x := float32(math.Sin(float64(phi)) * math.Cos(float64(theta)))
 			y := float32(math.Cos(float64(phi)))
 			z := float32(math.Sin(float64(phi)) * math.Sin(float64(theta)))
 
-			// Position (radius 0.5) and normal (unit vector)
-			vertices = append(vertices,
+			// pos(3), normal(3), uv(2)
+			baseVerts = append(baseVerts,
 				x*0.5, y*0.5, z*0.5, // position
-				x, y, z) // normal
+				x, y, z, // normal
+				u, v, // uv
+			)
 		}
 	}
 
-	// Generate indices
+	// --- Generate indices ---
 	for i := 0; i < stacks; i++ {
 		for j := 0; j < slices; j++ {
 			first := uint32(i*(slices+1) + j)
@@ -452,6 +457,19 @@ func (mm *MeshManager) RegisterSphere(id string, slices, stacks int) {
 		}
 	}
 
+	// --- Expand to 12 floats per vertex (pos3, normal3, uv2, tangent3, w1) ---
+	vertexCount := len(baseVerts) / 8
+	verts12 := make([]float32, vertexCount*12)
+
+	for i := 0; i < vertexCount; i++ {
+		copy(verts12[i*12:], baseVerts[i*8:i*8+8])
+		// tangent.xyz + w will be filled by computeTangents
+	}
+
+	// --- Compute tangents ---
+	computeTangents(verts12, indices)
+
+	// --- Upload to GL ---
 	var vao, vbo, ebo uint32
 	gl.GenVertexArrays(1, &vao)
 	gl.GenBuffers(1, &vbo)
@@ -460,30 +478,35 @@ func (mm *MeshManager) RegisterSphere(id string, slices, stacks int) {
 	gl.BindVertexArray(vao)
 
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
+	gl.BufferData(gl.ARRAY_BUFFER, len(verts12)*4, gl.Ptr(verts12), gl.STATIC_DRAW)
 
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
 
-	// Position attribute
-	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, 6*4, 0)
+	stride := int32(12 * 4)
+
+	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, stride, 0)
 	gl.EnableVertexAttribArray(0)
 
-	// Normal attribute
-	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, 6*4, 3*4)
+	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, stride, 3*4)
 	gl.EnableVertexAttribArray(1)
+
+	gl.VertexAttribPointerWithOffset(2, 2, gl.FLOAT, false, stride, 6*4)
+	gl.EnableVertexAttribArray(2)
+
+	gl.VertexAttribPointerWithOffset(3, 4, gl.FLOAT, false, stride, 8*4)
+	gl.EnableVertexAttribArray(3)
 
 	gl.BindVertexArray(0)
 
-	mm.indexTypes[id] = gl.UNSIGNED_INT
-	mm.vertexCounts[id] = int32(len(vertices) / 6)
-	mm.counts[id] = int32(len(indices))
+	mm.vaos[id] = vao
 	mm.vbos[id] = vbo
 	mm.ebos[id] = ebo
-	mm.vaos[id] = vao
+	mm.counts[id] = int32(len(indices))
+	mm.indexTypes[id] = gl.UNSIGNED_INT
+	mm.vertexCounts[id] = int32(vertexCount)
 
 	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
-
 }
 
 func (mm *MeshManager) GetVAO(id string) uint32 { return mm.vaos[id] }

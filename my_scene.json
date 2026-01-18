@@ -96,7 +96,7 @@
           "specular": 0.5
         },
         "Mesh": {
-          "id": "cube"
+          "id": "cube24"
         },
         "Transform": {
           "position": [
@@ -120,6 +120,44 @@
     },
     {
       "id": 6,
+      "components": {
+        "Material": {
+          "ambient": 0.2,
+          "baseColor": [
+            0.8,
+            1,
+            0.8,
+            1
+          ],
+          "diffuse": 0.8,
+          "shininess": 32,
+          "specular": 0.5
+        },
+        "Mesh": {
+          "id": "sphere"
+        },
+        "Transform": {
+          "position": [
+            1.1,
+            2.5,
+            2.5
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "id": 7,
       "components": {
         "Material": {
           "ambient": 0.05,
@@ -157,7 +195,7 @@
       }
     },
     {
-      "id": 7,
+      "id": 8,
       "components": {
         "Material": {
           "ambient": 0.4,
@@ -195,7 +233,7 @@
       }
     },
     {
-      "id": 8,
+      "id": 9,
       "components": {
         "Material": {
           "ambient": 0.4,
@@ -233,7 +271,7 @@
       }
     },
     {
-      "id": 9,
+      "id": 10,
       "components": {
         "Material": {
           "ambient": 0.2,
@@ -271,7 +309,7 @@
       }
     },
     {
-      "id": 10,
+      "id": 11,
       "components": {
         "Mesh": {
           "id": "sphere"
@@ -297,7 +335,7 @@
       }
     },
     {
-      "id": 11,
+      "id": 12,
       "components": {
         "Mesh": {
           "id": "line"

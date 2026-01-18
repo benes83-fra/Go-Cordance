@@ -44,12 +44,21 @@ func BootstrapScene() (*Scene, map[string]*ecs.Entity) {
 	// Cube 2
 	cube2 := sc.AddEntity()
 	cube2.AddComponent(ecs.NewTransform([3]float32{0.2, 6.0, 0.0}))
-	cube2.AddComponent(ecs.NewMesh("cube"))
+	cube2.AddComponent(ecs.NewMesh("cube24"))
 	cube2.AddComponent(ecs.NewMaterial([4]float32{0.8, 1.0, 0.8, 1.0}))
 	cube2.AddComponent(ecs.NewRigidBody(1.0))
 	cube2.AddComponent(ecs.NewColliderAABB([3]float32{0.5, 0.5, 0.5}))
 	cube2.AddComponent(ecs.NewName("Second Cube"))
 	named["cube2"] = cube2
+
+	sphere := sc.AddEntity()
+	sphere.AddComponent(ecs.NewTransform([3]float32{1.1, 2.5, 2.5}))
+	sphere.AddComponent(ecs.NewMesh("sphere"))
+	sphere.AddComponent(ecs.NewRigidBody(1.0))
+	sphere.AddComponent(ecs.NewMaterial([4]float32{0.8, 1.0, 0.8, 1.0}))
+	sphere.AddComponent(ecs.NewColliderSphere(1))
+	sphere.AddComponent(ecs.NewName("Sphere1"))
+	named["Sphere1"] = sphere
 
 	// Metal cube
 	metalCube := sc.AddEntity()
