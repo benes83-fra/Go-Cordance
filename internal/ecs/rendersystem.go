@@ -444,7 +444,7 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		// Upload material only if dirty
 
 		// Normal map
-		if normalMapComp != nil && normalMapComp.ID != 0 {
+		if normalMapComp != nil && normalMapComp.ID != 0 && rs.MeshManager.HasTangents(mesh.ID) {
 			gl.ActiveTexture(gl.TEXTURE1)
 			gl.BindTexture(gl.TEXTURE_2D, normalMapComp.ID)
 			gl.Uniform1i(rs.Renderer.LocNormalMap, 1)

@@ -21,6 +21,7 @@ type MeshManager struct {
 	// new bookkeeping
 	indexTypes   map[string]uint32 // gl.UNSIGNED_INT or gl.UNSIGNED_SHORT
 	vertexCounts map[string]int32  // number of vertices (for DrawArrays fallback if needed)
+	layoutType   map[string]int    // 8 or 12
 
 }
 
@@ -32,7 +33,12 @@ func NewMeshManager() *MeshManager {
 		ebos:         make(map[string]uint32),
 		indexTypes:   make(map[string]uint32),
 		vertexCounts: make(map[string]int32),
+		layoutType:   make(map[string]int),
 	}
+}
+
+func (mm *MeshManager) HasTangents(id string) bool {
+	return mm.layoutType[id] == 12
 }
 
 func (mm *MeshManager) GetCount(MeshID string) int32 {
@@ -115,6 +121,7 @@ func (mm *MeshManager) RegisterLine(id string) {
 	mm.vbos[id] = vbo
 	mm.ebos[id] = ebo
 	mm.vaos[id] = vao
+	mm.layoutType[id] = 3
 
 	// verify EBO size: 4 bytes per uint32 index
 	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
@@ -234,6 +241,7 @@ func (mm *MeshManager) RegisterCube(id string) {
 	mm.vbos[id] = vbo
 	mm.ebos[id] = ebo
 	mm.vaos[id] = vao
+	mm.layoutType[id] = 12
 
 	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
 
@@ -277,6 +285,7 @@ func (mm *MeshManager) RegisterWireCube(id string) {
 	gl.EnableVertexAttribArray(1)
 
 	gl.BindVertexArray(0)
+	mm.layoutType[id] = 8
 
 	mm.vaos[id] = vao
 	mm.vbos[id] = vbo
@@ -338,6 +347,7 @@ func (mm *MeshManager) RegisterWireSphere(id string, slices, stacks int) {
 	mm.vbos[id] = vbo
 	mm.ebos[id] = ebo
 	mm.vaos[id] = vao
+	mm.layoutType[id] = 3
 
 	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
 
@@ -418,6 +428,7 @@ func (mm *MeshManager) RegisterCube8(id string) {
 	mm.counts[id] = int32(len(indices))
 	mm.indexTypes[id] = gl.UNSIGNED_INT
 	mm.vertexCounts[id] = int32(len(vertices) / 8)
+	mm.layoutType[id] = 8
 
 	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
 }
@@ -485,6 +496,7 @@ func (mm *MeshManager) RegisterPlane(id string) {
 	mm.counts[id] = int32(len(indices))
 	mm.indexTypes[id] = gl.UNSIGNED_INT
 	mm.vertexCounts[id] = int32(vertexCount)
+	mm.layoutType[id] = 12
 
 	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
 }
@@ -561,6 +573,7 @@ func (mm *MeshManager) RegisterPlaneDoubleSided(id string) {
 	mm.counts[id] = int32(len(indices))
 	mm.indexTypes[id] = gl.UNSIGNED_INT
 	mm.vertexCounts[id] = int32(vertexCount)
+	mm.layoutType[id] = 12
 
 	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
 }
@@ -650,6 +663,7 @@ func (mm *MeshManager) RegisterSphere(id string, slices, stacks int) {
 	mm.counts[id] = int32(len(indices))
 	mm.indexTypes[id] = gl.UNSIGNED_INT
 	mm.vertexCounts[id] = int32(vertexCount)
+	mm.layoutType[id] = 12
 
 	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
 }
@@ -781,6 +795,7 @@ func (mm *MeshManager) RegisterGizmoPlane(id string) {
 	mm.vbos[id] = vbo
 	mm.ebos[id] = ebo
 	mm.vaos[id] = vao
+	mm.layoutType[id] = 3
 
 	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
 
@@ -821,6 +836,7 @@ func (mm *MeshManager) RegisterGizmoCircle(id string, segments int) {
 	mm.vbos[id] = vbo
 	mm.ebos[id] = ebo
 	mm.vaos[id] = vao
+	mm.layoutType[id] = 3
 
 	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
 
@@ -886,6 +902,7 @@ func (mm *MeshManager) RegisterBillboardQuad(id string) {
 	mm.counts[id] = int32(len(indices))
 	mm.indexTypes[id] = gl.UNSIGNED_INT
 	mm.vertexCounts[id] = int32(vertexCount)
+	mm.layoutType[id] = 12
 
 	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
 }
@@ -952,6 +969,7 @@ func (mm *MeshManager) RegisterSinglePlane(id string) {
 	mm.counts[id] = int32(len(indices))
 	mm.indexTypes[id] = gl.UNSIGNED_INT
 	mm.vertexCounts[id] = int32(vertexCount)
+	mm.layoutType[id] = 12
 
 	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
 }

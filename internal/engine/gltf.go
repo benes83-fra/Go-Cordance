@@ -222,6 +222,7 @@ func uploadMeshToGL(mm *MeshManager, id string, vertices []float32, indices []ui
 	mm.indexTypes[id] = gl.UNSIGNED_INT
 	// 12 floats per vertex as above
 	mm.vertexCounts[id] = int32(len(vertices) / 12)
+	mm.layoutType[id] = 12
 
 	// Verify EBO size (warn if mismatch)
 	var eboSize int32
