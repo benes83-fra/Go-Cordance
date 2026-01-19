@@ -12,8 +12,10 @@ func (m *Mesh) Update(dt float32) { _ = dt }
 func (m *Mesh) EditorName() string { return "Mesh" }
 
 func (m *Mesh) EditorFields() map[string]any {
+
 	return map[string]any{
 		"MeshName": m.MeshName,
+		"MeshID":   m.ID,
 	}
 }
 
@@ -21,5 +23,7 @@ func (m *Mesh) SetEditorField(name string, value any) {
 	switch name {
 	case "MeshName":
 		m.MeshName = value.(string)
+	case "MeshID":
+		m.ID = value.(string)
 	}
 }

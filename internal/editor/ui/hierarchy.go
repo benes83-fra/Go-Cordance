@@ -4,11 +4,15 @@ import (
 	"go-engine/Go-Cordance/internal/ecs/gizmo"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editorlink"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 )
+
+var lastClickTime time.Time
+var lastClickIndex = -1
 
 // NewHierarchyPanel returns a *widget.List that displays st.Entities and calls
 // onSelect(index) when the user selects an item. This version adds a checkbox
@@ -94,31 +98,35 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) *widget.List {
 
 			// clicking the button sets the active index (inspector) and notifies remote
 			btn.OnTapped = func() {
-				// 1. Set primary selection
+				now := time.Now()
+
+				// Detect double-click on the same row
+				if lastClickIndex == i && now.Sub(lastClickTime) < 300*time.Millisecond {
+					// Double-click detected → send FocusEntity
+					if editorlink.EditorConn != nil {
+						go editorlink.WriteFocusEntity(editorlink.EditorConn, ent.ID)
+					}
+					return
+				}
+
+				// Update click tracking
+				lastClickTime = now
+				lastClickIndex = i
+
+				// --- Normal single-click behavior ---
 				st.SelectedIndex = i
 				st.Selection.ActiveID = ent.ID
 
-				// 2. Reset multi-selection to only this entity
+				// Reset multi-selection to only this entity
 				st.Selection.IDs = []int64{ent.ID}
 
-				// 3. Uncheck all rows except this one
-				for row := 0; row < len(st.Entities); row++ {
-					if row == i {
-						// This row should be checked
-						// We must refresh the list AFTER updating state
-						continue
-					}
-					// Uncheck others by removing them from selection
-					// (the UI will reflect this on next Refresh)
-				}
-
-				// 4. Notify the game
+				// Notify the game
 				if editorlink.EditorConn != nil {
 					go editorlink.WriteSelectEntity(editorlink.EditorConn, ent.ID)
 					go editorlink.WriteSelectEntities(editorlink.EditorConn, st.Selection.IDs)
 				}
 
-				// 5. Refresh UI
+				// Refresh inspector
 				onSelect(i)
 			}
 

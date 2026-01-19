@@ -16,7 +16,7 @@ var EditorConn net.Conn
 var lastLightVersion = map[uint64]uint64{} // entityID -> version
 
 // StartServer exposes the given Scene to a single editor client.
-func StartServer(addr string, sc *scene.Scene) {
+func StartServer(addr string, sc *scene.Scene, camSys *ecs.CameraSystem) {
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Printf("editorlink: listen %s: %v", addr, err)
@@ -32,7 +32,7 @@ func StartServer(addr string, sc *scene.Scene) {
 		}
 		EditorConn = conn
 		log.Printf("editorlink: editor connected from %s", conn.RemoteAddr())
-		go handleConn(conn, sc)
+		go handleConn(conn, sc, camSys)
 		// After EditorConn = conn
 		go WriteTextureList(conn, ecs.TextureNames, ecs.TextureIDs)
 		log.Printf("game: sent texture list to editor: %v", ecs.TextureNames)
@@ -40,7 +40,7 @@ func StartServer(addr string, sc *scene.Scene) {
 	}
 }
 
-func handleConn(conn net.Conn, sc *scene.Scene) {
+func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 	defer conn.Close()
 	// inside the game-side editorlink message handler
 
@@ -139,6 +139,21 @@ func handleConn(conn net.Conn, sc *scene.Scene) {
 			var m MsgSetEditorFlag
 			json.Unmarshal(msg.Data, &m)
 			gizmo.SetGlobalShowLightGizmos(m.ShowLightGizmos)
+		case "FocusEntity":
+			var m MsgFocusEntity
+			if err := json.Unmarshal(msg.Data, &m); err != nil {
+				log.Printf("editorlink: bad FocusEntity: %v", err)
+				continue
+			}
+
+			ent := sc.World().FindByID(int64(m.ID))
+			if ent == nil {
+				log.Printf("editorlink: FocusEntity: entity %d not found", m.ID)
+				continue
+			}
+
+			// Tell the camera system to focus
+			camSys.FocusOn(ent)
 
 		default:
 			log.Printf("editorlink: unknown msg type %q", msg.Type)

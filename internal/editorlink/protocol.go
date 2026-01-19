@@ -76,6 +76,9 @@ type MsgTextureList struct {
 	Names []string `json:"names"`
 	IDs   []uint32 `json:"ids"`
 }
+type MsgFocusEntity struct {
+	ID uint64 `json:"id"`
+}
 
 func readMsg(conn net.Conn) (Msg, error) {
 	var m Msg
@@ -172,4 +175,8 @@ func WriteTextureList(conn net.Conn, names []string, ids []uint32) error {
 		IDs:   ids,
 	}
 	return writeMsg(conn, "TextureList", msg)
+}
+func WriteFocusEntity(conn net.Conn, id int64) error {
+	msg := MsgFocusEntity{ID: uint64(id)}
+	return writeMsg(conn, "FocusEntity", msg)
 }

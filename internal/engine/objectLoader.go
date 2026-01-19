@@ -230,6 +230,7 @@ func (mm *MeshManager) RegisterOBJ(id, path string) error {
 	mm.indexTypes[id] = gl.UNSIGNED_INT
 	mm.vertexCounts[id] = int32(len(vertices) / 12) // OBJ code builds 12-float interleaved vertices
 	mm.verifyEBOSize(ebo, int32(len(indices)*4), id)
+	mm.layoutType[id] = 12
 	// compute vertexCount for OBJ (you build 12-float interleaved vertices)
 	vertexCount := int32(len(vertices) / 12)
 

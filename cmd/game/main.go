@@ -302,7 +302,7 @@ func main() {
 
 	// Optionally save the scene (pure data) to disk
 	sc.Save("my_scene.json")
-	go editorlink.StartServer(":7777", sc)
+	go editorlink.StartServer(":7777", sc, camSys)
 	bridge.SendTransformToEditor = func(
 		id int64,
 		pos [3]float32,

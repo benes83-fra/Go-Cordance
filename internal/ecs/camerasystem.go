@@ -59,3 +59,29 @@ func (cs *CameraSystem) Forward() mgl32.Vec3 {
 	f := mgl32.Vec3{-cs.View[8], -cs.View[9], -cs.View[10]}
 	return f.Normalize()
 }
+
+func (cs *CameraSystem) FocusOn(e *Entity) {
+	t, ok := e.GetComponent((*Transform)(nil)).(*Transform)
+	if !ok {
+		return
+	}
+
+	target := mgl32.Vec3{t.Position[0], t.Position[1], t.Position[2]}
+
+	// Move camera back a bit
+	offset := mgl32.Vec3{0, 2, 6} // tweak as needed
+	cs.Position = [3]float32{
+		target.X() + offset.X(),
+		target.Y() + offset.Y(),
+		target.Z() + offset.Z(),
+	}
+
+	// Look at entity
+	cs.LookAt(target)
+}
+
+func (cs *CameraSystem) LookAt(target mgl32.Vec3) {
+	pos := mgl32.Vec3{cs.Position[0], cs.Position[1], cs.Position[2]}
+	up := mgl32.Vec3{0, 1, 0}
+	cs.View = mgl32.LookAtV(pos, target, up)
+}
