@@ -165,6 +165,72 @@ func (t *Transform) Up() [3]float32 {
 	}
 }
 
+func (t *Transform) SetForward(forward [3]float32, up [3]float32) {
+	// Normalize forward
+	fx, fy, fz := forward[0], forward[1], forward[2]
+	fl := float32(math.Sqrt(float64(fx*fx + fy*fy + fz*fz)))
+	if fl > 0 {
+		fx /= fl
+		fy /= fl
+		fz /= fl
+	}
+
+	// Right = normalize(cross(up, forward))
+	rx := up[1]*fz - up[2]*fy
+	ry := up[2]*fx - up[0]*fz
+	rz := up[0]*fy - up[1]*fx
+
+	rl := float32(math.Sqrt(float64(rx*rx + ry*ry + rz*rz)))
+	if rl > 0 {
+		rx /= rl
+		ry /= rl
+		rz /= rl
+	}
+
+	// Recompute up = cross(forward, right)
+	ux := fy*rz - fz*ry
+	uy := fz*rx - fx*rz
+	uz := fx*ry - fy*rx
+
+	// Convert rotation matrix to quaternion
+	m00, m01, m02 := rx, ux, -fx
+	m10, m11, m12 := ry, uy, -fy
+	m20, m21, m22 := rz, uz, -fz
+
+	trace := m00 + m11 + m22
+
+	var qx, qy, qz, qw float32
+
+	if trace > 0 {
+		s := float32(math.Sqrt(float64(trace+1.0))) * 2
+		qw = 0.25 * s
+		qx = (m21 - m12) / s
+		qy = (m02 - m20) / s
+		qz = (m10 - m01) / s
+	} else if m00 > m11 && m00 > m22 {
+		s := float32(math.Sqrt(float64(1.0+m00-m11-m22))) * 2
+		qw = (m21 - m12) / s
+		qx = 0.25 * s
+		qy = (m01 + m10) / s
+		qz = (m02 + m20) / s
+	} else if m11 > m22 {
+		s := float32(math.Sqrt(float64(1.0+m11-m00-m22))) * 2
+		qw = (m02 - m20) / s
+		qx = (m01 + m10) / s
+		qy = 0.25 * s
+		qz = (m12 + m21) / s
+	} else {
+		s := float32(math.Sqrt(float64(1.0+m22-m00-m11))) * 2
+		qw = (m10 - m01) / s
+		qx = (m02 + m20) / s
+		qy = (m12 + m21) / s
+		qz = 0.25 * s
+	}
+
+	t.Rotation = [4]float32{qx, qy, qz, qw}
+	t.Dirty = true
+}
+
 func (t *Transform) EditorName() string { return "Transform" }
 
 func (t *Transform) EditorFields() map[string]any {

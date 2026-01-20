@@ -133,6 +133,10 @@ func BootstrapScene() (*Scene, map[string]*ecs.Entity) {
 	bill.AddComponent(ecs.NewBillboard())
 	bill.AddComponent(ecs.NewMaterial([4]float32{1, 1, 1, 1}))
 	bill.AddComponent(ecs.NewName("Billboard"))
+	bill.AddComponent(&ecs.Billboard{
+		Mode: ecs.BillboardSpherical,
+		Axis: [3]float32{0, 1, 0},
+	})
 	named["Billboard"] = bill
 	return sc, named
 }

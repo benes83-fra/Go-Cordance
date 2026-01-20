@@ -140,6 +140,7 @@ func main() {
 	camSys.SetWorld(sc.World())
 	renderSys := ecs.NewRenderSystem(renderer, meshMgr, camSys)
 	camCtrl := ecs.NewCameraControllerSystem(window)
+	billboardSys := ecs.NewBillboardSystem(camSys)
 
 	// Now that we have camSys, set it on debug systems that need it
 	debugSys.SetCameraSystem(camSys)
@@ -151,7 +152,7 @@ func main() {
 	sc.Systems().AddSystem(ecs.NewPhysicsSystem())
 	sc.Systems().AddSystem(ecs.NewCollisionSystem())
 	sc.Systems().AddSystem(ecs.NewTransformSystem())
-
+	sc.Systems().AddSystem(billboardSys)
 	sc.Systems().AddSystem(camCtrl)
 	sc.Systems().AddSystem(camSys)
 	sc.Systems().AddSystem(renderSys)
