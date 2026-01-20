@@ -11,10 +11,14 @@ type CameraSystem struct {
 	Projection mgl32.Mat4
 	window     *glfw.Window
 	Position   [3]float32 // NEW
+	world      *World
 }
 
 func NewCameraSystem(window *glfw.Window) *CameraSystem {
 	return &CameraSystem{window: window}
+}
+func (cs *CameraSystem) SetWorld(w *World) {
+	cs.world = w
 }
 
 func (cs *CameraSystem) Update(_ float32, entities []*Entity) {
@@ -61,23 +65,36 @@ func (cs *CameraSystem) Forward() mgl32.Vec3 {
 }
 
 func (cs *CameraSystem) FocusOn(e *Entity) {
+	// 1. Get target position
 	t, ok := e.GetComponent((*Transform)(nil)).(*Transform)
 	if !ok {
 		return
 	}
-
 	target := mgl32.Vec3{t.Position[0], t.Position[1], t.Position[2]}
 
-	// Move camera back a bit
-	offset := mgl32.Vec3{0, 2, 6} // tweak as needed
-	cs.Position = [3]float32{
-		target.X() + offset.X(),
-		target.Y() + offset.Y(),
-		target.Z() + offset.Z(),
+	// 2. Find the active camera component
+	var activeCam *Camera
+	for _, ent := range cs.world.Entities { // or pass world into CameraSystem
+		if cam, ok := ent.GetComponent((*Camera)(nil)).(*Camera); ok && cam.Active {
+			activeCam = cam
+			break
+		}
+	}
+	if activeCam == nil {
+		return
 	}
 
-	// Look at entity
-	cs.LookAt(target)
+	// 3. Compute new camera position
+	offset := mgl32.Vec3{0, 2, 6}
+	newPos := target.Add(offset)
+
+	// 4. Update the camera component (NOT the selected entity)
+	activeCam.Position = [3]float32{newPos.X(), newPos.Y(), newPos.Z()}
+	activeCam.Target = [3]float32{target.X(), target.Y(), target.Z()}
+
+	// 5. Update CameraSystem state
+	cs.Position = activeCam.Position
+	cs.View = mgl32.LookAtV(newPos, target, mgl32.Vec3{0, 1, 0})
 }
 
 func (cs *CameraSystem) LookAt(target mgl32.Vec3) {

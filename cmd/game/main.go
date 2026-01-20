@@ -137,6 +137,7 @@ func main() {
 	gizmo.RegisterGlobalGizmo(gizmoSys)
 	// Create runtime systems that need the window/renderer/meshMgr
 	camSys := ecs.NewCameraSystem(window)
+	camSys.SetWorld(sc.World())
 	renderSys := ecs.NewRenderSystem(renderer, meshMgr, camSys)
 	camCtrl := ecs.NewCameraControllerSystem(window)
 
