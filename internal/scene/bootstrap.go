@@ -96,6 +96,10 @@ func BootstrapScene() (*Scene, map[string]*ecs.Entity) {
 	teapot := sc.AddEntity()
 	teapot.AddComponent(ecs.NewTransform([3]float32{0, 2, 0}))
 	teapot.AddComponent(ecs.NewMesh("teapot"))
+	teapot.AddComponent(&ecs.Mesh{
+		ID:       "teapot",
+		MeshName: "teapot",
+	})
 	teapot.AddComponent(&ecs.Material{
 		BaseColor: [4]float32{1, 1, 1, 1.0},
 		Ambient:   0.4,
@@ -112,6 +116,10 @@ func BootstrapScene() (*Scene, map[string]*ecs.Entity) {
 	ent.AddComponent(ecs.NewTransform([3]float32{1, 1, 1}))
 	ent.AddComponent(ecs.NewMaterial([4]float32{1, 1, 1, 1}))
 	ent.AddComponent(ecs.NewName("Sofa Entity"))
+	ent.AddComponent(&ecs.Mesh{
+		ID:       "Frame/0",
+		MeshName: "Frame/0",
+	})
 	named["ent"] = ent
 
 	// Light gizmo and arrow (for debug / gizmos)

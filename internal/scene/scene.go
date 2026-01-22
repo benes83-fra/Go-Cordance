@@ -136,6 +136,9 @@ func (s *Scene) DuplicateEntity(src *ecs.Entity) *ecs.Entity {
 		case *ecs.ColliderPlane:
 			nc := *c
 			dup.AddComponent(&nc)
+		case *ecs.Mesh:
+			nc := *c
+			dup.AddComponent(&nc)
 
 		// Add more as needed
 
