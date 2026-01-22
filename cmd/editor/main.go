@@ -1,13 +1,8 @@
 package main
 
 import (
-	"encoding/json"
 	"go-engine/Go-Cordance/internal/editor"
-	"go-engine/Go-Cordance/internal/editor/bridge"
-	"go-engine/Go-Cordance/internal/editorlink"
 	"go-engine/Go-Cordance/internal/scene"
-	"log"
-	"net"
 )
 
 func main() {
@@ -18,6 +13,7 @@ func main() {
 
 }
 
+/*
 func connectAndRequestSnapshot() error {
 	var err error
 	editorlink.EditorConn, err = net.Dial("tcp", "localhost:7777")
@@ -68,3 +64,4 @@ func snapshotToEntityInfo(snap editorlink.SceneSnapshot) []bridge.EntityInfo {
 	}
 	return out
 }
+*/

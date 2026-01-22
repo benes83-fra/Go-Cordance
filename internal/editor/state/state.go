@@ -16,22 +16,25 @@ type EditorState struct {
 	TextureNames    []string
 	TextureIDs      []uint32
 	IsRebuilding    bool
+	LastComponents  map[int64][]string
 }
 
 func NewEditorState() *EditorState {
 	return &EditorState{
-		Entities:      []bridge.EntityInfo{},
-		SelectedIndex: -1,
-		TextureNames:  []string{},
-		TextureIDs:    []uint32{},
+		Entities:       []bridge.EntityInfo{},
+		SelectedIndex:  -1,
+		TextureNames:   []string{},
+		TextureIDs:     []uint32{},
+		LastComponents: make(map[int64][]string),
 	}
 }
 
 func New() *EditorState {
 	return &EditorState{
-		Entities:      []bridge.EntityInfo{},
-		SelectedIndex: -1,
-		SplitOffset:   0.35,
+		Entities:       []bridge.EntityInfo{},
+		SelectedIndex:  -1,
+		SplitOffset:    0.35,
+		LastComponents: make(map[int64][]string),
 	}
 
 }

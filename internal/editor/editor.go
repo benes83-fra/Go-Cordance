@@ -90,12 +90,14 @@ func Run(world *ecs.World) {
 	win.ShowAndRun()
 }
 
-func UpdateEntities(ents []bridge.EntityInfo) {
+func UpdateEntities(world *ecs.World, ents []bridge.EntityInfo) {
 	log.Printf("editor: UpdateEntities called with %d entities", len(ents))
 	for i, e := range ents {
 		log.Printf(" Entity %d: ID=%d, Name=%s, Components=%v", i, e.ID, e.Name, e.Components)
 	}
 	state.Global.Entities = ents
+
+	structuralChange := false
 	// prune selection IDs that no longer exist
 	valid := map[int64]bool{}
 	for _, e := range ents {
@@ -109,6 +111,16 @@ func UpdateEntities(ents []bridge.EntityInfo) {
 	}
 	state.Global.Selection.IDs = newIDs
 
+	for _, e := range ents {
+		last, ok := state.Global.LastComponents[e.ID]
+		if !ok || !equalStringSlices(last, e.Components) {
+			structuralChange = true
+			state.Global.LastComponents[e.ID] = append([]string{}, e.Components...)
+		}
+	}
+	if structuralChange {
+		SyncEditorWorld(world, ents)
+	}
 	// If there is a selected index, forward it to the gizmo; otherwise clear selection.
 	// Forward current multi-selection to gizmo if present; otherwise fall back to single SelectedIndex.
 	if len(state.Global.Selection.IDs) > 0 {
@@ -218,8 +230,45 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 			}
 
 			fyne.DoAndWait(func() {
-				UpdateEntities(ents)
+				UpdateEntities(world, ents)
 			})
 		}
 	}
+}
+
+// SyncEditorWorld rebuilds the editor's ECS world to match the snapshot.
+func SyncEditorWorld(world *ecs.World, ents []bridge.EntityInfo) {
+	// Clear the editor ECS
+	world.Entities = nil
+
+	// Rebuild entities
+	for _, e := range ents {
+		ent := ecs.NewEntity(e.ID)
+
+		// Add components based on snapshot
+		for _, cname := range e.Components {
+			constructor, ok := ecs.ComponentRegistry[cname]
+			if !ok {
+				log.Printf("editor: no constructor for component %q in registry", cname)
+				continue
+			}
+			comp := constructor()
+			log.Printf("editor: Snapshot Components %v", comp)
+			ent.AddComponent(comp)
+		}
+
+		world.Entities = append(world.Entities, ent)
+	}
+}
+
+func equalStringSlices(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
