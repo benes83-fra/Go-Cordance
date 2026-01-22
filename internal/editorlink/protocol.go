@@ -133,6 +133,15 @@ func WriteSetPivotMode(conn net.Conn, mode string) error {
 	return writeMsg(conn, "SetPivotMode", msg)
 }
 
+type MsgDuplicateEntity struct {
+	ID uint64 `json:"id"`
+}
+
+func WriteDuplicateEntity(conn net.Conn, id int64) error {
+	msg := MsgDuplicateEntity{ID: uint64(id)}
+	return writeMsg(conn, "DuplicateEntity", msg)
+}
+
 // Public client helpers:
 
 func ReadMsg(conn net.Conn) (Msg, error) { return readMsg(conn) }

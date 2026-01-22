@@ -5,9 +5,11 @@ import (
 	"go-engine/Go-Cordance/internal/editor/bridge"
 )
 
-
 type World struct {
 	Entities []*Entity
+}
+type ComponentCloner interface {
+	Clone() Component
 }
 
 func NewWorld() *World {

@@ -32,21 +32,24 @@ func Run(world *ecs.World) {
 	st := state.Global
 	st.Foldout = map[string]bool{"Position": true, "Rotation": true, "Scale": true}
 	st.ShowLightGizmos = true
-	var hierarchyWidget *widget.List
+
+	var hierarchyWidget fyne.CanvasObject
+	var hierarchyList *widget.List
+
 	// Create inspector first so we have the rebuild function available.
 	inspectorContainer, inspectorRebuild := ui.NewInspectorPanel()
 
 	state.Global.RefreshUI = func() {
-		hierarchyWidget.Refresh()
-		inspectorRebuild(world, st, hierarchyWidget)
-
+		if hierarchyList != nil {
+			hierarchyList.Refresh()
+		}
+		inspectorRebuild(world, st, hierarchyList)
 	}
 
 	// Now create the hierarchy and pass a callback that calls inspectorRebuild.
-	hierarchyWidget = ui.NewHierarchyPanel(st, func(id int) {
-		// This callback runs on the UI goroutine (Fyne), so it's safe to call rebuild directly.
+	hierarchyWidget, hierarchyList = ui.NewHierarchyPanel(st, func(id int) {
 		st.SelectedIndex = id
-		inspectorRebuild(world, st, hierarchyWidget)
+		inspectorRebuild(world, st, hierarchyList)
 	})
 
 	// viewport placeholder
@@ -77,7 +80,8 @@ func Run(world *ecs.World) {
 	win.Show()
 
 	// initial build (no selection)
-	inspectorRebuild(world, st, hierarchyWidget)
+	inspectorRebuild(world, st, hierarchyList)
+
 	win.SetCloseIntercept(func() {
 		st.SplitOffset = split.Offset
 		win.Close()
@@ -128,11 +132,11 @@ func UpdateEntityTransform(id int64, pos bridge.Vec3, rot bridge.Vec4, scale bri
 			state.Global.Entities[i].Position = pos
 			state.Global.Entities[i].Rotation = rot
 			state.Global.Entities[i].Scale = scale
-
 			return
 		}
 	}
 }
+
 func startEditorLinkClient(world *ecs.World) {
 	conn, err := net.Dial("tcp", "localhost:7777")
 	if err != nil {
@@ -177,6 +181,7 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 					state.Global.RefreshUI() // rebuild inspector ONCE
 				}
 			})
+
 		case "TextureList":
 			var m editorlink.MsgTextureList
 			if err := json.Unmarshal(msg.Data, &m); err != nil {
@@ -203,50 +208,18 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 			ents := make([]bridge.EntityInfo, len(snap.Snapshot.Entities))
 			for i, e := range snap.Snapshot.Entities {
 				ents[i] = bridge.EntityInfo{
-					ID:       int64(e.ID),
-					Name:     e.Name,
-					Position: bridge.Vec3(e.Position),
-					Rotation: bridge.Vec4(e.Rotation),
-					Scale:    bridge.Vec3(e.Scale),
-
-					Components: e.Components, // <-- NEW
-
+					ID:         int64(e.ID),
+					Name:       e.Name,
+					Position:   bridge.Vec3(e.Position),
+					Rotation:   bridge.Vec4(e.Rotation),
+					Scale:      bridge.Vec3(e.Scale),
+					Components: e.Components,
 				}
-
 			}
 
 			fyne.DoAndWait(func() {
-				//SyncEditorWorld(world, ents)
 				UpdateEntities(ents)
 			})
-
 		}
 	}
 }
-
-/*
-// SyncEditorWorld rebuilds the editor's ECS world to match the snapshot.
-func SyncEditorWorld(world *ecs.World, ents []bridge.EntityInfo) {
-	// Clear the editor ECS
-	world.Entities = nil
-
-	// Rebuild entities
-	for _, e := range ents {
-		ent := ecs.NewEntity(e.ID)
-
-		// Add components based on snapshot
-		for _, cname := range e.Components {
-			constructor, ok := ecs.ComponentRegistry[cname]
-			if !ok {
-				log.Printf("editor: no constructor for component %q in registry", cname)
-				continue
-			}
-			comp := constructor()
-			log.Printf("editor: Snapshot Components %v", comp)
-			ent.AddComponent(comp)
-		}
-
-		world.Entities = append(world.Entities, ent)
-	}
-}
-*/

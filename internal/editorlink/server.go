@@ -154,6 +154,25 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 
 			// Tell the camera system to focus
 			camSys.FocusOn(ent)
+		case "DuplicateEntity":
+			var m MsgDuplicateEntity
+			json.Unmarshal(msg.Data, &m)
+
+			src := sc.World().FindByID(int64(m.ID))
+			if src == nil {
+				log.Printf("DuplicateEntity: entity %d not found", m.ID)
+				continue
+			}
+
+			dup := sc.DuplicateEntity(src)
+
+			sc.Selected = dup
+			sc.SelectedEntity = uint64(dup.ID)
+
+			if EditorConn != nil {
+				snap := buildSceneSnapshot(sc)
+				writeMsg(EditorConn, "SceneSnapshot", MsgSceneSnapshot{Snapshot: snap})
+			}
 
 		default:
 			log.Printf("editorlink: unknown msg type %q", msg.Type)

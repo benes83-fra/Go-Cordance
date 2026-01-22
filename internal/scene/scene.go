@@ -99,3 +99,50 @@ func (s *Scene) contains(e *ecs.Entity) bool {
 	}
 	return false
 }
+func (s *Scene) DuplicateEntity(src *ecs.Entity) *ecs.Entity {
+	// 1. Create a new entity with a new ID
+	dup := s.AddEntity()
+
+	// 2. Clone components (shallow copy is fine for your architecture)
+	for _, comp := range src.Components {
+		switch c := comp.(type) {
+
+		case *ecs.Transform:
+			nc := *c
+			nc.Position[0] += 0.5 // small offset so it's visible
+			dup.AddComponent(&nc)
+
+		case *ecs.Name:
+			nc := *c
+			nc.Value = c.Value + " Copy"
+			dup.AddComponent(&nc)
+
+		case *ecs.Material:
+			nc := *c
+			dup.AddComponent(&nc)
+
+		case *ecs.LightComponent:
+			nc := *c
+			dup.AddComponent(&nc)
+
+		case *ecs.ColliderSphere:
+			nc := *c
+			dup.AddComponent(&nc)
+
+		case *ecs.ColliderAABB:
+			nc := *c
+			dup.AddComponent(&nc)
+
+		case *ecs.ColliderPlane:
+			nc := *c
+			dup.AddComponent(&nc)
+
+		// Add more as needed
+
+		default:
+			// Unknown component type — skip
+		}
+	}
+
+	return dup
+}
