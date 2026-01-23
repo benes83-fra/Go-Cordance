@@ -149,3 +149,24 @@ func (s *Scene) DuplicateEntity(src *ecs.Entity) *ecs.Entity {
 
 	return dup
 }
+
+func (s *Scene) DeleteEntityByID(id int64) {
+	// Remove from scene.entities
+	newList := make([]*ecs.Entity, 0, len(s.entities))
+	for _, e := range s.entities {
+		if e.ID != id {
+			newList = append(newList, e)
+		}
+	}
+	s.entities = newList
+
+	// Remove from ECS world
+	if s.world != nil {
+		s.world.RemoveEntityByID(id)
+	}
+
+	// Clear selection if needed
+	if s.Selected != nil && s.Selected.ID == id {
+		s.Selected = nil
+	}
+}

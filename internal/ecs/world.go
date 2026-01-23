@@ -44,3 +44,13 @@ func (w *World) FindByID(id int64) *Entity {
 	}
 	return nil
 }
+
+func (w *World) RemoveEntityByID(id int64) {
+	newList := make([]*Entity, 0, len(w.Entities))
+	for _, e := range w.Entities {
+		if e.ID != id {
+			newList = append(newList, e)
+		}
+	}
+	w.Entities = newList
+}

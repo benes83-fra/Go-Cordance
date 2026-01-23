@@ -142,6 +142,10 @@ func WriteDuplicateEntity(conn net.Conn, id int64) error {
 	return writeMsg(conn, "DuplicateEntity", msg)
 }
 
+type MsgDeleteEntity struct {
+	ID int64 `json:"id"`
+}
+
 // Public client helpers:
 
 func ReadMsg(conn net.Conn) (Msg, error) { return readMsg(conn) }
@@ -188,4 +192,9 @@ func WriteTextureList(conn net.Conn, names []string, ids []uint32) error {
 func WriteFocusEntity(conn net.Conn, id int64) error {
 	msg := MsgFocusEntity{ID: uint64(id)}
 	return writeMsg(conn, "FocusEntity", msg)
+}
+
+func WriteDeleteEntity(conn net.Conn, id int64) error {
+	msg := MsgDeleteEntity{ID: id}
+	return writeMsg(conn, "DeleteEntity", msg)
 }
