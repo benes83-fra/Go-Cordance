@@ -4,7 +4,6 @@ import (
 	"go-engine/Go-Cordance/internal/ecs/gizmo"
 	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
-	"go-engine/Go-Cordance/internal/editor/undo"
 	"go-engine/Go-Cordance/internal/editorlink"
 	"time"
 
@@ -56,10 +55,9 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 			}
 
 			// Push structural undo
-			undo.Global.PushStructural(undo.DeleteEntityCommand{Entity: deleted})
 
 			// Send delete request to game
-			go editorlink.WriteDeleteEntity(editorlink.EditorConn, st.Selection.ActiveID)
+			go editorlink.WriteDeleteEntity(editorlink.EditorConn, st.Selection.ActiveID, deleted.Name)
 		}
 	})
 

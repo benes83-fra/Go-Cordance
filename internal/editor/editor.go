@@ -296,15 +296,3 @@ func equalStringSlices(a, b []string) bool {
 	}
 	return true
 }
-
-func findDuplicateInSnapshot(ents []bridge.EntityInfo, src bridge.EntityInfo) bridge.EntityInfo {
-	// simplest: pick the entity with the highest ID
-	// or match by name = src.Name + " Copy"
-	var best bridge.EntityInfo
-	for _, e := range ents {
-		if e.ID > best.ID {
-			best = e
-		}
-	}
-	return best
-}

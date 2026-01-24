@@ -134,7 +134,8 @@ func WriteSetPivotMode(conn net.Conn, mode string) error {
 }
 
 type MsgDuplicateEntity struct {
-	ID uint64 `json:"id"`
+	ID   uint64 `json:"id"`
+	Name string `json:"name"`
 }
 
 func WriteDuplicateEntity(conn net.Conn, id int64) error {
@@ -143,7 +144,8 @@ func WriteDuplicateEntity(conn net.Conn, id int64) error {
 }
 
 type MsgDeleteEntity struct {
-	ID int64 `json:"id"`
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
 }
 
 // Public client helpers:
@@ -194,7 +196,10 @@ func WriteFocusEntity(conn net.Conn, id int64) error {
 	return writeMsg(conn, "FocusEntity", msg)
 }
 
-func WriteDeleteEntity(conn net.Conn, id int64) error {
-	msg := MsgDeleteEntity{ID: id}
+func WriteDeleteEntity(conn net.Conn, id int64, name string) error {
+	msg := MsgDeleteEntity{
+		ID:   id,
+		Name: name,
+	}
 	return writeMsg(conn, "DeleteEntity", msg)
 }

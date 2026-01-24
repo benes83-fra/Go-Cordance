@@ -12,6 +12,7 @@ import (
 	"go-engine/Go-Cordance/internal/ecs/gizmo"
 	"go-engine/Go-Cordance/internal/ecs/gizmo/bridge"
 	"go-engine/Go-Cordance/internal/editor/state"
+	"go-engine/Go-Cordance/internal/editor/undo"
 	"go-engine/Go-Cordance/internal/editorlink"
 	"go-engine/Go-Cordance/internal/engine"
 	"go-engine/Go-Cordance/internal/scene"
@@ -241,11 +242,12 @@ func main() {
 
 				}
 			case glfw.KeyZ:
-				log.Printf("Undo Gizmo action")
-				gizmoSys.Undo.Undo(sc.World())
+				log.Printf("Undo")
+				undo.Global.Undo(sc.World())
 			case glfw.KeyY:
-				log.Printf("Redo Gizmo action")
-				gizmoSys.Undo.Redo(sc.World())
+				log.Printf("Redo")
+				undo.Global.Redo(sc.World())
+
 			}
 
 		}

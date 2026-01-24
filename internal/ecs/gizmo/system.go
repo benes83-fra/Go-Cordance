@@ -33,9 +33,9 @@ type GizmoRenderSystem struct {
 	LocalRotation bool
 	SelectionIDs  []int64
 	PivotMode     state.PivotMode
-	Undo          *undo.UndoStack
-	World         *ecs.World
-	dragBefore    []undo.TransformSnapshot
+	//Undo          *undo.UndoStack
+	World      *ecs.World
+	dragBefore []undo.TransformSnapshot
 
 	dragStartRayOrigin mgl32.Vec3
 	dragStartRayDir    mgl32.Vec3
@@ -51,7 +51,7 @@ func NewGizmoRenderSystem(r *engine.DebugRenderer, mm *engine.MeshManager, cs *e
 		Mode:          GizmoCombined,
 		Enabled:       true,
 		LocalRotation: false,
-		Undo:          undo.NewUndoStack(),
+		//Undo:          undo.NewUndoStack(),
 	}
 }
 
@@ -252,7 +252,8 @@ func (gs *GizmoRenderSystem) handleDragEnd() {
 		if gs.World != nil && len(gs.SelectionIDs) > 0 && len(gs.dragBefore) > 0 {
 			after := captureSnapshotsByID(gs.World, gs.SelectionIDs)
 			cmd := &undo.TransformCommand{Before: gs.dragBefore, After: after}
-			gs.Undo.Push(cmd)
+			//gs.Undo.Push(cmd)
+			undo.Global.PushTransform(cmd)
 		}
 
 		gs.ActiveAxis = ""

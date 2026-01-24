@@ -9,6 +9,7 @@ import (
 	"go-engine/Go-Cordance/internal/ecs/gizmo"
 	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
+	"go-engine/Go-Cordance/internal/editor/undo"
 
 	"go-engine/Go-Cordance/internal/scene"
 )
@@ -167,6 +168,13 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 			}
 
 			dup := sc.DuplicateEntity(src)
+			name := dup.GetComponent((*ecs.Name)(nil)).(*ecs.Name).Value
+			info := bridge.EntityInfo{
+				ID:   int64(dup.ID),
+				Name: name,
+				// fill Position/Rotation/Scale/Components
+			}
+			undo.Global.PushStructural(undo.CreateEntityCommand{Entity: info})
 
 			sc.Selected = dup
 			sc.SelectedEntity = uint64(dup.ID)
@@ -181,6 +189,19 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 				log.Printf("bad DeleteEntity: %v", err)
 				continue
 			}
+			// 1) capture snapshot BEFORE deletion
+			ent := sc.World().FindByID(int64(m.ID))
+			name := m.Name
+			if ent != nil {
+
+				info := bridge.EntityInfo{
+					ID:   int64(ent.ID),
+					Name: name,
+					// fill Position/Rotation/Scale/Components from ECS
+				}
+				undo.Global.PushStructural(undo.DeleteEntityCommand{Entity: info})
+			}
+
 			sc.DeleteEntityByID(m.ID)
 
 			if EditorConn != nil {
