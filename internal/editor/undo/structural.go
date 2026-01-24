@@ -218,3 +218,5 @@ func (g *GlobalUndoStack) Redo(world *ecs.World) {
 		g.StructuralUndo.Redo(world)
 	}
 }
+
+var Global = NewGlobalUndoStack()

@@ -24,19 +24,6 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 		if st.Selection.ActiveID != 0 && editorlink.EditorConn != nil {
 
 			// Capture source entity info BEFORE duplication
-			var src bridge.EntityInfo
-			for _, e := range st.Entities {
-				if e.ID == st.Selection.ActiveID {
-					src = e
-					break
-				}
-			}
-
-			// The game will create a new entity with a NEW ID.
-			// But we need to know the new entity's info for undo.
-			// So we push undo AFTER receiving the snapshot.
-
-			editorlink.PendingDuplicateUndo = &src
 
 			go editorlink.WriteDuplicateEntity(editorlink.EditorConn, st.Selection.ActiveID)
 		}

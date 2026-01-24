@@ -16,7 +16,6 @@ import (
 
 var EditorConn net.Conn
 var lastLightVersion = map[uint64]uint64{} // entityID -> version
-var PendingDuplicateUndo *bridge.EntityInfo
 
 // StartServer exposes the given Scene to a single editor client.
 func StartServer(addr string, sc *scene.Scene, camSys *ecs.CameraSystem) {
@@ -168,12 +167,50 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 			}
 
 			dup := sc.DuplicateEntity(src)
+
+			// Build full EntityInfo from ECS
 			name := dup.GetComponent((*ecs.Name)(nil)).(*ecs.Name).Value
-			info := bridge.EntityInfo{
-				ID:   int64(dup.ID),
-				Name: name,
-				// fill Position/Rotation/Scale/Components
+
+			var pos [3]float32
+			var rot [4]float32
+			var scale [3]float32
+			var comps []string
+
+			if c := dup.GetComponent((*ecs.Transform)(nil)); c != nil {
+				tr := c.(*ecs.Transform)
+				pos = tr.Position
+				rot = tr.Rotation
+				scale = tr.Scale
+				comps = append(comps, "Transform")
 			}
+			if dup.GetComponent((*ecs.Material)(nil)) != nil {
+				comps = append(comps, "Material")
+			}
+			if dup.GetComponent((*ecs.RigidBody)(nil)) != nil {
+				comps = append(comps, "RigidBody")
+			}
+			if dup.GetComponent((*ecs.ColliderSphere)(nil)) != nil {
+				comps = append(comps, "ColliderSphere")
+			}
+			if dup.GetComponent((*ecs.ColliderAABB)(nil)) != nil {
+				comps = append(comps, "ColliderAABB")
+			}
+			if dup.GetComponent((*ecs.ColliderPlane)(nil)) != nil {
+				comps = append(comps, "ColliderPlane")
+			}
+			if dup.GetComponent((*ecs.LightComponent)(nil)) != nil {
+				comps = append(comps, "Light")
+			}
+
+			info := bridge.EntityInfo{
+				ID:         int64(dup.ID),
+				Name:       name,
+				Position:   bridge.Vec3(pos),
+				Rotation:   bridge.Vec4(rot),
+				Scale:      bridge.Vec3(scale),
+				Components: comps,
+			}
+
 			undo.Global.PushStructural(undo.CreateEntityCommand{Entity: info})
 
 			sc.Selected = dup
@@ -183,22 +220,57 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 				snap := buildSceneSnapshot(sc)
 				writeMsg(EditorConn, "SceneSnapshot", MsgSceneSnapshot{Snapshot: snap})
 			}
+
 		case "DeleteEntity":
 			var m MsgDeleteEntity
 			if err := json.Unmarshal(msg.Data, &m); err != nil {
 				log.Printf("bad DeleteEntity: %v", err)
 				continue
 			}
-			// 1) capture snapshot BEFORE deletion
+
 			ent := sc.World().FindByID(int64(m.ID))
-			name := m.Name
 			if ent != nil {
+				name := m.Name
+				var pos [3]float32
+				var rot [4]float32
+				var scale [3]float32
+				var comps []string
+
+				if c := ent.GetComponent((*ecs.Transform)(nil)); c != nil {
+					tr := c.(*ecs.Transform)
+					pos = tr.Position
+					rot = tr.Rotation
+					scale = tr.Scale
+					comps = append(comps, "Transform")
+				}
+				if ent.GetComponent((*ecs.Material)(nil)) != nil {
+					comps = append(comps, "Material")
+				}
+				if ent.GetComponent((*ecs.RigidBody)(nil)) != nil {
+					comps = append(comps, "RigidBody")
+				}
+				if ent.GetComponent((*ecs.ColliderSphere)(nil)) != nil {
+					comps = append(comps, "ColliderSphere")
+				}
+				if ent.GetComponent((*ecs.ColliderAABB)(nil)) != nil {
+					comps = append(comps, "ColliderAABB")
+				}
+				if ent.GetComponent((*ecs.ColliderPlane)(nil)) != nil {
+					comps = append(comps, "ColliderPlane")
+				}
+				if ent.GetComponent((*ecs.LightComponent)(nil)) != nil {
+					comps = append(comps, "Light")
+				}
 
 				info := bridge.EntityInfo{
-					ID:   int64(ent.ID),
-					Name: name,
-					// fill Position/Rotation/Scale/Components from ECS
+					ID:         int64(ent.ID),
+					Name:       name,
+					Position:   bridge.Vec3(pos),
+					Rotation:   bridge.Vec4(rot),
+					Scale:      bridge.Vec3(scale),
+					Components: comps,
 				}
+
 				undo.Global.PushStructural(undo.DeleteEntityCommand{Entity: info})
 			}
 
@@ -207,7 +279,6 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 			if EditorConn != nil {
 				snap := buildSceneSnapshot(sc)
 				writeMsg(EditorConn, "SceneSnapshot", MsgSceneSnapshot{Snapshot: snap})
-
 			}
 
 		default:

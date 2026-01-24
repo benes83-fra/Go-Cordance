@@ -7,7 +7,6 @@ import (
 	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editor/ui"
-	"go-engine/Go-Cordance/internal/editor/undo"
 	"go-engine/Go-Cordance/internal/editorlink"
 	"net"
 
@@ -234,22 +233,6 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 					Scale:      bridge.Vec3(e.Scale),
 					Components: e.Components,
 				}
-			}
-
-			// if a duplicate was requested, detect the new entity and push undo
-			if editorlink.PendingDuplicateUndo != nil {
-				//	src := editorlink.PendingDuplicateUndo
-				var newest bridge.EntityInfo
-				for _, e := range ents {
-					// simplest heuristic: highest ID is the new duplicate
-					if e.ID > newest.ID {
-						newest = e
-					}
-				}
-				if newest.ID != 0 {
-					undo.Global.PushStructural(undo.CreateEntityCommand{Entity: newest})
-				}
-				editorlink.PendingDuplicateUndo = nil
 			}
 
 			fyne.DoAndWait(func() {
