@@ -110,6 +110,12 @@ func UpdateEntities(world *ecs.World, ents []bridge.EntityInfo) {
 		}
 	}
 	state.Global.Selection.IDs = newIDs
+	// ❗ NEW: fix SelectedIndex if it points to a deleted entity
+	if state.Global.SelectedIndex >= len(ents) {
+		state.Global.SelectedIndex = -1
+		state.Global.Selection.ActiveID = 0
+		state.Global.Selection.IDs = nil
+	}
 
 	for _, e := range ents {
 		last, ok := state.Global.LastComponents[e.ID]

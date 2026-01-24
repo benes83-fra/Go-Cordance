@@ -181,6 +181,12 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 			}
 			sc.DeleteEntityByID(m.ID)
 
+			if EditorConn != nil {
+				snap := buildSceneSnapshot(sc)
+				writeMsg(EditorConn, "SceneSnapshot", MsgSceneSnapshot{Snapshot: snap})
+
+			}
+
 		default:
 			log.Printf("editorlink: unknown msg type %q", msg.Type)
 		}
