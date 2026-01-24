@@ -3,6 +3,7 @@ package undo
 import (
 	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/editor/bridge"
+	"log"
 )
 
 //
@@ -22,61 +23,79 @@ type StructuralCommand interface {
 // ──────────────────────────────────────────────────────────────
 //
 
-type DeleteEntityCommand struct {
-	Entity bridge.EntityInfo
-}
-
-func (c DeleteEntityCommand) Undo(world *ecs.World) {
-	// Recreate entity
-	ent := ecs.NewEntity(c.Entity.ID)
-
-	// Recreate components
-	for _, cname := range c.Entity.Components {
-		constructor := ecs.ComponentRegistry[cname]
-		comp := constructor()
-		ent.AddComponent(comp)
-	}
-
-	// Reapply transform
-	if tr := ecs.GetTransform(ent); tr != nil {
-		tr.Position = c.Entity.Position
-		tr.Rotation = c.Entity.Rotation
-		tr.Scale = c.Entity.Scale
-	}
-
-	world.AddEntity(ent)
-}
-
-func (c DeleteEntityCommand) Redo(world *ecs.World) {
-	world.RemoveEntityByID(c.Entity.ID)
-}
+// structural.go (editor/undo)
 
 type CreateEntityCommand struct {
 	Entity bridge.EntityInfo
 }
 
 func (c CreateEntityCommand) Undo(world *ecs.World) {
-	// Undo creation = delete the entity
-	world.RemoveEntityByID(c.Entity.ID)
+	// Remove the created entity from the world
+	id := c.Entity.ID
+	newEntities := world.Entities[:0]
+	for _, e := range world.Entities {
+		if e.ID != id {
+			newEntities = append(newEntities, e)
+		}
+	}
+	world.Entities = newEntities
 }
 
 func (c CreateEntityCommand) Redo(world *ecs.World) {
-	// Redo creation = recreate the entity
-	ent := ecs.NewEntity(c.Entity.ID)
+	// Recreate the entity from the stored snapshot
+	recreateEntityFromInfo(world, c.Entity)
+}
 
-	for _, cname := range c.Entity.Components {
-		constructor := ecs.ComponentRegistry[cname]
+type DeleteEntityCommand struct {
+	Entity bridge.EntityInfo
+}
+
+func (c DeleteEntityCommand) Undo(world *ecs.World) {
+	// Recreate the deleted entity from the stored snapshot
+	recreateEntityFromInfo(world, c.Entity)
+}
+
+func (c DeleteEntityCommand) Redo(world *ecs.World) {
+	// Delete the entity again
+	id := c.Entity.ID
+	newEntities := world.Entities[:0]
+	for _, e := range world.Entities {
+		if e.ID != id {
+			newEntities = append(newEntities, e)
+		}
+	}
+	world.Entities = newEntities
+}
+
+// helper: mirror SyncEditorWorld but for a single entity
+func recreateEntityFromInfo(world *ecs.World, info bridge.EntityInfo) {
+	// avoid duplicates if somehow already present
+	if existing := world.FindByID(info.ID); existing != nil {
+		return
+	}
+
+	ent := ecs.NewEntity(info.ID)
+
+	for _, cname := range info.Components {
+		constructor, ok := ecs.ComponentRegistry[cname]
+		if !ok {
+			log.Printf("undo: no constructor for component %q in registry", cname)
+			continue
+		}
 		comp := constructor()
 		ent.AddComponent(comp)
+
+		// hydrate Transform from snapshot
+		if tr, ok := comp.(*ecs.Transform); ok {
+			tr.Position = [3]float32(info.Position)
+			tr.Rotation = [4]float32(info.Rotation)
+			tr.Scale = [3]float32(info.Scale)
+		}
+		// if you later store material/light data in EntityInfo,
+		// hydrate them here as well.
 	}
 
-	if tr := ecs.GetTransform(ent); tr != nil {
-		tr.Position = c.Entity.Position
-		tr.Rotation = c.Entity.Rotation
-		tr.Scale = c.Entity.Scale
-	}
-
-	world.AddEntity(ent)
+	world.Entities = append(world.Entities, ent)
 }
 
 //

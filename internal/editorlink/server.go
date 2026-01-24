@@ -169,47 +169,7 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 			dup := sc.DuplicateEntity(src)
 
 			// Build full EntityInfo from ECS
-			name := dup.GetComponent((*ecs.Name)(nil)).(*ecs.Name).Value
-
-			var pos [3]float32
-			var rot [4]float32
-			var scale [3]float32
-			var comps []string
-
-			if c := dup.GetComponent((*ecs.Transform)(nil)); c != nil {
-				tr := c.(*ecs.Transform)
-				pos = tr.Position
-				rot = tr.Rotation
-				scale = tr.Scale
-				comps = append(comps, "Transform")
-			}
-			if dup.GetComponent((*ecs.Material)(nil)) != nil {
-				comps = append(comps, "Material")
-			}
-			if dup.GetComponent((*ecs.RigidBody)(nil)) != nil {
-				comps = append(comps, "RigidBody")
-			}
-			if dup.GetComponent((*ecs.ColliderSphere)(nil)) != nil {
-				comps = append(comps, "ColliderSphere")
-			}
-			if dup.GetComponent((*ecs.ColliderAABB)(nil)) != nil {
-				comps = append(comps, "ColliderAABB")
-			}
-			if dup.GetComponent((*ecs.ColliderPlane)(nil)) != nil {
-				comps = append(comps, "ColliderPlane")
-			}
-			if dup.GetComponent((*ecs.LightComponent)(nil)) != nil {
-				comps = append(comps, "Light")
-			}
-
-			info := bridge.EntityInfo{
-				ID:         int64(dup.ID),
-				Name:       name,
-				Position:   bridge.Vec3(pos),
-				Rotation:   bridge.Vec4(rot),
-				Scale:      bridge.Vec3(scale),
-				Components: comps,
-			}
+			info := getEntityInfo(dup)
 
 			undo.Global.PushStructural(undo.CreateEntityCommand{Entity: info})
 
@@ -229,47 +189,9 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 			}
 
 			ent := sc.World().FindByID(int64(m.ID))
+
 			if ent != nil {
-				name := m.Name
-				var pos [3]float32
-				var rot [4]float32
-				var scale [3]float32
-				var comps []string
-
-				if c := ent.GetComponent((*ecs.Transform)(nil)); c != nil {
-					tr := c.(*ecs.Transform)
-					pos = tr.Position
-					rot = tr.Rotation
-					scale = tr.Scale
-					comps = append(comps, "Transform")
-				}
-				if ent.GetComponent((*ecs.Material)(nil)) != nil {
-					comps = append(comps, "Material")
-				}
-				if ent.GetComponent((*ecs.RigidBody)(nil)) != nil {
-					comps = append(comps, "RigidBody")
-				}
-				if ent.GetComponent((*ecs.ColliderSphere)(nil)) != nil {
-					comps = append(comps, "ColliderSphere")
-				}
-				if ent.GetComponent((*ecs.ColliderAABB)(nil)) != nil {
-					comps = append(comps, "ColliderAABB")
-				}
-				if ent.GetComponent((*ecs.ColliderPlane)(nil)) != nil {
-					comps = append(comps, "ColliderPlane")
-				}
-				if ent.GetComponent((*ecs.LightComponent)(nil)) != nil {
-					comps = append(comps, "Light")
-				}
-
-				info := bridge.EntityInfo{
-					ID:         int64(ent.ID),
-					Name:       name,
-					Position:   bridge.Vec3(pos),
-					Rotation:   bridge.Vec4(rot),
-					Scale:      bridge.Vec3(scale),
-					Components: comps,
-				}
+				info := getEntityInfo(ent)
 
 				undo.Global.PushStructural(undo.DeleteEntityCommand{Entity: info})
 			}
@@ -285,6 +207,51 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 			log.Printf("editorlink: unknown msg type %q", msg.Type)
 		}
 	}
+}
+
+func getEntityInfo(dup *ecs.Entity) bridge.EntityInfo {
+	name := dup.GetComponent((*ecs.Name)(nil)).(*ecs.Name).Value
+
+	var pos [3]float32
+	var rot [4]float32
+	var scale [3]float32
+	var comps []string
+
+	if c := dup.GetComponent((*ecs.Transform)(nil)); c != nil {
+		tr := c.(*ecs.Transform)
+		pos = tr.Position
+		rot = tr.Rotation
+		scale = tr.Scale
+		comps = append(comps, "Transform")
+	}
+	if dup.GetComponent((*ecs.Material)(nil)) != nil {
+		comps = append(comps, "Material")
+	}
+	if dup.GetComponent((*ecs.RigidBody)(nil)) != nil {
+		comps = append(comps, "RigidBody")
+	}
+	if dup.GetComponent((*ecs.ColliderSphere)(nil)) != nil {
+		comps = append(comps, "ColliderSphere")
+	}
+	if dup.GetComponent((*ecs.ColliderAABB)(nil)) != nil {
+		comps = append(comps, "ColliderAABB")
+	}
+	if dup.GetComponent((*ecs.ColliderPlane)(nil)) != nil {
+		comps = append(comps, "ColliderPlane")
+	}
+	if dup.GetComponent((*ecs.LightComponent)(nil)) != nil {
+		comps = append(comps, "Light")
+	}
+
+	info := bridge.EntityInfo{
+		ID:         int64(dup.ID),
+		Name:       name,
+		Position:   bridge.Vec3(pos),
+		Rotation:   bridge.Vec4(rot),
+		Scale:      bridge.Vec3(scale),
+		Components: comps,
+	}
+	return info
 }
 
 func buildSceneSnapshot(sc *scene.Scene) SceneSnapshot {
@@ -402,5 +369,18 @@ func applyRemoveComponent(sc *scene.Scene, m MsgRemoveComponent) {
 		if err := writeMsg(EditorConn, "SceneSnapshot", resp); err != nil {
 			log.Printf("editorlink: failed to send SceneSnapshot: %v", err)
 		}
+	}
+}
+
+// editorlink/server.go
+
+func SendFullSnapshot(sc *scene.Scene) {
+	if EditorConn == nil {
+		return
+	}
+	snap := buildSceneSnapshot(sc)
+	resp := MsgSceneSnapshot{Snapshot: snap}
+	if err := writeMsg(EditorConn, "SceneSnapshot", resp); err != nil {
+		log.Printf("editorlink: failed to send SceneSnapshot: %v", err)
 	}
 }
