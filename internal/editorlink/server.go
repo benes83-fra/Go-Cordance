@@ -7,6 +7,7 @@ import (
 
 	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/ecs/gizmo"
+	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
 
 	"go-engine/Go-Cordance/internal/scene"
@@ -14,6 +15,7 @@ import (
 
 var EditorConn net.Conn
 var lastLightVersion = map[uint64]uint64{} // entityID -> version
+var PendingDuplicateUndo *bridge.EntityInfo
 
 // StartServer exposes the given Scene to a single editor client.
 func StartServer(addr string, sc *scene.Scene, camSys *ecs.CameraSystem) {

@@ -7,6 +7,7 @@ import (
 	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editor/ui"
+	"go-engine/Go-Cordance/internal/editor/undo"
 	"go-engine/Go-Cordance/internal/editorlink"
 	"net"
 
@@ -235,9 +236,26 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 				}
 			}
 
+			// if a duplicate was requested, detect the new entity and push undo
+			if editorlink.PendingDuplicateUndo != nil {
+				//	src := editorlink.PendingDuplicateUndo
+				var newest bridge.EntityInfo
+				for _, e := range ents {
+					// simplest heuristic: highest ID is the new duplicate
+					if e.ID > newest.ID {
+						newest = e
+					}
+				}
+				if newest.ID != 0 {
+					undo.Global.PushStructural(undo.CreateEntityCommand{Entity: newest})
+				}
+				editorlink.PendingDuplicateUndo = nil
+			}
+
 			fyne.DoAndWait(func() {
 				UpdateEntities(world, ents)
 			})
+
 		}
 	}
 }
@@ -277,4 +295,16 @@ func equalStringSlices(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+func findDuplicateInSnapshot(ents []bridge.EntityInfo, src bridge.EntityInfo) bridge.EntityInfo {
+	// simplest: pick the entity with the highest ID
+	// or match by name = src.Name + " Copy"
+	var best bridge.EntityInfo
+	for _, e := range ents {
+		if e.ID > best.ID {
+			best = e
+		}
+	}
+	return best
 }

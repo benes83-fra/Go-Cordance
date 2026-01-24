@@ -2,7 +2,9 @@ package ui
 
 import (
 	"go-engine/Go-Cordance/internal/ecs/gizmo"
+	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
+	"go-engine/Go-Cordance/internal/editor/undo"
 	"go-engine/Go-Cordance/internal/editorlink"
 	"time"
 
@@ -21,11 +23,42 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 
 	dupBtn := widget.NewButton("Duplicate", func() {
 		if st.Selection.ActiveID != 0 && editorlink.EditorConn != nil {
+
+			// Capture source entity info BEFORE duplication
+			var src bridge.EntityInfo
+			for _, e := range st.Entities {
+				if e.ID == st.Selection.ActiveID {
+					src = e
+					break
+				}
+			}
+
+			// The game will create a new entity with a NEW ID.
+			// But we need to know the new entity's info for undo.
+			// So we push undo AFTER receiving the snapshot.
+
+			editorlink.PendingDuplicateUndo = &src
+
 			go editorlink.WriteDuplicateEntity(editorlink.EditorConn, st.Selection.ActiveID)
 		}
 	})
+
 	delBtn := widget.NewButton("Delete", func() {
 		if st.Selection.ActiveID != 0 && editorlink.EditorConn != nil {
+
+			// Capture entity info for undo
+			var deleted bridge.EntityInfo
+			for _, e := range st.Entities {
+				if e.ID == st.Selection.ActiveID {
+					deleted = e
+					break
+				}
+			}
+
+			// Push structural undo
+			undo.Global.PushStructural(undo.DeleteEntityCommand{Entity: deleted})
+
+			// Send delete request to game
 			go editorlink.WriteDeleteEntity(editorlink.EditorConn, st.Selection.ActiveID)
 		}
 	})
