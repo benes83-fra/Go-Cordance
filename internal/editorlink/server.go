@@ -169,12 +169,12 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 			dup := sc.DuplicateEntity(src)
 
 			// Build full EntityInfo from ECS
-			info := getEntityInfo(dup)
+			//	info := getEntityInfo(dup)
 			log.Printf("editorlink: DuplicateEntity created entity %d (from %d)", dup.ID, src.ID)
 
 			// Push undo command
 
-			undo.Global.PushStructural(undo.CreateEntityCommand{Entity: info})
+			undo.Global.PushStructural(undo.CreateEntityCommand{Entity: dup})
 			log.Printf("editorlink: UndoStack after DuplicateEntity contains %v.", undo.Global)
 			sc.Selected = dup
 			sc.SelectedEntity = uint64(dup.ID)
@@ -194,9 +194,9 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 			ent := sc.World().FindByID(int64(m.ID))
 
 			if ent != nil {
-				info := getEntityInfo(ent)
+				//info  := getEntityInfo(ent)
 
-				undo.Global.PushStructural(undo.DeleteEntityCommand{Entity: info})
+				undo.Global.PushStructural(undo.DeleteEntityCommand{Entity: ent})
 				log.Printf("editorlink: UndoStack after DeleteEntity contains %v.", undo.Global)
 			}
 
@@ -255,6 +255,7 @@ func getEntityInfo(dup *ecs.Entity) bridge.EntityInfo {
 		Scale:      bridge.Vec3(scale),
 		Components: comps,
 	}
+	log.Printf("editorlink: getEntityInfo: build info for entity %d: %+v", dup.ID, info)
 	return info
 }
 

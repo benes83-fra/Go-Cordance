@@ -4,7 +4,6 @@ import (
 	"log"
 
 	"go-engine/Go-Cordance/internal/ecs"
-	"go-engine/Go-Cordance/internal/editor/bridge"
 	"go-engine/Go-Cordance/internal/scene"
 )
 
@@ -26,7 +25,7 @@ type StructuralCommand interface {
 //
 
 type DeleteEntityCommand struct {
-	Entity bridge.EntityInfo
+	Entity *ecs.Entity
 }
 
 func (c DeleteEntityCommand) Undo(sc *scene.Scene) {
@@ -39,10 +38,10 @@ func (c DeleteEntityCommand) Undo(sc *scene.Scene) {
 	}
 
 	// Recreate entity
-	ent := ecs.NewEntity(c.Entity.ID)
+	//ent := ecs.NewEntity(c.Entity.ID)
 
 	// Recreate components
-	for _, cname := range c.Entity.Components {
+	/*for _, cname := range c.Entity.Components {
 		constructor, ok := ecs.ComponentRegistry[cname]
 		if !ok {
 			log.Printf("undo: DeleteEntityCommand.Undo: no constructor for component %q", cname)
@@ -57,11 +56,11 @@ func (c DeleteEntityCommand) Undo(sc *scene.Scene) {
 		tr.Position = c.Entity.Position
 		tr.Rotation = c.Entity.Rotation
 		tr.Scale = c.Entity.Scale
-	}
+	}*/
 
 	// Add to world + scene
-	world.AddEntity(ent)
-	sc.AddExisting(ent)
+	world.AddEntity(c.Entity)
+	sc.AddExisting(c.Entity)
 
 	log.Printf("undo: DeleteEntityCommand.Undo: recreated entity %d with components %v",
 		c.Entity.ID, c.Entity.Components)
@@ -83,7 +82,7 @@ func (c DeleteEntityCommand) Redo(sc *scene.Scene) {
 //
 
 type CreateEntityCommand struct {
-	Entity bridge.EntityInfo
+	Entity *ecs.Entity
 }
 
 func (c CreateEntityCommand) Undo(sc *scene.Scene) {
@@ -103,9 +102,9 @@ func (c CreateEntityCommand) Redo(sc *scene.Scene) {
 		return
 	}
 
-	ent := ecs.NewEntity(c.Entity.ID)
+	//ent := ecs.NewEntity(c.Entity.ID)
 
-	for _, cname := range c.Entity.Components {
+	/*for _, cname := range c.Entity.Components {
 		constructor, ok := ecs.ComponentRegistry[cname]
 		if !ok {
 			log.Printf("undo: CreateEntityCommand.Redo: no constructor for component %q", cname)
@@ -119,10 +118,10 @@ func (c CreateEntityCommand) Redo(sc *scene.Scene) {
 		tr.Position = c.Entity.Position
 		tr.Rotation = c.Entity.Rotation
 		tr.Scale = c.Entity.Scale
-	}
+	}*/
 
-	world.AddEntity(ent)
-	sc.AddExisting(ent)
+	world.AddEntity(c.Entity)
+	sc.AddExisting(c.Entity)
 
 	log.Printf("undo: CreateEntityCommand.Redo: recreated entity %d with components %v",
 		c.Entity.ID, c.Entity.Components)

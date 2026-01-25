@@ -155,6 +155,9 @@ func NewInspectorPanel() (
 				for _, name := range names {
 					constructor, ok := ecs.ComponentRegistry[name]
 					if !ok {
+						if name == "Transform" {
+							continue
+						}
 						log.Printf("editor: no constructor for component %q in registry", name)
 						continue
 					}
