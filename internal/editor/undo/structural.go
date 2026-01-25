@@ -1,20 +1,22 @@
 package undo
 
 import (
+	"log"
+
 	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/editor/bridge"
-	"log"
+	"go-engine/Go-Cordance/internal/scene"
 )
 
 //
 // ──────────────────────────────────────────────────────────────
-//   STRUCTURAL COMMAND INTERFACE
+//   STRUCTURAL COMMAND INTERFACE  (UPDATED TO USE SCENE)
 // ──────────────────────────────────────────────────────────────
 //
 
 type StructuralCommand interface {
-	Undo(world *ecs.World)
-	Redo(world *ecs.World)
+	Undo(sc *scene.Scene)
+	Redo(sc *scene.Scene)
 }
 
 //
@@ -23,84 +25,112 @@ type StructuralCommand interface {
 // ──────────────────────────────────────────────────────────────
 //
 
-// structural.go (editor/undo)
+type DeleteEntityCommand struct {
+	Entity bridge.EntityInfo
+}
+
+func (c DeleteEntityCommand) Undo(sc *scene.Scene) {
+	world := sc.World()
+
+	// If the entity already exists, don't duplicate it.
+	if existing := world.FindByID(c.Entity.ID); existing != nil {
+		log.Printf("undo: DeleteEntityCommand.Undo: entity %d already exists, skipping recreate", c.Entity.ID)
+		return
+	}
+
+	// Recreate entity
+	ent := ecs.NewEntity(c.Entity.ID)
+
+	// Recreate components
+	for _, cname := range c.Entity.Components {
+		constructor, ok := ecs.ComponentRegistry[cname]
+		if !ok {
+			log.Printf("undo: DeleteEntityCommand.Undo: no constructor for component %q", cname)
+			continue
+		}
+		comp := constructor()
+		ent.AddComponent(comp)
+	}
+
+	// Reapply transform
+	if tr := ecs.GetTransform(ent); tr != nil {
+		tr.Position = c.Entity.Position
+		tr.Rotation = c.Entity.Rotation
+		tr.Scale = c.Entity.Scale
+	}
+
+	// Add to world + scene
+	world.AddEntity(ent)
+	sc.AddExisting(ent)
+
+	log.Printf("undo: DeleteEntityCommand.Undo: recreated entity %d with components %v",
+		c.Entity.ID, c.Entity.Components)
+}
+
+func (c DeleteEntityCommand) Redo(sc *scene.Scene) {
+	world := sc.World()
+
+	world.RemoveEntityByID(c.Entity.ID)
+	sc.DeleteEntityByID(c.Entity.ID)
+
+	log.Printf("undo: DeleteEntityCommand.Redo: removed entity %d", c.Entity.ID)
+}
+
+//
+// ──────────────────────────────────────────────────────────────
+//   CREATE ENTITY COMMAND
+// ──────────────────────────────────────────────────────────────
+//
 
 type CreateEntityCommand struct {
 	Entity bridge.EntityInfo
 }
 
-func (c CreateEntityCommand) Undo(world *ecs.World) {
-	// Remove the created entity from the world
-	id := c.Entity.ID
-	newEntities := world.Entities[:0]
-	for _, e := range world.Entities {
-		if e.ID != id {
-			newEntities = append(newEntities, e)
-		}
-	}
-	world.Entities = newEntities
+func (c CreateEntityCommand) Undo(sc *scene.Scene) {
+	world := sc.World()
+
+	world.RemoveEntityByID(c.Entity.ID)
+	sc.DeleteEntityByID(c.Entity.ID)
+
+	log.Printf("undo: CreateEntityCommand.Undo: removed entity %d", c.Entity.ID)
 }
 
-func (c CreateEntityCommand) Redo(world *ecs.World) {
-	// Recreate the entity from the stored snapshot
-	recreateEntityFromInfo(world, c.Entity)
-}
+func (c CreateEntityCommand) Redo(sc *scene.Scene) {
+	world := sc.World()
 
-type DeleteEntityCommand struct {
-	Entity bridge.EntityInfo
-}
-
-func (c DeleteEntityCommand) Undo(world *ecs.World) {
-	// Recreate the deleted entity from the stored snapshot
-	recreateEntityFromInfo(world, c.Entity)
-}
-
-func (c DeleteEntityCommand) Redo(world *ecs.World) {
-	// Delete the entity again
-	id := c.Entity.ID
-	newEntities := world.Entities[:0]
-	for _, e := range world.Entities {
-		if e.ID != id {
-			newEntities = append(newEntities, e)
-		}
-	}
-	world.Entities = newEntities
-}
-
-// helper: mirror SyncEditorWorld but for a single entity
-func recreateEntityFromInfo(world *ecs.World, info bridge.EntityInfo) {
-	// avoid duplicates if somehow already present
-	if existing := world.FindByID(info.ID); existing != nil {
+	if existing := world.FindByID(c.Entity.ID); existing != nil {
+		log.Printf("undo: CreateEntityCommand.Redo: entity %d already exists, skipping recreate", c.Entity.ID)
 		return
 	}
 
-	ent := ecs.NewEntity(info.ID)
+	ent := ecs.NewEntity(c.Entity.ID)
 
-	for _, cname := range info.Components {
+	for _, cname := range c.Entity.Components {
 		constructor, ok := ecs.ComponentRegistry[cname]
 		if !ok {
-			log.Printf("undo: no constructor for component %q in registry", cname)
+			log.Printf("undo: CreateEntityCommand.Redo: no constructor for component %q", cname)
 			continue
 		}
 		comp := constructor()
 		ent.AddComponent(comp)
-
-		// hydrate Transform from snapshot
-		if tr, ok := comp.(*ecs.Transform); ok {
-			tr.Position = [3]float32(info.Position)
-			tr.Rotation = [4]float32(info.Rotation)
-			tr.Scale = [3]float32(info.Scale)
-		}
-		// if you later store material/light data in EntityInfo,
-		// hydrate them here as well.
 	}
 
-	world.Entities = append(world.Entities, ent)
+	if tr := ecs.GetTransform(ent); tr != nil {
+		tr.Position = c.Entity.Position
+		tr.Rotation = c.Entity.Rotation
+		tr.Scale = c.Entity.Scale
+	}
+
+	world.AddEntity(ent)
+	sc.AddExisting(ent)
+
+	log.Printf("undo: CreateEntityCommand.Redo: recreated entity %d with components %v",
+		c.Entity.ID, c.Entity.Components)
 }
 
 //
 // ──────────────────────────────────────────────────────────────
-//   STRUCTURAL UNDO STACK
+//   STRUCTURAL UNDO STACK (UPDATED TO PASS SCENE)
 // ──────────────────────────────────────────────────────────────
 //
 
@@ -128,30 +158,27 @@ func (u *StructuralUndoStack) Push(cmd StructuralCommand) {
 func (u *StructuralUndoStack) CanUndo() bool { return u.idx >= 0 }
 func (u *StructuralUndoStack) CanRedo() bool { return u.idx < len(u.stack)-1 }
 
-func (u *StructuralUndoStack) Undo(world *ecs.World) {
+func (u *StructuralUndoStack) Undo(sc *scene.Scene) {
 	if !u.CanUndo() {
 		return
 	}
-	u.stack[u.idx].Undo(world)
+	u.stack[u.idx].Undo(sc)
 	u.idx--
 }
 
-func (u *StructuralUndoStack) Redo(world *ecs.World) {
+func (u *StructuralUndoStack) Redo(sc *scene.Scene) {
 	if !u.CanRedo() {
 		return
 	}
 	u.idx++
-	u.stack[u.idx].Redo(world)
+	u.stack[u.idx].Redo(sc)
 }
 
 //
 // ──────────────────────────────────────────────────────────────
-//   UNIFIED GLOBAL UNDO STACK
+//   GLOBAL UNDO STACK (UPDATED TO PASS SCENE)
 // ──────────────────────────────────────────────────────────────
 //
-
-// This is what the user interacts with.
-// It stores a timeline of actions, each pointing to either a transform or structural command.
 
 type ActionType int
 
@@ -205,7 +232,7 @@ func (g *GlobalUndoStack) push(a GlobalAction) {
 func (g *GlobalUndoStack) CanUndo() bool { return g.idx >= 0 }
 func (g *GlobalUndoStack) CanRedo() bool { return g.idx < len(g.actions)-1 }
 
-func (g *GlobalUndoStack) Undo(world *ecs.World) {
+func (g *GlobalUndoStack) Undo(sc *scene.Scene) {
 	if !g.CanUndo() {
 		return
 	}
@@ -214,15 +241,15 @@ func (g *GlobalUndoStack) Undo(world *ecs.World) {
 
 	switch a.Type {
 	case ActionTransform:
-		g.TransformUndo.Undo(world)
+		g.TransformUndo.Undo(sc.World())
 	case ActionStructural:
-		g.StructuralUndo.Undo(world)
+		g.StructuralUndo.Undo(sc)
 	}
 
 	g.idx--
 }
 
-func (g *GlobalUndoStack) Redo(world *ecs.World) {
+func (g *GlobalUndoStack) Redo(sc *scene.Scene) {
 	if !g.CanRedo() {
 		return
 	}
@@ -232,9 +259,9 @@ func (g *GlobalUndoStack) Redo(world *ecs.World) {
 
 	switch a.Type {
 	case ActionTransform:
-		g.TransformUndo.Redo(world)
+		g.TransformUndo.Redo(sc.World())
 	case ActionStructural:
-		g.StructuralUndo.Redo(world)
+		g.StructuralUndo.Redo(sc)
 	}
 }
 

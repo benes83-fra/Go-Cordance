@@ -243,14 +243,14 @@ func main() {
 				}
 			case glfw.KeyZ:
 				log.Printf("Undo")
-				undo.Global.Undo(sc.World())
+				undo.Global.Undo(sc)
 				if editorlink.EditorConn != nil {
 					editorlink.SendFullSnapshot(sc)
 				}
 
 			case glfw.KeyY:
 				log.Printf("Redo")
-				undo.Global.Redo(sc.World())
+				undo.Global.Redo(sc)
 				if editorlink.EditorConn != nil {
 					editorlink.SendFullSnapshot(sc)
 				}
