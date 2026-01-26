@@ -101,13 +101,13 @@ func main() {
 
 	// Load textures (runtime GPU resources)
 	// Load textures via asset pipeline (non-breaking)
-	_, crateGL, err := assets.ImportTexture("assets/textures/crate.png")
+	crateAsset, crateGL, err := assets.ImportTexture("assets/textures/crate.png")
 	if err != nil {
 		log.Fatal(err)
 	}
 	ecs.RegisterTexture("Crate", crateGL)
 
-	_, teapotGL, err := assets.ImportTexture("assets/textures/teapot_diffuse.png")
+	teapotAsset, teapotGL, err := assets.ImportTexture("assets/textures/teapot_diffuse.png")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -269,6 +269,7 @@ func main() {
 		mat := e.GetComponent((*ecs.Material)(nil)).(*ecs.Material)
 		mat.UseTexture = true
 		mat.TextureID = crateTex.ID
+		mat.TextureAsset = crateAsset
 
 	}
 	if e, ok := named["cube2"]; ok {
@@ -276,6 +277,7 @@ func main() {
 		mat := e.GetComponent((*ecs.Material)(nil)).(*ecs.Material)
 		mat.UseTexture = true
 		mat.TextureID = teaTex.ID
+		mat.TextureAsset = teapotAsset
 
 	}
 	if _, ok := named["metalCube"]; ok {

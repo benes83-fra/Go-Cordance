@@ -1,17 +1,26 @@
 package ecs
 
+import (
+	"go-engine/Go-Cordance/internal/assets"
+)
+
 // Material holds surface properties for lighting/shading.
 type Material struct {
 	BaseColor [4]float32 // RGBA
-	Ambient   float32    // ambient multiplier
-	Diffuse   float32    // diffuse multiplier
-	Specular  float32    // specular multiplier
-	Shininess float32    // specular exponent
+	Ambient   float32
+	Diffuse   float32
+	Specular  float32
+	Shininess float32
 
+	// --- Existing inspector workflow (kept intact) ---
 	UseTexture bool
-	TextureID  uint32
+	TextureID  uint32 // raw GL texture ID (inspector uses this)
 	UseNormal  bool
-	NormalID   uint32
+	NormalID   uint32 // raw GL normal map ID
+
+	// --- New asset pipeline fields (optional, non-breaking) ---
+	TextureAsset assets.AssetID // future: replace TextureID
+	NormalAsset  assets.AssetID // future: replace NormalID
 
 	Dirty bool
 }
@@ -32,14 +41,22 @@ func (m *Material) EditorName() string { return "Material" }
 
 func (m *Material) EditorFields() map[string]any {
 	return map[string]any{
-		"BaseColor":  m.BaseColor,
-		"Ambient":    m.Ambient,
-		"Diffuse":    m.Diffuse,
-		"Specular":   m.Specular,
-		"Shininess":  m.Shininess,
+		"BaseColor": m.BaseColor,
+		"Ambient":   m.Ambient,
+		"Diffuse":   m.Diffuse,
+		"Specular":  m.Specular,
+		"Shininess": m.Shininess,
+
+		// Inspector-visible fields (unchanged)
 		"UseTexture": m.UseTexture,
 		"UseNormal":  m.UseNormal,
 		"TextureID":  m.TextureID,
+		"NormalID":   m.NormalID,
+
+		// Asset pipeline fields (hidden from inspector for now)
+		// They can be exposed later when the editor supports asset picking.
+		// "TextureAsset": m.TextureAsset,
+		// "NormalAsset":  m.NormalAsset,
 	}
 }
 
@@ -55,13 +72,23 @@ func (m *Material) SetEditorField(name string, value any) {
 		m.Specular = toFloat32(value)
 	case "Shininess":
 		m.Shininess = toFloat32(value)
+
+	// --- Inspector workflow (kept intact) ---
 	case "UseTexture":
 		m.UseTexture = toBool(value)
 	case "UseNormal":
 		m.UseNormal = toBool(value)
 	case "TextureID":
 		m.TextureID = uint32(toInt(value))
-	}
-	m.Dirty = true
+	case "NormalID":
+		m.NormalID = uint32(toInt(value))
 
+		// --- Asset pipeline fields (future use) ---
+		// case "TextureAsset":
+		//     m.TextureAsset = assets.AssetID(toInt(value))
+		// case "NormalAsset":
+		//     m.NormalAsset = assets.AssetID(toInt(value))
+	}
+
+	m.Dirty = true
 }
