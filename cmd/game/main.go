@@ -8,6 +8,7 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 
+	"go-engine/Go-Cordance/internal/assets"
 	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/ecs/gizmo"
 	"go-engine/Go-Cordance/internal/ecs/gizmo/bridge"
@@ -99,17 +100,19 @@ func main() {
 	}
 
 	// Load textures (runtime GPU resources)
-	texID, err := engine.LoadTexture("assets/textures/crate.png")
+	// Load textures via asset pipeline (non-breaking)
+	_, crateGL, err := assets.ImportTexture("assets/textures/crate.png")
 	if err != nil {
 		log.Fatal(err)
 	}
-	ecs.RegisterTexture("Crate", texID)
-	texID2, err := engine.LoadTexture("assets/textures/teapot_diffuse.png")
+	ecs.RegisterTexture("Crate", crateGL)
+
+	_, teapotGL, err := assets.ImportTexture("assets/textures/teapot_diffuse.png")
 	if err != nil {
-		fmt.Println("Could not load :", texID2)
 		log.Fatal(err)
 	}
-	ecs.RegisterTexture("Teapot", texID2)
+	ecs.RegisterTexture("Teapot", teapotGL)
+
 	// Load GLTF materials info (runtime)
 	mats, err := engine.LoadGLTFMaterials("sofa", "assets/models/sofa/sofa.gltf")
 	if err != nil {
@@ -118,8 +121,8 @@ func main() {
 	matInfo := mats[0]
 
 	// Create runtime wrappers for textures (ecs.Texture holds GPU id)
-	crateTex := ecs.NewTexture(texID)
-	teaTex := ecs.NewTexture(texID2)
+	crateTex := ecs.NewTexture(crateGL)
+	teaTex := ecs.NewTexture(teapotGL)
 
 	// Create renderers / debug systems that require runtime resources
 	debugRenderer := engine.NewDebugRenderer(debugVertexSrc, debugFragmentSrc)

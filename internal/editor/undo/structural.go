@@ -37,27 +37,6 @@ func (c DeleteEntityCommand) Undo(sc *scene.Scene) {
 		return
 	}
 
-	// Recreate entity
-	//ent := ecs.NewEntity(c.Entity.ID)
-
-	// Recreate components
-	/*for _, cname := range c.Entity.Components {
-		constructor, ok := ecs.ComponentRegistry[cname]
-		if !ok {
-			log.Printf("undo: DeleteEntityCommand.Undo: no constructor for component %q", cname)
-			continue
-		}
-		comp := constructor()
-		ent.AddComponent(comp)
-	}
-
-	// Reapply transform
-	if tr := ecs.GetTransform(ent); tr != nil {
-		tr.Position = c.Entity.Position
-		tr.Rotation = c.Entity.Rotation
-		tr.Scale = c.Entity.Scale
-	}*/
-
 	// Add to world + scene
 	world.AddEntity(c.Entity)
 	sc.AddExisting(c.Entity)
@@ -101,24 +80,6 @@ func (c CreateEntityCommand) Redo(sc *scene.Scene) {
 		log.Printf("undo: CreateEntityCommand.Redo: entity %d already exists, skipping recreate", c.Entity.ID)
 		return
 	}
-
-	//ent := ecs.NewEntity(c.Entity.ID)
-
-	/*for _, cname := range c.Entity.Components {
-		constructor, ok := ecs.ComponentRegistry[cname]
-		if !ok {
-			log.Printf("undo: CreateEntityCommand.Redo: no constructor for component %q", cname)
-			continue
-		}
-		comp := constructor()
-		ent.AddComponent(comp)
-	}
-
-	if tr := ecs.GetTransform(ent); tr != nil {
-		tr.Position = c.Entity.Position
-		tr.Rotation = c.Entity.Rotation
-		tr.Scale = c.Entity.Scale
-	}*/
 
 	world.AddEntity(c.Entity)
 	sc.AddExisting(c.Entity)
