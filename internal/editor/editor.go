@@ -38,6 +38,7 @@ func Run(world *ecs.World) {
 
 	// Create inspector first so we have the rebuild function available.
 	inspectorContainer, inspectorRebuild := ui.NewInspectorPanel()
+	assetBrowser := ui.NewAssetBrowserPanel(st)
 
 	state.Global.RefreshUI = func() {
 		if hierarchyList != nil {
@@ -71,7 +72,11 @@ func Run(world *ecs.World) {
 
 	left := container.NewMax(hierarchyWidget)
 	center := container.NewVBox(viewportColumn)
-	right := container.NewVBox(inspectorContainer)
+	right := container.NewAppTabs(
+		container.NewTabItem("Inspector", inspectorContainer),
+		container.NewTabItem("Assets", assetBrowser),
+	)
+	right.SetTabLocation(container.TabLocationTop)
 
 	split := container.NewHSplit(container.NewVSplit(left, center), right)
 	split.Offset = 0.25
@@ -165,6 +170,7 @@ func startEditorLinkClient(world *ecs.World) {
 
 	// Request initial snapshot
 	go editorlink.WriteRequestSceneSnapshot(conn)
+	go editorlink.WriteRequestAssetList(conn)
 
 	go editorReadLoop(conn, world)
 }
@@ -237,6 +243,43 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 
 			fyne.DoAndWait(func() {
 				UpdateEntities(world, ents)
+			})
+		case "AssetList":
+			var m editorlink.MsgAssetList
+			json.Unmarshal(msg.Data, &m)
+
+			fyne.DoAndWait(func() {
+				st := state.Global
+
+				// Convert message → editor state
+				st.Assets.Textures = make([]state.AssetView, len(m.Textures))
+				for i, v := range m.Textures {
+					st.Assets.Textures[i] = state.AssetView{
+						ID:   v.ID,
+						Path: v.Path,
+						Type: v.Type,
+					}
+				}
+
+				st.Assets.Meshes = make([]state.AssetView, len(m.Meshes))
+				for i, v := range m.Meshes {
+					st.Assets.Meshes[i] = state.AssetView{
+						ID:   v.ID,
+						Path: v.Path,
+						Type: v.Type,
+					}
+				}
+
+				st.Assets.Materials = make([]state.AssetView, len(m.Materials))
+				for i, v := range m.Materials {
+					st.Assets.Materials[i] = state.AssetView{
+						ID:   v.ID,
+						Path: v.Path,
+						Type: v.Type,
+					}
+				}
+
+				st.RefreshUI()
 			})
 
 		}

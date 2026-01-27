@@ -80,6 +80,19 @@ type MsgFocusEntity struct {
 	ID uint64 `json:"id"`
 }
 
+type MsgAssetList struct {
+	Textures  []AssetView `json:"textures"`
+	Meshes    []AssetView `json:"meshes"`
+	Materials []AssetView `json:"materials"`
+}
+
+type AssetView struct {
+	ID   uint64 `json:"id"`
+	Path string `json:"path"`
+	Type string `json:"type"`
+}
+type MsgRequestAssetList struct{}
+
 func readMsg(conn net.Conn) (Msg, error) {
 	var m Msg
 	r := bufio.NewReader(conn)
@@ -202,4 +215,7 @@ func WriteDeleteEntity(conn net.Conn, id int64, name string) error {
 		Name: name,
 	}
 	return writeMsg(conn, "DeleteEntity", msg)
+}
+func WriteRequestAssetList(conn net.Conn) error {
+	return writeMsg(conn, "RequestAssetList", MsgRequestAssetList{})
 }

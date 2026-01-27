@@ -4,6 +4,12 @@ import (
 	"go-engine/Go-Cordance/internal/editor/bridge"
 )
 
+type AssetView struct {
+	ID   uint64
+	Path string
+	Type string
+}
+
 type EditorState struct {
 	Entities        []bridge.EntityInfo
 	SelectedID      int64
@@ -17,6 +23,12 @@ type EditorState struct {
 	TextureIDs      []uint32
 	IsRebuilding    bool
 	LastComponents  map[int64][]string
+
+	Assets struct {
+		Textures  []AssetView
+		Meshes    []AssetView
+		Materials []AssetView
+	}
 }
 
 func NewEditorState() *EditorState {

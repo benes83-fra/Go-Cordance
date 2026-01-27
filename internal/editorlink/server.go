@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 
+	"go-engine/Go-Cordance/internal/assets"
 	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/ecs/gizmo"
 	"go-engine/Go-Cordance/internal/editor/bridge"
@@ -206,6 +207,11 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 				snap := buildSceneSnapshot(sc)
 				writeMsg(EditorConn, "SceneSnapshot", MsgSceneSnapshot{Snapshot: snap})
 			}
+		case "RequestAssetList":
+			resp := buildAssetList()
+			if err := writeMsg(conn, "AssetList", resp); err != nil {
+				log.Printf("editorlink: failed to send AssetList: %v", err)
+			}
 
 		default:
 			log.Printf("editorlink: unknown msg type %q", msg.Type)
@@ -388,4 +394,43 @@ func SendFullSnapshot(sc *scene.Scene) {
 	if err := writeMsg(EditorConn, "SceneSnapshot", resp); err != nil {
 		log.Printf("editorlink: failed to send SceneSnapshot: %v", err)
 	}
+}
+
+func buildAssetList() MsgAssetList {
+	out := MsgAssetList{
+		Textures:  []AssetView{},
+		Meshes:    []AssetView{},
+		Materials: []AssetView{},
+	}
+
+	for _, a := range assets.All() {
+		view := AssetView{
+			ID:   uint64(a.ID),
+			Path: a.Path,
+			Type: assetTypeToString(a.Type),
+		}
+
+		switch a.Type {
+		case assets.AssetTexture:
+			out.Textures = append(out.Textures, view)
+		case assets.AssetMesh:
+			out.Meshes = append(out.Meshes, view)
+		case assets.AssetMaterial:
+			out.Materials = append(out.Materials, view)
+		}
+	}
+
+	return out
+}
+
+func assetTypeToString(t assets.AssetType) string {
+	switch t {
+	case assets.AssetTexture:
+		return "Texture"
+	case assets.AssetMesh:
+		return "Mesh"
+	case assets.AssetMaterial:
+		return "Material"
+	}
+	return "Unknown"
 }
