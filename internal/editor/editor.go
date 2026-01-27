@@ -26,7 +26,6 @@ func Run(world *ecs.World) {
 	a.Settings().SetTheme(theme.DarkTheme())
 	win := a.NewWindow("Go-Cordance Editor")
 	win.Resize(fyne.NewSize(1000, 600))
-	startEditorLinkClient(world)
 
 	// state
 	st := state.Global
@@ -38,11 +37,14 @@ func Run(world *ecs.World) {
 
 	// Create inspector first so we have the rebuild function available.
 	inspectorContainer, inspectorRebuild := ui.NewInspectorPanel()
-	assetBrowser := ui.NewAssetBrowserPanel(st)
+	assetBrowser, assetList := ui.NewAssetBrowserPanel(st)
 
 	state.Global.RefreshUI = func() {
 		if hierarchyList != nil {
 			hierarchyList.Refresh()
+		}
+		if assetList != nil {
+			assetList.Refresh()
 		}
 		inspectorRebuild(world, st, hierarchyList)
 	}
@@ -60,7 +62,13 @@ func Run(world *ecs.World) {
 	showGizmosCheck := widget.NewCheck("Show Light Gizmos", func(v bool) {
 		st.ShowLightGizmos = v
 		log.Printf("ShowLightGizmos set to %v", v)
-		editorlink.WriteSetEditorFlag(editorlink.EditorConn, editorlink.MsgSetEditorFlag{ShowLightGizmos: v})
+
+		if editorlink.EditorConn != nil {
+			editorlink.WriteSetEditorFlag(
+				editorlink.EditorConn,
+				editorlink.MsgSetEditorFlag{ShowLightGizmos: v},
+			)
+		}
 	})
 
 	showGizmosCheck.SetChecked(st.ShowLightGizmos)
@@ -83,7 +91,7 @@ func Run(world *ecs.World) {
 
 	win.SetContent(split)
 	win.Show()
-
+	go startEditorLinkClient(world)
 	// initial build (no selection)
 	inspectorRebuild(world, st, hierarchyList)
 
@@ -259,6 +267,7 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 						Path: v.Path,
 						Type: v.Type,
 					}
+					log.Printf("Loaded texture asset: ID=%d, Path=%s, Type=%s", v.ID, v.Path, v.Type)
 				}
 
 				st.Assets.Meshes = make([]state.AssetView, len(m.Meshes))

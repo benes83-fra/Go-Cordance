@@ -3,13 +3,14 @@ package ui
 import (
 	"go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editorlink"
+	"log"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 )
 
-func NewAssetBrowserPanel(st *state.EditorState) fyne.CanvasObject {
+func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.List) {
 
 	// --- TEXTURES LIST ---
 	texList := widget.NewList(
@@ -60,6 +61,7 @@ func NewAssetBrowserPanel(st *state.EditorState) fyne.CanvasObject {
 			o.(*widget.Label).SetText(st.Assets.Meshes[i].Path)
 		},
 	)
+	log.Printf("Texture count: %d", len(st.Assets.Textures))
 
 	// (Meshes are not assignable yet — future feature)
 	meshList.OnSelected = func(id widget.ListItemID) {}
@@ -89,5 +91,5 @@ func NewAssetBrowserPanel(st *state.EditorState) fyne.CanvasObject {
 
 	tabs.SetTabLocation(container.TabLocationTop)
 
-	return tabs
+	return tabs, texList
 }
