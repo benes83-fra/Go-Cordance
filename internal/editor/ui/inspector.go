@@ -542,17 +542,11 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 					// Determine current selection (prefer TextureAsset)
 					var currentAssetID int = -1
 					if v2, ok := fields["TextureAsset"]; ok {
-						switch t := v2.(type) {
-						case int:
-							currentAssetID = t
-						case int32:
-							currentAssetID = int(t)
-						case int64:
-							currentAssetID = int(t)
-						case uint32:
-							currentAssetID = int(t)
-						case uint64:
-							currentAssetID = int(t)
+						if id, ok2 := parseAnyInt(v2); ok2 {
+							currentAssetID = id
+						} else {
+							// helpful debug while you stabilize types
+							log.Printf("inspector: TextureAsset present but unrecognized type %T value=%v", v2, v2)
 						}
 					} else {
 						// fallback: try to map TextureID -> asset path
@@ -562,6 +556,8 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 						}
 					}
 
+					log.Printf("inspector: fields 'TextureAsset' contains : %v", fields["TextureAsset"])
+					log.Printf("Component %s: currentAssetID=%d", c.EditorName(), currentAssetID)
 					// If we have an asset id, set the selected label (before wiring callback)
 					if currentAssetID >= 0 {
 						for i, id := range textureIDs {
@@ -596,6 +592,9 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 						c.SetEditorField("TextureAsset", selectedAssetID)
 						c.SetEditorField("TextureID", uint32(glID))
 
+						if refresh != nil {
+							refresh()
+						}
 						// send authoritative update to game
 						go sendComponentUpdate(entityID, c)
 					}
