@@ -19,8 +19,6 @@ type EditorState struct {
 	Selection       Selection
 	SplitOffset     float64
 	ShowLightGizmos bool
-	TextureNames    []string
-	TextureIDs      []uint32
 	IsRebuilding    bool
 	LastComponents  map[int64][]string
 
@@ -33,10 +31,9 @@ type EditorState struct {
 
 func NewEditorState() *EditorState {
 	return &EditorState{
-		Entities:       []bridge.EntityInfo{},
-		SelectedIndex:  -1,
-		TextureNames:   []string{},
-		TextureIDs:     []uint32{},
+		Entities:      []bridge.EntityInfo{},
+		SelectedIndex: -1,
+
 		LastComponents: make(map[int64][]string),
 	}
 }

@@ -1,6 +1,7 @@
 package ecs
 
 import (
+	"go-engine/Go-Cordance/internal/assets"
 	"go-engine/Go-Cordance/internal/engine"
 	"go-engine/Go-Cordance/internal/glutil"
 	"log"
@@ -432,9 +433,10 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 
 		// Diffuse texture
 
-		if mat.TextureID != 0 {
+		if mat.TextureAsset != 0 {
+			textureID := assets.ResolveTextureGLID(assets.AssetID(mat.TextureAsset))
 			gl.ActiveTexture(gl.TEXTURE0)
-			gl.BindTexture(gl.TEXTURE_2D, mat.TextureID)
+			gl.BindTexture(gl.TEXTURE_2D, textureID)
 			gl.Uniform1i(rs.Renderer.LocDiffuseTex, 0)
 			gl.Uniform1i(rs.Renderer.LocUseTexture, 1)
 		} else {

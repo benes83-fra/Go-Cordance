@@ -37,8 +37,8 @@ func StartServer(addr string, sc *scene.Scene, camSys *ecs.CameraSystem) {
 		log.Printf("editorlink: editor connected from %s", conn.RemoteAddr())
 		go handleConn(conn, sc, camSys)
 		// After EditorConn = conn
-		go WriteTextureList(conn, ecs.TextureNames, ecs.TextureIDs)
-		log.Printf("game: sent texture list to editor: %v", ecs.TextureNames)
+		//go WriteTextureList(conn, ecs.TextureNames, ecs.TextureIDs) Legacy Texture communication
+		//log.Printf("game: sent texture list to editor: %v", ecs.TextureNames)
 
 	}
 }

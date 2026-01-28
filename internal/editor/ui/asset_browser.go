@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"go-engine/Go-Cordance/internal/assets"
 	"go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editorlink"
 	"log"
@@ -33,19 +34,23 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 		ent := st.Entities[st.SelectedIndex]
 		asset := st.Assets.Textures[id]
 
-		// For now: assign raw TextureID via inspector workflow
-		// (later: switch to AssetID)
+		// Resolve GL texture id from asset registry (assets.ResolveTextureGLID must exist)
+		glID := int(assets.ResolveTextureGLID(assets.AssetID(asset.ID)))
+
 		msg := editorlink.MsgSetComponent{
 			EntityID: uint64(ent.ID),
 			Name:     "Material",
 			Fields: map[string]any{
-				"UseTexture": true,
-				"TextureID":  int(asset.ID), // asset.ID currently stores GL texture ID
+				"UseTexture":   true,
+				"TextureAsset": int(asset.ID), // editor-side AssetID
+				"TextureID":    glID,          // compatibility: raw GL ID for renderer/inspector
 			},
 		}
 
 		if editorlink.EditorConn != nil {
-			_ = editorlink.WriteSetComponent(editorlink.EditorConn, msg)
+			go func(m editorlink.MsgSetComponent) {
+				_ = editorlink.WriteSetComponent(editorlink.EditorConn, m)
+			}(msg)
 		}
 	}
 

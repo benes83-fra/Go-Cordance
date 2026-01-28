@@ -214,21 +214,6 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 				}
 			})
 
-		case "TextureList":
-			var m editorlink.MsgTextureList
-			if err := json.Unmarshal(msg.Data, &m); err != nil {
-				log.Printf("editor: bad TextureList: %v", err)
-				continue
-			}
-
-			fyne.DoAndWait(func() {
-				state.Global.TextureNames = m.Names
-				state.Global.TextureIDs = m.IDs
-				if state.Global.RefreshUI != nil {
-					state.Global.RefreshUI()
-				}
-			})
-
 		case "SceneSnapshot":
 			var snap editorlink.MsgSceneSnapshot
 			if err := json.Unmarshal(msg.Data, &snap); err != nil {
@@ -287,8 +272,9 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 						Type: v.Type,
 					}
 				}
-
-				st.RefreshUI()
+				if st.RefreshUI != nil {
+					st.RefreshUI()
+				}
 			})
 
 		}

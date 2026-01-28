@@ -293,6 +293,7 @@ func main() {
 		mat := e.GetComponent((*ecs.Material)(nil)).(*ecs.Material)
 		mat.UseTexture = true
 		mat.TextureID = teaTex.ID
+		mat.TextureAsset = teapotAsset
 
 		// optionally add normal map later if available
 	}

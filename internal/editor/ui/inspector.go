@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"go-engine/Go-Cordance/internal/assets"
 	"go-engine/Go-Cordance/internal/ecs"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editorlink"
@@ -525,35 +526,82 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 		case uint32:
 			if name == "TextureID" {
 				if fields["UseTexture"].(bool) {
-					texName := lookupTextureName(uint32(v))
-					options := state.Global.TextureNames
-
-					// 1. Create dropdown with no callback yet
-					dropdown := widget.NewSelect(options, nil)
-
-					// 2. Preselect current texture WITHOUT triggering a send
-					if texName != "" {
-						dropdown.SetSelected(texName)
+					// Build options from the authoritative asset list
+					// Build options from assets
+					st := state.Global
+					textureNames := make([]string, len(st.Assets.Textures))
+					textureIDs := make([]int, len(st.Assets.Textures))
+					for i, a := range st.Assets.Textures {
+						textureNames[i] = a.Path
+						textureIDs[i] = int(a.ID)
 					}
 
-					// 3. Now wire the callback for real user changes
-					currentID := v
-					dropdown.OnChanged = func(selected string) {
+					// Create select with nil callback
+					textureSelect := widget.NewSelect(textureNames, nil)
+
+					// Determine current selection (prefer TextureAsset)
+					var currentAssetID int = -1
+					if v2, ok := fields["TextureAsset"]; ok {
+						switch t := v2.(type) {
+						case int:
+							currentAssetID = t
+						case int32:
+							currentAssetID = int(t)
+						case int64:
+							currentAssetID = int(t)
+						case uint32:
+							currentAssetID = int(t)
+						case uint64:
+							currentAssetID = int(t)
+						}
+					} else {
+						// fallback: try to map TextureID -> asset path
+						texName := lookupTextureName(uint32(v))
+						if texName != "" {
+							textureSelect.SetSelected(texName)
+						}
+					}
+
+					// If we have an asset id, set the selected label (before wiring callback)
+					if currentAssetID >= 0 {
+						for i, id := range textureIDs {
+							if id == currentAssetID {
+								textureSelect.SetSelected(textureNames[i])
+								break
+							}
+						}
+					}
+
+					// Now wire the callback (after initial SetSelected)
+					textureSelect.OnChanged = func(selected string) {
 						if state.Global.IsRebuilding {
 							return
 						}
-
-						id := lookupTextureID(selected)
-						if id == currentID {
-							// avoid spamming identical updates
+						// find selected asset id
+						var selectedAssetID int = -1
+						for i, name := range textureNames {
+							if name == selected {
+								selectedAssetID = textureIDs[i]
+								break
+							}
+						}
+						if selectedAssetID < 0 {
 							return
 						}
-						currentID = id
-						c.SetEditorField("TextureID", id)
-						sendComponentUpdate(entityID, c)
+
+						// resolve GL id for compatibility
+						glID := int(assets.ResolveTextureGLID(assets.AssetID(selectedAssetID)))
+
+						// update component instance first
+						c.SetEditorField("TextureAsset", selectedAssetID)
+						c.SetEditorField("TextureID", uint32(glID))
+
+						// send authoritative update to game
+						go sendComponentUpdate(entityID, c)
 					}
 
-					box.Add(container.NewHBox(widget.NewLabel("Texture"), dropdown))
+					box.Add(container.NewHBox(widget.NewLabel("Texture"), textureSelect))
+
 				}
 			}
 
@@ -718,18 +766,24 @@ func sendRemoveComponent(entityID int64, name string) {
 	go editorlink.WriteRemoveComponent(editorlink.EditorConn, msg)
 
 }
+
+// lookupTextureID returns an asset's AssetID (as uint32) for a given asset path/name.
+// It searches state.Global.Assets.Textures for a matching Path.
 func lookupTextureID(name string) uint32 {
-	for i, n := range state.Global.TextureNames {
-		if n == name {
-			return state.Global.TextureIDs[i]
+	for _, a := range state.Global.Assets.Textures {
+		if a.Path == name {
+			return uint32(a.ID)
 		}
 	}
 	return 0
 }
+
+// lookupTextureName returns the asset Path for a given asset id (uint32).
+// It searches state.Global.Assets.Textures for a matching ID.
 func lookupTextureName(id uint32) string {
-	for i, tid := range state.Global.TextureIDs {
-		if tid == id {
-			return state.Global.TextureNames[i]
+	for _, a := range state.Global.Assets.Textures {
+		if uint32(a.ID) == id {
+			return a.Path
 		}
 	}
 	return ""

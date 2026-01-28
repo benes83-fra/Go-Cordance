@@ -48,10 +48,11 @@ func (m *Material) EditorFields() map[string]any {
 		"Shininess": m.Shininess,
 
 		// Inspector-visible fields (unchanged)
-		"UseTexture": m.UseTexture,
-		"UseNormal":  m.UseNormal,
-		"TextureID":  m.TextureID,
-		"NormalID":   m.NormalID,
+		"UseTexture":   m.UseTexture,
+		"UseNormal":    m.UseNormal,
+		"TextureID":    m.TextureID,
+		"NormalID":     m.NormalID,
+		"TextureAsset": m.TextureAsset,
 
 		// Asset pipeline fields (hidden from inspector for now)
 		// They can be exposed later when the editor supports asset picking.
@@ -82,6 +83,8 @@ func (m *Material) SetEditorField(name string, value any) {
 		m.TextureID = uint32(toInt(value))
 	case "NormalID":
 		m.NormalID = uint32(toInt(value))
+	case "TextureAsset":
+		m.TextureAsset = assets.AssetID(toInt(value))
 
 		// --- Asset pipeline fields (future use) ---
 		// case "TextureAsset":
