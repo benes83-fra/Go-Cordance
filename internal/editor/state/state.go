@@ -21,6 +21,7 @@ type EditorState struct {
 	ShowLightGizmos bool
 	IsRebuilding    bool
 	LastComponents  map[int64][]string
+	// in EditorState
 
 	Assets struct {
 		Textures  []AssetView

@@ -385,6 +385,9 @@ func eulerToQuat(pitch, yaw, roll float32) mgl32.Quat {
 }
 func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) fyne.CanvasObject {
 	fields := c.EditorFields()
+
+	// merge pending optimistic edits so UI shows local changes
+
 	box := container.NewVBox()
 	keys := make([]string, 0, len(fields))
 	for k := range fields {
@@ -404,6 +407,7 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 					return
 				}
 				c.SetEditorField(name, parse32(s))
+
 				sendComponentUpdate(entityID, c)
 			}
 
@@ -424,6 +428,7 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 				}
 				v[0] = parse32(s)
 				c.SetEditorField(name, v)
+
 				sendComponentUpdate(entityID, c)
 			}
 
@@ -433,6 +438,7 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 				}
 				v[1] = parse32(s)
 				c.SetEditorField(name, v)
+
 				sendComponentUpdate(entityID, c)
 			}
 
@@ -442,6 +448,7 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 				}
 				v[2] = parse32(s)
 				c.SetEditorField(name, v)
+
 				sendComponentUpdate(entityID, c)
 			}
 
@@ -471,6 +478,7 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 				v[2] = parse32(b.Text)
 				v[3] = parse32(a.Text)
 				c.SetEditorField(name, v)
+
 				sendComponentUpdate(entityID, c)
 			}
 
@@ -507,6 +515,7 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 				}
 				last = newVal
 				c.SetEditorField(fieldName, newVal)
+
 				sendComponentUpdate(entityID, c)
 
 			}
@@ -520,6 +529,7 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 					return
 				}
 				c.SetEditorField(name, s)
+
 				sendComponentUpdate(entityID, c)
 			}
 			box.Add(container.NewHBox(widget.NewLabel(name), e))
@@ -629,6 +639,7 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 
 					}
 					c.SetEditorField(name, idx)
+
 					sendComponentUpdate(entityID, c)
 
 				}
@@ -673,11 +684,15 @@ func sendComponentUpdate(entityID int64, c ecs.EditorInspectable) {
 	if editorlink.EditorConn == nil {
 		return
 	}
-	log.Printf("Component: %d  with Name: %s set to: %v", entityID, c.EditorName(), c.EditorFields())
+
+	fields := c.EditorFields()
+
+	// store pending so we can match and clear when the game confirms
+
 	msg := editorlink.MsgSetComponent{
 		EntityID: uint64(entityID),
 		Name:     c.EditorName(),
-		Fields:   c.EditorFields(),
+		Fields:   fields,
 	}
 
 	go editorlink.WriteSetComponent(editorlink.EditorConn, msg)
@@ -727,6 +742,7 @@ func showAddComponentDialog(world *ecs.World, ent *ecs.Entity, entityID int64, c
 			}
 
 			if insp, ok := newComp.(ecs.EditorInspectable); ok {
+
 				sendComponentUpdate(entityID, insp)
 			}
 

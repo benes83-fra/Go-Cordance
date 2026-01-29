@@ -233,10 +233,12 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 					Components: e.Components,
 				}
 			}
+			log.Printf("editor: incoming SceneSnapshot with %v entitites", ents)
 
 			fyne.DoAndWait(func() {
 				UpdateEntities(world, ents)
 			})
+
 		case "AssetList":
 			var m editorlink.MsgAssetList
 			json.Unmarshal(msg.Data, &m)
@@ -281,31 +283,6 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 	}
 }
 
-// SyncEditorWorld rebuilds the editor's ECS world to match the snapshot.
-func SyncEditorWorld(world *ecs.World, ents []bridge.EntityInfo) {
-	// Clear the editor ECS
-	world.Entities = nil
-
-	// Rebuild entities
-	for _, e := range ents {
-		ent := ecs.NewEntity(e.ID)
-
-		// Add components based on snapshot
-		for _, cname := range e.Components {
-			constructor, ok := ecs.ComponentRegistry[cname]
-			if !ok {
-				log.Printf("editor: no constructor for component %q in registry", cname)
-				continue
-			}
-			comp := constructor()
-			log.Printf("editor: Snapshot Components %v", comp)
-			ent.AddComponent(comp)
-		}
-
-		world.Entities = append(world.Entities, ent)
-	}
-}
-
 func equalStringSlices(a, b []string) bool {
 	if len(a) != len(b) {
 		return false
@@ -316,4 +293,59 @@ func equalStringSlices(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+// SyncEditorWorld rebuilds the editor's ECS world to match the snapshot,
+// but reuses existing component instances when possible to avoid losing
+// transient editor-side state.
+func SyncEditorWorld(world *ecs.World, ents []bridge.EntityInfo) {
+	// Build map of old entities by ID for reuse
+	oldByID := make(map[int64]*ecs.Entity)
+	for _, e := range world.Entities {
+		oldByID[e.ID] = e
+	}
+
+	// New list
+	newEntities := make([]*ecs.Entity, 0, len(ents))
+
+	for _, e := range ents {
+		// Create a fresh entity object (we will reuse components where possible)
+		ent := ecs.NewEntity(e.ID)
+
+		// If we have an old entity, try to reuse its components
+		var oldEnt *ecs.Entity
+		if oe, ok := oldByID[e.ID]; ok {
+			oldEnt = oe
+		}
+
+		for _, cname := range e.Components {
+			constructor, ok := ecs.ComponentRegistry[cname]
+			if !ok {
+				log.Printf("editor: no constructor for component %q in registry", cname)
+				continue
+			}
+
+			// Try to reuse existing component instance from old entity
+			var comp ecs.Component // replace with your component interface type
+			if oldEnt != nil {
+				// ask old entity for a component instance of the same type
+				oldComp := oldEnt.GetComponent(constructor())
+				if oldComp != nil {
+					comp = oldComp
+				}
+			}
+
+			// If not found, construct a new one
+			if comp == nil {
+				comp = constructor()
+			}
+
+			ent.AddComponent(comp)
+		}
+
+		newEntities = append(newEntities, ent)
+	}
+
+	// Replace world.Entities with the rebuilt list
+	world.Entities = newEntities
 }
