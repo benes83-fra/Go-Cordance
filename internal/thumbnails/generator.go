@@ -7,24 +7,38 @@ import (
 	"fmt"
 	"image"
 	"image/png"
+	"log"
 	"os"
 	"path/filepath"
 
 	_ "image/jpeg"
 	_ "image/png"
 
+	"go-engine/Go-Cordance/internal/assets"
+
 	"github.com/nfnt/resize"
 )
 
-// Replace this with your asset lookup
+// assetPathForID returns the canonical source path for an asset ID.
+// It looks up the engine's asset registry rather than assuming numeric filenames.
 func assetPathForID(assetID uint64) (string, bool) {
-	// TODO: map assetID to file path or return false
-	return fmt.Sprintf("assets/textures/%d.png", assetID), true
+	for _, a := range assets.All() {
+		if uint64(a.ID) == assetID {
+			return a.Path, true
+		}
+	}
+	return "", false
 }
 
 func GenerateThumbnailBytes(assetID uint64, size int) ([]byte, string, error) {
+
 	path, ok := assetPathForID(assetID)
 	if !ok {
+		// helpful debug: list known texture IDs/paths once
+		log.Printf("thumbnail: asset id %d not found in assets registry", assetID)
+		for _, a := range assets.All() {
+			log.Printf("thumbnail: known asset ID=%d Path=%s Type=%v", a.ID, a.Path, a.Type)
+		}
 		return nil, "", fmt.Errorf("no path for asset %d", assetID)
 	}
 
@@ -59,6 +73,9 @@ func GenerateThumbnailBytes(assetID uint64, size int) ([]byte, string, error) {
 	fname := filepath.Join(cacheDir, fmt.Sprintf("%d-%s.png", assetID, hash))
 	if _, err := os.Stat(fname); os.IsNotExist(err) {
 		_ = os.WriteFile(fname, data, 0644)
+	}
+	for _, a := range assets.All() {
+		log.Printf("asset-registry: ID=%d Path=%s Type=%v", a.ID, a.Path, a.Type)
 	}
 
 	return data, hash, nil
