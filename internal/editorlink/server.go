@@ -11,12 +11,14 @@ import (
 	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editor/undo"
+	"go-engine/Go-Cordance/internal/thumbnails"
 
 	"go-engine/Go-Cordance/internal/scene"
 )
 
 var EditorConn net.Conn
 var lastLightVersion = map[uint64]uint64{} // entityID -> version
+var Mgr *thumbnails.Manager
 
 // StartServer exposes the given Scene to a single editor client.
 func StartServer(addr string, sc *scene.Scene, camSys *ecs.CameraSystem) {
@@ -26,7 +28,12 @@ func StartServer(addr string, sc *scene.Scene, camSys *ecs.CameraSystem) {
 		return
 	}
 	log.Printf("editorlink: listening on %s", addr)
-
+	// create manager with send callback that uses editorlink.WriteAssetThumbnail
+	mgr := thumbnails.NewManager(2, 256, func(conn net.Conn, assetID uint64, format string, data []byte, hash string) error {
+		// this is inside editorlink package, so we can call WriteAssetThumbnail directly
+		return WriteAssetThumbnail(conn, assetID, format, data, hash)
+	})
+	Mgr = mgr
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
@@ -212,6 +219,8 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 			if err := writeMsg(conn, "AssetList", resp); err != nil {
 				log.Printf("editorlink: failed to send AssetList: %v", err)
 			}
+		case "RequestThumbnail":
+			thumbnails.HandleRequestThumbnail(msg.Data, EditorConn, Mgr)
 
 		default:
 			log.Printf("editorlink: unknown msg type %q", msg.Type)

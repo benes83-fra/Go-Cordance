@@ -5,9 +5,11 @@ import (
 )
 
 type AssetView struct {
-	ID   uint64
-	Path string
-	Type string
+	ID        uint64
+	Path      string
+	Type      string
+	Thumbnail string
+	ThumbHash string
 }
 
 type EditorState struct {

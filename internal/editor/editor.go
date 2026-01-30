@@ -1,7 +1,9 @@
 package editor
 
 import (
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/ecs/gizmo"
 	"go-engine/Go-Cordance/internal/editor/bridge"
@@ -9,6 +11,8 @@ import (
 	"go-engine/Go-Cordance/internal/editor/ui"
 	"go-engine/Go-Cordance/internal/editorlink"
 	"net"
+	"os"
+	"path/filepath"
 
 	"log"
 
@@ -238,6 +242,22 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 			fyne.DoAndWait(func() {
 				UpdateEntities(world, ents)
 			})
+		case "AssetThumbnail":
+			var t editorlink.MsgAssetThumbnail
+			if err := json.Unmarshal(msg.Data, &t); err != nil {
+				log.Printf("editor: bad AssetThumbnail: %v", err)
+				continue
+			}
+			// decode base64
+			data, err := base64.StdEncoding.DecodeString(t.DataB64)
+			if err != nil {
+				log.Printf("editor: AssetThumbnail base64 decode error: %v", err)
+				continue
+			}
+			// call UI handler on main thread
+			fyne.DoAndWait(func() {
+				handleAssetThumbnail(t.AssetID, t.Format, data, t.Hash)
+			})
 
 		case "AssetList":
 			var m editorlink.MsgAssetList
@@ -321,7 +341,9 @@ func SyncEditorWorld(world *ecs.World, ents []bridge.EntityInfo) {
 		for _, cname := range e.Components {
 			constructor, ok := ecs.ComponentRegistry[cname]
 			if !ok {
-				log.Printf("editor: no constructor for component %q in registry", cname)
+				if cname != "Transform" {
+					log.Printf("editor: no constructor for component %q in registry", cname)
+				}
 				continue
 			}
 
@@ -348,4 +370,54 @@ func SyncEditorWorld(world *ecs.World, ents []bridge.EntityInfo) {
 
 	// Replace world.Entities with the rebuilt list
 	world.Entities = newEntities
+}
+
+// userCacheDir returns a writable cache directory for the current user.
+// Falls back to the current working directory if os.UserCacheDir fails.
+func userCacheDir() string {
+	if dir, err := os.UserCacheDir(); err == nil && dir != "" {
+		return filepath.Join(dir, "go-cordance-editor")
+	}
+	// fallback: use a local ".cache" directory in the working dir
+	cwd, err := os.Getwd()
+	if err != nil {
+		return ".cache"
+	}
+	return filepath.Join(cwd, ".cache", "go-cordance-editor")
+}
+
+// handleAssetThumbnail receives decoded thumbnail bytes and stores them in disk cache,
+// updates the editor state, and triggers a UI refresh.
+func handleAssetThumbnail(assetID uint64, format string, data []byte, hash string) {
+	// 1) Save to disk cache (optional)
+	cacheDir := filepath.Join(userCacheDir(), "thumbs")
+	if err := os.MkdirAll(cacheDir, 0755); err != nil {
+		log.Printf("editor: failed to create thumbnail cache dir: %v", err)
+	}
+
+	// Use format extension if provided, default to png
+	ext := "png"
+	if format != "" {
+		ext = format
+	}
+
+	fname := filepath.Join(cacheDir, fmt.Sprintf("%d-%s.%s", assetID, hash, ext))
+	if _, err := os.Stat(fname); os.IsNotExist(err) {
+		if err := os.WriteFile(fname, data, 0644); err != nil {
+			log.Printf("editor: failed to write thumbnail file %s: %v", fname, err)
+		}
+	}
+
+	// 2) Update state.Global asset entry with thumbnail path
+	for i := range state.Global.Assets.Textures {
+		if state.Global.Assets.Textures[i].ID == assetID {
+			state.Global.Assets.Textures[i].Thumbnail = fname
+			break
+		}
+	}
+
+	// 3) Refresh UI on main thread (RefreshUI already calls list refresh)
+	if state.Global.RefreshUI != nil {
+		state.Global.RefreshUI()
+	}
 }

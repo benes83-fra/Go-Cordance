@@ -7,22 +7,55 @@ import (
 	"log"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
 func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.List) {
 
 	// --- TEXTURES LIST ---
+	// --- TEXTURES LIST (image + label cells, lazy thumbnail requests) ---
 	texList := widget.NewList(
 		func() int {
 			return len(st.Assets.Textures)
 		},
 		func() fyne.CanvasObject {
-			return widget.NewLabel("texture")
+			return makeTextureItem()
 		},
 		func(i widget.ListItemID, o fyne.CanvasObject) {
-			o.(*widget.Label).SetText(st.Assets.Textures[i].Path)
+			// row layout: [canvas.Image, *widget.Label]
+			row := o.(*fyne.Container)
+			img := row.Objects[0].(*canvas.Image)
+			lbl := row.Objects[1].(*widget.Label)
+
+			av := st.Assets.Textures[i]
+			lbl.SetText(av.Path)
+
+			// If we have a cached thumbnail path, show it
+			if av.Thumbnail != "" {
+				img.File = av.Thumbnail
+				img.Resource = nil
+				img.Refresh()
+				return
+			}
+
+			// No thumbnail yet: show placeholder and request one
+			img.Resource = theme.FileImageIcon()
+			img.File = ""
+			img.Refresh()
+
+			// Request thumbnail asynchronously for visible item
+			go func(assetID uint64) {
+				if editorlink.EditorConn == nil {
+					return
+				}
+				// size 128 for now
+				if err := editorlink.WriteRequestThumbnail(editorlink.EditorConn, assetID, 128); err != nil {
+					log.Printf("failed to request thumbnail for asset %d: %v", assetID, err)
+				}
+			}(av.ID)
 		},
 	)
 
@@ -97,4 +130,11 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 	tabs.SetTabLocation(container.TabLocationTop)
 
 	return tabs, texList
+}
+
+func makeTextureItem() fyne.CanvasObject {
+	img := canvas.NewImageFromResource(nil)
+	img.SetMinSize(fyne.NewSize(64, 64))
+	lbl := widget.NewLabel("")
+	return container.NewHBox(img, lbl)
 }

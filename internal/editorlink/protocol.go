@@ -2,6 +2,7 @@ package editorlink
 
 import (
 	"bufio"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -161,6 +162,22 @@ type MsgDeleteEntity struct {
 	Name string `json:"name"`
 }
 
+// MsgRequestThumbnail asks the game to generate/send a thumbnail for AssetID.
+type MsgRequestThumbnail struct {
+	AssetID uint64 `json:"asset_id"`
+	// Optional: desired size (pixels). If zero, game chooses default.
+	Size int `json:"size,omitempty"`
+}
+
+// MsgAssetThumbnail carries a generated thumbnail from game -> editor.
+// Data is base64-encoded PNG/JPEG bytes to keep the message JSON-friendly.
+type MsgAssetThumbnail struct {
+	AssetID uint64 `json:"asset_id"`
+	Format  string `json:"format"`         // e.g. "png" or "jpeg"
+	DataB64 string `json:"data_b64"`       // base64-encoded image bytes
+	Hash    string `json:"hash,omitempty"` // optional checksum for cache validation
+}
+
 // Public client helpers:
 
 func ReadMsg(conn net.Conn) (Msg, error) { return readMsg(conn) }
@@ -218,4 +235,32 @@ func WriteDeleteEntity(conn net.Conn, id int64, name string) error {
 }
 func WriteRequestAssetList(conn net.Conn) error {
 	return writeMsg(conn, "RequestAssetList", MsgRequestAssetList{})
+}
+
+// WriteRequestThumbnail sends a thumbnail request to the game.
+// conn must be a live net.Conn (editorlink.EditorConn).
+func WriteRequestThumbnail(conn net.Conn, assetID uint64, size int) error {
+	if conn == nil {
+		return fmt.Errorf("editorlink: nil connection")
+	}
+	msg := MsgRequestThumbnail{
+		AssetID: assetID,
+		Size:    size,
+	}
+	return writeMsg(conn, "RequestThumbnail", msg)
+}
+
+// WriteAssetThumbnail sends a generated thumbnail to the editor.
+func WriteAssetThumbnail(conn net.Conn, assetID uint64, format string, data []byte, hash string) error {
+	if conn == nil {
+		return fmt.Errorf("editorlink: nil connection")
+	}
+	b64 := base64.StdEncoding.EncodeToString(data)
+	msg := MsgAssetThumbnail{
+		AssetID: assetID,
+		Format:  format,
+		DataB64: b64,
+		Hash:    hash,
+	}
+	return writeMsg(conn, "AssetThumbnail", msg)
 }
