@@ -113,6 +113,12 @@ func main() {
 	}
 	ecs.RegisterTexture("Teapot", teapotGL)
 
+	goldyAsset, goldyGL, err := assets.ImportTexture("assets/textures/goldy2.jpg")
+	if err != nil {
+		log.Fatal(err)
+	}
+	ecs.RegisterTexture("Goldy", goldyGL)
+
 	// Load GLTF materials info (runtime)
 	mats, err := engine.LoadGLTFMaterials("sofa", "assets/models/sofa/sofa.gltf")
 	if err != nil {
@@ -123,7 +129,7 @@ func main() {
 	// Create runtime wrappers for textures (ecs.Texture holds GPU id)
 	crateTex := ecs.NewTexture(crateGL)
 	teaTex := ecs.NewTexture(teapotGL)
-
+	goldyTex := ecs.NewTexture(goldyGL)
 	// Create renderers / debug systems that require runtime resources
 	debugRenderer := engine.NewDebugRenderer(debugVertexSrc, debugFragmentSrc)
 	debugSys := ecs.NewDebugRenderSystem(debugRenderer, meshMgr, nil) // camSys set later
@@ -292,8 +298,8 @@ func main() {
 	if e, ok := named["teapot"]; ok {
 		mat := e.GetComponent((*ecs.Material)(nil)).(*ecs.Material)
 		mat.UseTexture = true
-		mat.TextureID = teaTex.ID
-		mat.TextureAsset = teapotAsset
+		mat.TextureID = goldyTex.ID
+		mat.TextureAsset = goldyAsset
 
 		// optionally add normal map later if available
 	}

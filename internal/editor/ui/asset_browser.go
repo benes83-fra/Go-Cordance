@@ -78,6 +78,12 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 				_ = editorlink.WriteSetComponent(editorlink.EditorConn, m)
 			}(msg)
 		}
+		if st.UpdateLocalMaterial != nil {
+			st.UpdateLocalMaterial(ent.ID, msg.Fields)
+		}
+		if state.Global.RefreshUI != nil {
+			state.Global.RefreshUI()
+		}
 	}
 
 	// --- MESH LIST ---

@@ -13,16 +13,17 @@ type AssetView struct {
 }
 
 type EditorState struct {
-	Entities        []bridge.EntityInfo
-	SelectedID      int64
-	SelectedIndex   int
-	Foldout         map[string]bool
-	RefreshUI       func() // <-- add this
-	Selection       Selection
-	SplitOffset     float64
-	ShowLightGizmos bool
-	IsRebuilding    bool
-	LastComponents  map[int64][]string
+	Entities            []bridge.EntityInfo
+	SelectedID          int64
+	SelectedIndex       int
+	Foldout             map[string]bool
+	RefreshUI           func() // <-- add this
+	UpdateLocalMaterial func(entityID int64, fields map[string]any)
+	Selection           Selection
+	SplitOffset         float64
+	ShowLightGizmos     bool
+	IsRebuilding        bool
+	LastComponents      map[int64][]string
 	// in EditorState
 
 	Assets struct {

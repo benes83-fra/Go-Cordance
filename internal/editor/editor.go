@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"go-engine/Go-Cordance/internal/assets"
 	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/ecs/gizmo"
 	"go-engine/Go-Cordance/internal/editor/bridge"
@@ -35,7 +36,9 @@ func Run(world *ecs.World) {
 	st := state.Global
 	st.Foldout = map[string]bool{"Position": true, "Rotation": true, "Scale": true}
 	st.ShowLightGizmos = true
-
+	st.UpdateLocalMaterial = func(entityID int64, fields map[string]any) {
+		updateLocalMaterial(world, entityID, fields)
+	}
 	var hierarchyWidget fyne.CanvasObject
 	var hierarchyList *widget.List
 
@@ -419,5 +422,39 @@ func handleAssetThumbnail(assetID uint64, format string, data []byte, hash strin
 	// 3) Refresh UI on main thread (RefreshUI already calls list refresh)
 	if state.Global.RefreshUI != nil {
 		state.Global.RefreshUI()
+	}
+}
+
+func updateLocalMaterial(world *ecs.World, entityID int64, fields map[string]any) {
+	for _, e := range world.Entities {
+		if e.ID == entityID {
+			comp := e.GetComponent(&ecs.Material{})
+			var mat *ecs.Material
+
+			if comp == nil {
+				mat = &ecs.Material{}
+				e.AddComponent(mat)
+			} else {
+				var ok bool
+				mat, ok = comp.(*ecs.Material)
+				if !ok {
+					// Should never happen unless ECS registry is corrupted
+					return
+				}
+			}
+
+			// Now safe to access fields
+			if v, ok := fields["UseTexture"].(bool); ok {
+				mat.UseTexture = v
+			}
+			if v, ok := fields["TextureAsset"].(int); ok {
+				mat.TextureAsset = assets.AssetID(v)
+			}
+			if v, ok := fields["TextureID"].(int); ok {
+				mat.TextureID = uint32(v)
+			}
+
+			return
+		}
 	}
 }
