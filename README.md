@@ -3,21 +3,17 @@ A modular, experimental 3D game engine and editor written in Go.
 
 Go‑Cordance is a real‑time 3D engine built around a clean ECS architecture, a modern OpenGL rendering pipeline, a growing asset system, and a live‑linked editor that communicates directly with the running game. The project focuses on clarity, extensibility, and professional‑grade workflows: stable transforms, predictable systems, and an editor that mirrors the runtime state.
 
-Features Overview
+Features
 Core Architecture
-Entity‑Component‑System (ECS)
-
-Simple, explicit component model
-
-Systems for physics, transforms, rendering, camera, billboards, gizmos, debugging, and more
-
-Clean separation between data (components) and behavior (systems)
+Entity‑Component‑System (ECS)  
+Explicit, minimal, and predictable.
+Includes systems for physics, transforms, rendering, camera, billboards, gizmos, debugging, and more.
 
 Scene System
 
 JSON‑based scene format
 
-Load/save scenes (Scene.Save("my_scene.json"))
+Load/save scenes
 
 Named entity lookup for runtime binding
 
@@ -44,7 +40,7 @@ Material extraction (LoadGLTFMaterials)
 
 Automatic VAO/VBO setup
 
-Multi‑material mesh support (e.g., sofa model)
+Multi‑material mesh support
 
 Lighting & Shadows
 Multiple light sources
@@ -62,19 +58,25 @@ Light debug visualization system
 Debug Rendering
 Toggleable debug overlays
 
-Normal/tangent/bitangent/UV visualization modes
+Normal/tangent/bitangent/UV visualization
 
 Light direction visualization
 
 Wireframe and collider rendering
 
 Physics
-Physics Components
-Velocity, Acceleration
+Components
+Velocity
 
-AngularVelocity, AngularAcceleration
+Acceleration
 
-AngularMass, AngularDamping
+AngularVelocity
+
+AngularAcceleration
+
+AngularMass
+
+AngularDamping
 
 Collider Types
 Sphere
@@ -83,7 +85,7 @@ AABB
 
 Plane
 
-Physics Systems
+Systems
 Force system (e.g., gravity)
 
 Physics integration
@@ -114,8 +116,6 @@ Cursor‑locked camera mode
 FocusOn(entity) support for editor integration
 
 Asset Pipeline (Early Stage)
-The engine includes the beginnings of a structured asset pipeline:
-
 Asset Registry
 Global registry for:
 
@@ -213,9 +213,9 @@ internal/
     scene/      → Scene loading, saving, bootstrap
 Controls (Runtime)
 Camera
-WASD – Move
+W/A/S/D – Move
 
-Mouse – Look (when cursor disabled)
+Mouse – Look (cursor disabled)
 
 Tab – Toggle cursor (editor vs camera mode)
 
