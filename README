@@ -1,103 +1,291 @@
-# Go‑Cordance
+Go‑Cordance
+A modular, experimental 3D game engine and editor written in Go.
 
-Go‑Cordance is a lightweight 3D engine prototype written in Go.  
-It explores how far Go can be pushed for real‑time graphics, physics, and entity‑component‑system (ECS) style architecture. The project is experimental but already demonstrates meshes, materials, cameras, physics, and shader‑based rendering.
+Go‑Cordance is a real‑time 3D engine built around a clean ECS architecture, a modern OpenGL rendering pipeline, a growing asset system, and a live‑linked editor that communicates directly with the running game. The project focuses on clarity, extensibility, and professional‑grade workflows: stable transforms, predictable systems, and an editor that mirrors the runtime state.
 
----
+Features Overview
+Core Architecture
+Entity‑Component‑System (ECS)
 
-## ✨ Features
+Simple, explicit component model
 
-- **Entity–Component–System (ECS) architecture**
-  - Entities composed of modular components (Mesh, Material, Camera, etc.)
-  - Systems update and render components independently
+Systems for physics, transforms, rendering, camera, billboards, gizmos, debugging, and more
 
-- **Rendering**
-  - OpenGL pipeline with GLSL shaders
-  - Mesh support (including sphere meshes with normals)
-  - Material properties (ambient, diffuse, specular, shininess)
-  - Debug overlays (wireframe colliders, bounding boxes)
+Clean separation between data (components) and behavior (systems)
 
-- **Physics**
-  - Basic collision detection and rigid body updates
-  - Collider visualization integrated into the render loop
+Scene System
 
-- **Camera**
-  - Minimal Camera component and CameraSystem
-  - View/projection matrix handling
-  - Lighting uniforms passed through camera system
+JSON‑based scene format
 
-- **Debugging**
-  - Toggleable debug rendering system
-  - Separate shader for collider visualization
-  - Empirical validation of material/shader differences
+Load/save scenes (Scene.Save("my_scene.json"))
 
-- **Textures**
-  - Simple texture system introduced
+Named entity lookup for runtime binding
 
-- **Mesh Loader**
-  - A simple MeshLoader was introduced to load .obj files
-    glTF files with multiple meshes and materials. 
-    Scene loading and saving
+Editor ↔ game synchronization via TCP
 
-- **Editor**
-  - Currently working on an Editor to access components and edit the scene
+Rendering
+Modern OpenGL Pipeline
+GLSL shader pipeline (vertex, fragment, shadow, debug)
 
----
+Perspective camera with controller system
 
-## 📂 Project Structure
+MeshManager with built‑in primitives:
 
-cmd/game/ # Entry point demo binary 
-internal/engine # Core engine packages 
-internal/esc # Camera component/system 
-             # Physics system and colliders 
-             # Mesh generation and handling 
-             # Material component and shader integration 
-assets/shaders/ # GLSL shader files
-go.mod, go.sum # Go module definitions
+Cube, sphere, plane, wireframe shapes
 
+Gizmo primitives (arrows, planes, circles)
+
+Billboard quad
+
+glTF Support
+Single‑mesh and multi‑mesh glTF loading
+
+Material extraction (LoadGLTFMaterials)
+
+Automatic VAO/VBO setup
+
+Multi‑material mesh support (e.g., sofa model)
+
+Lighting & Shadows
+Multiple light sources
+
+Directional, point, and spotlight variants
+
+Shadow mapping pipeline:
+
+Dedicated shadow shaders
+
+Configurable shadow resolution
+
+Light debug visualization system
+
+Debug Rendering
+Toggleable debug overlays
+
+Normal/tangent/bitangent/UV visualization modes
+
+Light direction visualization
+
+Wireframe and collider rendering
+
+Physics
+Physics Components
+Velocity, Acceleration
+
+AngularVelocity, AngularAcceleration
+
+AngularMass, AngularDamping
+
+Collider Types
+Sphere
+
+AABB
+
+Plane
+
+Physics Systems
+Force system (e.g., gravity)
+
+Physics integration
+
+Collision detection
+
+Transform propagation
+
+Camera
+Camera Component
+Position, target, up vector
+
+FOV, near/far, aspect
+
+Active camera selection
+
+Camera Systems
+CameraSystem: view/projection calculation
+
+CameraControllerSystem:
+
+WASD movement
+
+Mouse‑look
+
+Cursor‑locked camera mode
+
+FocusOn(entity) support for editor integration
+
+Asset Pipeline (Early Stage)
+The engine includes the beginnings of a structured asset pipeline:
+
+Asset Registry
+Global registry for:
+
+Textures
+
+Meshes
+
+Materials
+
+Texture Importing
+assets.ImportTexture(path)
+
+Stores GPU texture ID in registry
+
+ECS texture component wraps GL ID
+
+Mesh Importing
+glTF single‑mesh and multi‑mesh importers
+
+Assets registered with metadata
+
+Material Metadata
+Base color
+
+Diffuse/normal texture paths
+
+Future‑proof for shader/material graph integration
+
+Editor
+The editor is a separate executable (cmd/editor) that connects to the running game via TCP and provides a live view of the scene.
+
+Editor ↔ Game Link
+TCP connection on port 7777
+
+Full scene snapshot transfer
+
+Incremental transform updates
+
+Undo/redo synchronization
+
+Hierarchy Panel
+Displays all entities in the scene
+
+Selecting an entity updates the inspector
+
+Selection is synchronized with the game runtime
+
+Inspector
+Displays all components on the selected entity
+
+Editable fields for:
+
+Transform
+
+Materials
+
+Billboards
+
+Any component implementing EditorFields()
+
+Writes changes back to the game in real time
+
+Transformation Gizmo
+Move / Rotate / Scale / Combined modes
+
+Local vs world rotation
+
+Pivot vs center mode
+
+Drawn using dedicated gizmo meshes
+
+Depth‑independent rendering
+
+Sends transform deltas back to the game
+
+Undo / Redo
+Full undo/redo stack
+
+Editor and game stay synchronized
+
+Triggered via keyboard shortcuts (Z/Y)
+
+Project Structure
 Code
+cmd/
+    game/       → Runtime game executable
+    editor/     → Editor executable
 
----
+internal/
+    assets/     → Asset registry, texture importers, glTF helpers
+    ecs/        → ECS core, components, systems
+    editor/     → Editor UI, hierarchy, inspector, gizmo logic
+    editorlink/ → TCP protocol between editor and game
+    engine/     → Rendering, shaders, GL setup, mesh manager
+    scene/      → Scene loading, saving, bootstrap
+Controls (Runtime)
+Camera
+WASD – Move
 
-## 🚀 Getting Started
+Mouse – Look (when cursor disabled)
 
-### Prerequisites
-- Go 1.21+ (modules enabled)
-- OpenGL drivers (tested with modern desktop GPUs)
-- `glfw` and `go-gl` bindings (installed via `go get`)
+Tab – Toggle cursor (editor vs camera mode)
 
-### Build & Run
-```bash
-git clone https://github.com/benes83-fra/Go-Cordance.git
-cd Go-Cordance/cmd/game
+Rendering / Debug
+F1 – Toggle debug rendering
+
+F2 – Toggle light debug
+
+1–7 – Debug visualization modes
+
+G – Flip green channel (normal maps)
+
+Lighting
+Arrow keys – Adjust directional light
+
+Space – Toggle orbital light animation
+
+Gizmo
+W – Move
+
+E – Rotate
+
+R – Scale
+
+Q – Combined
+
+L – Toggle local rotation
+
+P – Toggle pivot mode
+
+Editor Sync
+Z – Undo
+
+Y – Redo
+
+Building & Running
+Game
+Code
+cd cmd/game
 go run .
+Editor
+Code
+cd cmd/editor
+go run .
+The editor will automatically connect to the running game.
 
-This will launch the demo scene with camera, meshes, and physics enabled.
+Roadmap
+Rendering
+PBR materials
 
-The camera can be controled WASD + Mouse,
-F1 toggles/untoggles Collsion Debugging
-F2 toggles/untoggles Lighting Debuggen
+Cascaded shadow maps
 
-The Lightsource rotation can be stopped/started with SPACE
-and the arrow keys allow to move the the light independently of the gizmo
+HDR + bloom
 
+GPU instancing
 
-🛠 Development Roadmap
-Planned improvements:
+Editor
+Drag‑and‑drop asset assignment
 
-Texture support (diffuse, normal maps)
+Scene graph parenting
 
-Advanced lighting (PBR, shadows)
+Component creation UI
 
-Expanded physics (joints, constraints)
+Material editor
 
-Scene graph and asset pipeline
+Engine
+Animation system (skeletal + morph)
 
-Profiling and benchmarking tools
+Audio system
 
-Editor / configuration system
+Prefab system
 
-Documentation and tutorials
-
-🤝 Contributing
-Contributions are welcome! Please open issues for bugs or feature requests, and submit pull requests against the main branch.
+Hot‑reloadable shaders
