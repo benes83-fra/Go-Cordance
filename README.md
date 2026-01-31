@@ -1,205 +1,184 @@
-Go‑Cordance
+# Go‑Cordance
+
 A modular, experimental 3D game engine and editor written in Go.
 
-Go‑Cordance is a real‑time 3D engine built around a clean ECS architecture, a modern OpenGL rendering pipeline, a growing asset system, and a live‑linked editor that communicates directly with the running game. The project focuses on clarity, extensibility, and professional‑grade workflows: stable transforms, predictable systems, and an editor that mirrors the runtime state.
+Go‑Cordance is a real‑time 3D game engine built around a clean ECS architecture, a modern OpenGL rendering pipeline, a growing asset system, and a live‑linked editor that communicates directly with the running game. The project focuses on clarity, extensibility, and professional‑grade workflows: stable transforms, predictable systems, and an editor that mirrors the runtime state.
 
-Features
-Core Architecture
-Entity‑Component‑System (ECS)  
-Explicit, minimal, and predictable.
-Includes systems for physics, transforms, rendering, camera, billboards, gizmos, debugging, and more.
+---
 
-Scene System
+## Features
 
-JSON‑based scene format
+### Core Architecture
 
-Load/save scenes
+- **Entity‑Component‑System (ECS)**
+- Systems for physics, transforms, rendering, camera, billboards, gizmos, debugging, and more
+- JSON‑based scene format
+- Scene load/save
+- Named entity lookup for runtime binding
+- Editor ↔ game synchronization via TCP
 
-Named entity lookup for runtime binding
+---
 
-Editor ↔ game synchronization via TCP
+## Rendering
 
-Rendering
-Modern OpenGL Pipeline
-GLSL shader pipeline (vertex, fragment, shadow, debug)
+### Modern OpenGL Pipeline
 
-Perspective camera with controller system
+- GLSL shader pipeline (vertex, fragment, shadow, debug)
+- Perspective camera with controller system
+- MeshManager with built‑in primitives:
+  - Cube, sphere, plane, wireframe shapes
+  - Gizmo primitives (arrows, planes, circles)
+  - Billboard quad
 
-MeshManager with built‑in primitives:
+### glTF Support
 
-Cube, sphere, plane, wireframe shapes
+- Single‑mesh and multi‑mesh glTF loading
+- Material extraction (`LoadGLTFMaterials`)
+- Automatic VAO/VBO setup
+- Multi‑material mesh support
 
-Gizmo primitives (arrows, planes, circles)
+### Lighting & Shadows
 
-Billboard quad
+- Multiple light sources
+- Directional, point, and spotlight variants
+- Shadow mapping pipeline:
+  - Dedicated shadow shaders
+  - Configurable shadow resolution
+- Light debug visualization system
 
-glTF Support
-Single‑mesh and multi‑mesh glTF loading
+### Debug Rendering
 
-Material extraction (LoadGLTFMaterials)
+- Toggleable debug overlays
+- Normal/tangent/bitangent/UV visualization
+- Light direction visualization
+- Wireframe and collider rendering
 
-Automatic VAO/VBO setup
+---
 
-Multi‑material mesh support
+## Physics
 
-Lighting & Shadows
-Multiple light sources
+### Components
 
-Directional, point, and spotlight variants
+- Velocity  
+- Acceleration  
+- AngularVelocity  
+- AngularAcceleration  
+- AngularMass  
+- AngularDamping  
 
-Shadow mapping pipeline:
+### Collider Types
 
-Dedicated shadow shaders
+- Sphere  
+- AABB  
+- Plane  
 
-Configurable shadow resolution
+### Systems
 
-Light debug visualization system
+- Force system (e.g., gravity)
+- Physics integration
+- Collision detection
+- Transform propagation
 
-Debug Rendering
-Toggleable debug overlays
+---
 
-Normal/tangent/bitangent/UV visualization
+## Camera
 
-Light direction visualization
+### Camera Component
 
-Wireframe and collider rendering
+- Position, target, up vector  
+- FOV, near/far, aspect  
+- Active camera selection  
 
-Physics
-Components
-Velocity
+### Camera Systems
 
-Acceleration
+- **CameraSystem**: view/projection calculation  
+- **CameraControllerSystem**:
+  - WASD movement  
+  - Mouse‑look  
+  - Cursor‑locked camera mode  
+- `FocusOn(entity)` support for editor integration  
 
-AngularVelocity
+---
 
-AngularAcceleration
+## Asset Pipeline (Early Stage)
 
-AngularMass
+### Asset Registry
 
-AngularDamping
-
-Collider Types
-Sphere
-
-AABB
-
-Plane
-
-Systems
-Force system (e.g., gravity)
-
-Physics integration
-
-Collision detection
-
-Transform propagation
-
-Camera
-Camera Component
-Position, target, up vector
-
-FOV, near/far, aspect
-
-Active camera selection
-
-Camera Systems
-CameraSystem: view/projection calculation
-
-CameraControllerSystem:
-
-WASD movement
-
-Mouse‑look
-
-Cursor‑locked camera mode
-
-FocusOn(entity) support for editor integration
-
-Asset Pipeline (Early Stage)
-Asset Registry
 Global registry for:
 
-Textures
+- Textures  
+- Meshes  
+- Materials  
 
-Meshes
+### Texture Importing
 
-Materials
+- `assets.ImportTexture(path)`  
+- Stores GPU texture ID in registry  
+- ECS texture component wraps GL ID  
 
-Texture Importing
-assets.ImportTexture(path)
+### Mesh Importing
 
-Stores GPU texture ID in registry
+- glTF single‑mesh and multi‑mesh importers  
+- Assets registered with metadata  
 
-ECS texture component wraps GL ID
+### Material Metadata
 
-Mesh Importing
-glTF single‑mesh and multi‑mesh importers
+- Base color  
+- Diffuse/normal texture paths  
+- Future‑proof for shader/material graph integration  
 
-Assets registered with metadata
+---
 
-Material Metadata
-Base color
+## Editor
 
-Diffuse/normal texture paths
+The editor is a separate executable (`cmd/editor`) that connects to the running game via TCP and provides a live view of the scene.
 
-Future‑proof for shader/material graph integration
+### Editor ↔ Game Link
 
-Editor
-The editor is a separate executable (cmd/editor) that connects to the running game via TCP and provides a live view of the scene.
+- TCP connection on port 7777  
+- Full scene snapshot transfer  
+- Incremental transform updates  
+- Undo/redo synchronization  
 
-Editor ↔ Game Link
-TCP connection on port 7777
+### Hierarchy Panel
 
-Full scene snapshot transfer
+- Displays all entities in the scene  
+- Selecting an entity updates the inspector  
+- Selection is synchronized with the game runtime  
 
-Incremental transform updates
+### Inspector
 
-Undo/redo synchronization
-
-Hierarchy Panel
-Displays all entities in the scene
-
-Selecting an entity updates the inspector
-
-Selection is synchronized with the game runtime
-
-Inspector
-Displays all components on the selected entity
+Displays all components on the selected entity.
 
 Editable fields for:
 
-Transform
+- Transform  
+- Materials  
+- Billboards  
+- Any component implementing `EditorFields()`  
 
-Materials
+Writes changes back to the game in real time.
 
-Billboards
+### Transformation Gizmo
 
-Any component implementing EditorFields()
+- Move / Rotate / Scale / Combined modes  
+- Local vs world rotation  
+- Pivot vs center mode  
+- Drawn using dedicated gizmo meshes  
+- Depth‑independent rendering  
+- Sends transform deltas back to the game  
 
-Writes changes back to the game in real time
+### Undo / Redo
 
-Transformation Gizmo
-Move / Rotate / Scale / Combined modes
+- Full undo/redo stack  
+- Editor and game stay synchronized  
+- Triggered via keyboard shortcuts (Z/Y)  
 
-Local vs world rotation
+---
 
-Pivot vs center mode
+## Project Structure
 
-Drawn using dedicated gizmo meshes
-
-Depth‑independent rendering
-
-Sends transform deltas back to the game
-
-Undo / Redo
-Full undo/redo stack
-
-Editor and game stay synchronized
-
-Triggered via keyboard shortcuts (Z/Y)
-
-Project Structure
-Code
+```
 cmd/
     game/       → Runtime game executable
     editor/     → Editor executable
@@ -211,81 +190,85 @@ internal/
     editorlink/ → TCP protocol between editor and game
     engine/     → Rendering, shaders, GL setup, mesh manager
     scene/      → Scene loading, saving, bootstrap
-Controls (Runtime)
-Camera
-W/A/S/D – Move
+```
 
-Mouse – Look (cursor disabled)
+---
 
-Tab – Toggle cursor (editor vs camera mode)
+## Controls (Runtime)
 
-Rendering / Debug
-F1 – Toggle debug rendering
+### Camera
 
-F2 – Toggle light debug
+- W/A/S/D – Move  
+- Mouse – Look (cursor disabled)  
+- Tab – Toggle cursor (editor vs camera mode)  
 
-1–7 – Debug visualization modes
+### Rendering / Debug
 
-G – Flip green channel (normal maps)
+- F1 – Toggle debug rendering  
+- F2 – Toggle light debug  
+- 1–7 – Debug visualization modes  
+- G – Flip green channel (normal maps)  
 
-Lighting
-Arrow keys – Adjust directional light
+### Lighting
 
-Space – Toggle orbital light animation
+- Arrow keys – Adjust directional light  
+- Space – Toggle orbital light animation  
 
-Gizmo
-W – Move
+### Gizmo
 
-E – Rotate
+- W – Move  
+- E – Rotate  
+- R – Scale  
+- Q – Combined  
+- L – Toggle local rotation  
+- P – Toggle pivot mode  
 
-R – Scale
+### Editor Sync
 
-Q – Combined
+- Z – Undo  
+- Y – Redo  
 
-L – Toggle local rotation
+---
 
-P – Toggle pivot mode
+## Building & Running
 
-Editor Sync
-Z – Undo
+### Game
 
-Y – Redo
-
-Building & Running
-Game
-Code
+```
 cd cmd/game
 go run .
-Editor
-Code
+```
+
+### Editor
+
+```
 cd cmd/editor
 go run .
+```
+
 The editor will automatically connect to the running game.
 
-Roadmap
-Rendering
-PBR materials
+---
 
-Cascaded shadow maps
+## Roadmap
 
-HDR + bloom
+### Rendering
 
-GPU instancing
+- PBR materials  
+- Cascaded shadow maps  
+- HDR + bloom  
+- GPU instancing  
 
-Editor
-Drag‑and‑drop asset assignment
+### Editor
 
-Scene graph parenting
+- Drag‑and‑drop asset assignment  
+- Scene graph parenting  
+- Component creation UI  
+- Material editor  
 
-Component creation UI
+### Engine
 
-Material editor
-
-Engine
-Animation system (skeletal + morph)
-
-Audio system
-
-Prefab system
-
-Hot‑reloadable shaders
+- Animation system (skeletal + morph)  
+- Audio system  
+- Prefab system  
+- Hot‑reloadable shaders  
