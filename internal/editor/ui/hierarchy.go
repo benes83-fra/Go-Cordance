@@ -49,10 +49,7 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 	})
 
 	makeItem := func() fyne.CanvasObject {
-		check := widget.NewCheck("", nil)
-		btn := widget.NewButton("", nil)
-		btn.Importance = widget.LowImportance
-		return container.NewHBox(check, btn)
+		return newHierarchyDropItem()
 	}
 
 	list := widget.NewList(
@@ -68,9 +65,10 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 			}
 
 			ent := st.Entities[i]
-			row := o.(*fyne.Container)
-			check := row.Objects[0].(*widget.Check)
-			btn := row.Objects[1].(*widget.Button)
+			item := o.(*hierarchyDropItem)
+			check := item.check
+			btn := item.btn
+			item.entityID = ent.ID
 
 			btn.SetText(ent.Name)
 
@@ -146,4 +144,55 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 	panel := container.NewBorder(topBar, nil, nil, nil, list)
 
 	return panel, list
+}
+
+type hierarchyDropItem struct {
+	widget.BaseWidget
+	check    *widget.Check
+	btn      *widget.Button
+	entityID int64
+}
+
+func newHierarchyDropItem() *hierarchyDropItem {
+	check := widget.NewCheck("", nil)
+	btn := widget.NewButton("", nil)
+	btn.Importance = widget.LowImportance
+
+	item := &hierarchyDropItem{
+		check: check,
+		btn:   btn,
+	}
+	item.ExtendBaseWidget(item)
+	return item
+}
+
+func (h *hierarchyDropItem) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(
+		container.NewHBox(h.check, h.btn),
+	)
+}
+
+func (h *hierarchyDropItem) Dragged(ev *fyne.DragEvent) {}
+func (h *hierarchyDropItem) DragEnd()                   {}
+
+func (h *hierarchyDropItem) DragAccept(data interface{}) bool {
+	_, ok := data.(uint64)
+	return ok
+}
+
+func (h *hierarchyDropItem) Drop(data interface{}) {
+	assetID := data.(uint64)
+
+	msg := editorlink.MsgSetComponent{
+		EntityID: uint64(h.entityID),
+		Name:     "Material",
+		Fields: map[string]any{
+			"UseTexture":   true,
+			"TextureAsset": int(assetID),
+		},
+	}
+
+	if editorlink.EditorConn != nil {
+		go editorlink.WriteSetComponent(editorlink.EditorConn, msg)
+	}
 }

@@ -26,23 +26,19 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 			return makeTextureItem()
 		},
 		func(i widget.ListItemID, o fyne.CanvasObject) {
-			row := o.(*fyne.Container)            // HBox
-			img := row.Objects[0].(*canvas.Image) // first child
-			lbl := row.Objects[1].(*widget.Label) // second child
-
+			item := o.(*textureDragItem)
 			av := st.Assets.Textures[i]
-			log.Printf("texture[%d] label = %q", i, filepath.Base(av.Path))
-
-			lbl.SetText(filepath.Base(av.Path))
+			item.assetID = av.ID
+			item.lbl.SetText(filepath.Base(av.Path))
 
 			if av.Thumbnail != "" {
-				img.File = av.Thumbnail
-				img.Resource = nil
-				img.Refresh()
+				item.img.File = av.Thumbnail
+				item.img.Resource = nil
+				item.img.Refresh()
 			} else {
-				img.Resource = theme.FileImageIcon()
-				img.File = ""
-				img.Refresh()
+				item.img.Resource = theme.FileImageIcon()
+				item.img.File = ""
+				item.img.Refresh()
 
 				go func(assetID uint64) {
 					if editorlink.EditorConn == nil {
@@ -131,15 +127,7 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 }
 
 func makeTextureItem() fyne.CanvasObject {
-	img := canvas.NewImageFromResource(theme.FileImageIcon())
-	img.FillMode = canvas.ImageFillContain
-	img.SetMinSize(fyne.NewSize(96, 96)) // was 64, now larger
-
-	lbl := widget.NewLabel("")
-	//lbl.Wrapping = fyne.TextTruncate
-
-	// EXACTLY two children: [img, lbl]
-	return container.NewHBox(img, lbl)
+	return newTextureDragItem()
 }
 
 func makeTextureGridItem(av state.AssetView) fyne.CanvasObject {
@@ -166,4 +154,39 @@ func rebuildTextureGrid(st *state.EditorState, grid *fyne.Container) {
 	}
 
 	grid.Refresh()
+}
+
+type textureDragItem struct {
+	widget.BaseWidget
+	img     *canvas.Image
+	lbl     *widget.Label
+	assetID uint64
+}
+
+func newTextureDragItem() *textureDragItem {
+	img := canvas.NewImageFromResource(theme.FileImageIcon())
+	img.FillMode = canvas.ImageFillContain
+	img.SetMinSize(fyne.NewSize(96, 96))
+
+	lbl := widget.NewLabel("")
+
+	item := &textureDragItem{
+		img: img,
+		lbl: lbl,
+	}
+	item.ExtendBaseWidget(item)
+	return item
+}
+
+func (t *textureDragItem) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(
+		container.NewHBox(t.img, t.lbl),
+	)
+}
+
+func (t *textureDragItem) Dragged(ev *fyne.DragEvent) {}
+func (t *textureDragItem) DragEnd()                   {}
+
+func (t *textureDragItem) DragData() interface{} {
+	return t.assetID
 }
