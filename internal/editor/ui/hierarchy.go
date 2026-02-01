@@ -181,18 +181,46 @@ func (h *hierarchyDropItem) DragAccept(data interface{}) bool {
 }
 
 func (h *hierarchyDropItem) Drop(data interface{}) {
-	assetID := data.(uint64)
-
-	msg := editorlink.MsgSetComponent{
-		EntityID: uint64(h.entityID),
-		Name:     "Material",
-		Fields: map[string]any{
-			"UseTexture":   true,
-			"TextureAsset": int(assetID),
-		},
+	da, ok := data.(DragAsset)
+	if !ok {
+		return
 	}
 
-	if editorlink.EditorConn != nil {
-		go editorlink.WriteSetComponent(editorlink.EditorConn, msg)
+	switch da.Type {
+
+	case "texture":
+		msg := editorlink.MsgSetComponent{
+			EntityID: uint64(h.entityID),
+			Name:     "Material",
+			Fields: map[string]any{
+				"UseTexture":   true,
+				"TextureAsset": int(da.ID),
+			},
+		}
+		if editorlink.EditorConn != nil {
+			go editorlink.WriteSetComponent(editorlink.EditorConn, msg)
+		}
+
+		if state.Global.UpdateLocalMaterial != nil {
+			state.Global.UpdateLocalMaterial(h.entityID, msg.Fields)
+		}
+
+	case "mesh":
+		msg := editorlink.MsgSetComponent{
+			EntityID: uint64(h.entityID),
+			Name:     "Mesh",
+			Fields: map[string]any{
+				"MeshAsset": int(da.ID),
+			},
+		}
+		if editorlink.EditorConn != nil {
+			go editorlink.WriteSetComponent(editorlink.EditorConn, msg)
+		}
+
+		// If you add UpdateLocalMesh later, call it here
+	}
+
+	if state.Global.RefreshUI != nil {
+		state.Global.RefreshUI()
 	}
 }

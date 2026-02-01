@@ -92,12 +92,16 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 			return len(st.Assets.Meshes)
 		},
 		func() fyne.CanvasObject {
-			return widget.NewLabel("mesh")
+			return newMeshDragItem()
 		},
 		func(i widget.ListItemID, o fyne.CanvasObject) {
-			o.(*widget.Label).SetText(st.Assets.Meshes[i].Path)
+			item := o.(*meshDragItem)
+			av := st.Assets.Meshes[i]
+			item.assetID = av.ID
+			item.lbl.SetText(filepath.Base(av.Path))
 		},
 	)
+
 	log.Printf("Texture count: %d", len(st.Assets.Textures))
 
 	// (Meshes are not assignable yet — future feature)
@@ -194,5 +198,43 @@ func (t *textureDragItem) Dragged(ev *fyne.DragEvent) {}
 func (t *textureDragItem) DragEnd()                   {}
 
 func (t *textureDragItem) DragData() interface{} {
-	return t.assetID
+	return DragAsset{
+		ID:   t.assetID,
+		Type: "texture",
+	}
+}
+
+type meshDragItem struct {
+	widget.BaseWidget
+	lbl     *widget.Label
+	assetID uint64
+}
+
+func newMeshDragItem() *meshDragItem {
+	lbl := widget.NewLabel("")
+
+	item := &meshDragItem{
+		lbl: lbl,
+	}
+	item.ExtendBaseWidget(item)
+	return item
+}
+
+func (m *meshDragItem) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(m.lbl)
+}
+
+func (m *meshDragItem) Dragged(ev *fyne.DragEvent) {}
+func (m *meshDragItem) DragEnd()                   {}
+
+func (m *meshDragItem) DragData() interface{} {
+	return DragAsset{
+		ID:   m.assetID,
+		Type: "mesh",
+	}
+}
+
+type DragAsset struct {
+	ID   uint64
+	Type string // "texture", "mesh", "material"
 }

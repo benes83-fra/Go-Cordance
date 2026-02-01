@@ -82,12 +82,18 @@ func main() {
 	meshMgr.RegisterBillboardQuad("billboardQuad")
 
 	// Load GLTF meshes that require runtime resources
-	if err := meshMgr.RegisterGLTF("teapot", "assets/models/teapot/teapot.gltf"); err != nil {
+	teapotMeshAsset, err := assets.ImportGLTFMesh("teapot", "assets/models/teapot/teapot.gltf", meshMgr)
+	if err != nil {
 		log.Fatal("Failed to load glTF:", err)
 	}
-	if err := meshMgr.RegisterGLTFMulti("assets/models/sofa/sofa.gltf"); err != nil {
+
+	sofaMeshAsset, err := assets.ImportGLTFMulti("assets/models/sofa/sofa.gltf", meshMgr)
+	if err != nil {
 		log.Fatal(err)
 	}
+	//so far we don't use these variables directly, so we just going to silence them in order not get a compiler error
+	_ = teapotMeshAsset
+	_ = sofaMeshAsset
 
 	// Load shader sources for debug renderer
 	debugVertexSrc, err := engine.LoadShaderSource("assets/shaders/debug_vertex.glsl")

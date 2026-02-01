@@ -94,6 +94,22 @@ type AssetView struct {
 }
 type MsgRequestAssetList struct{}
 
+// MsgRequestThumbnail asks the game to generate/send a thumbnail for AssetID.
+type MsgRequestThumbnail struct {
+	AssetID uint64 `json:"asset_id"`
+	// Optional: desired size (pixels). If zero, game chooses default.
+	Size int `json:"size,omitempty"`
+}
+
+// MsgAssetThumbnail carries a generated thumbnail from game -> editor.
+// Data is base64-encoded PNG/JPEG bytes to keep the message JSON-friendly.
+type MsgAssetThumbnail struct {
+	AssetID uint64 `json:"asset_id"`
+	Format  string `json:"format"`         // e.g. "png" or "jpeg"
+	DataB64 string `json:"data_b64"`       // base64-encoded image bytes
+	Hash    string `json:"hash,omitempty"` // optional checksum for cache validation
+}
+
 func readMsg(conn net.Conn) (Msg, error) {
 	var m Msg
 	r := bufio.NewReader(conn)
@@ -160,22 +176,6 @@ func WriteDuplicateEntity(conn net.Conn, id int64) error {
 type MsgDeleteEntity struct {
 	ID   int64  `json:"id"`
 	Name string `json:"name"`
-}
-
-// MsgRequestThumbnail asks the game to generate/send a thumbnail for AssetID.
-type MsgRequestThumbnail struct {
-	AssetID uint64 `json:"asset_id"`
-	// Optional: desired size (pixels). If zero, game chooses default.
-	Size int `json:"size,omitempty"`
-}
-
-// MsgAssetThumbnail carries a generated thumbnail from game -> editor.
-// Data is base64-encoded PNG/JPEG bytes to keep the message JSON-friendly.
-type MsgAssetThumbnail struct {
-	AssetID uint64 `json:"asset_id"`
-	Format  string `json:"format"`         // e.g. "png" or "jpeg"
-	DataB64 string `json:"data_b64"`       // base64-encoded image bytes
-	Hash    string `json:"hash,omitempty"` // optional checksum for cache validation
 }
 
 // Public client helpers:
