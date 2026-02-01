@@ -178,18 +178,22 @@ func (h *hierarchyDropItem) Dragged(ev *fyne.DragEvent) {}
 func (h *hierarchyDropItem) DragEnd()                   {}
 
 func (h *hierarchyDropItem) DragAccept(data interface{}) bool {
+	log.Printf("DragAccept on entity %d with data %#v", h.entityID, data)
 	_, ok := data.(DragAsset)
+	log.Printf("DragAccept type assertion ok=%v", ok)
 	return ok
 }
 
 func (h *hierarchyDropItem) Drop(data interface{}) {
 	da, ok := data.(DragAsset)
 	if !ok {
+		log.Printf("Drop: wrong type: %#v", data)
 		return
 	}
-	log.Printf("Dropped asset %+v on entity %d", da, h.entityID)
-	switch da.Type {
 
+	log.Printf("Drop on entity %d: %+v", h.entityID, da)
+
+	switch da.Type {
 	case "texture":
 		msg := editorlink.MsgSetComponent{
 			EntityID: uint64(h.entityID),
@@ -199,38 +203,30 @@ func (h *hierarchyDropItem) Drop(data interface{}) {
 				"TextureAsset": int(da.ID),
 			},
 		}
-		log.Printf("Drag Message for Texture: %+v", msg)
-		if editorlink.EditorConn != nil {
-			go editorlink.WriteSetComponent(editorlink.EditorConn, msg)
-		}
-
-		if state.Global.UpdateLocalMaterial != nil {
-			state.Global.UpdateLocalMaterial(h.entityID, msg.Fields)
-		}
+		go editorlink.WriteSetComponent(editorlink.EditorConn, msg)
 
 	case "mesh":
-		// derive a mesh ID/name from the asset (example: basename without extension)
 		av := findMeshAssetByID(state.Global.Assets.Meshes, da.ID)
-		meshID := filepath.Base(av.Path) // or some mapping you already use in the game
+		meshID := filepath.Base(av.Path)
 
 		msg := editorlink.MsgSetComponent{
 			EntityID: uint64(h.entityID),
 			Name:     "Mesh",
 			Fields: map[string]any{
-				"MeshID": meshID, // or "MeshName": meshID
+				"MeshID": meshID,
 			},
 		}
-		log.Printf("Drag Message for mesh: %+v", msg)
-		if editorlink.EditorConn != nil {
-			go editorlink.WriteSetComponent(editorlink.EditorConn, msg)
+		go editorlink.WriteSetComponent(editorlink.EditorConn, msg)
+	}
+}
+
+func findTextureAssetByID(textures []state.AssetView, id uint64) state.AssetView {
+	for _, t := range textures {
+		if t.ID == id {
+			return t
 		}
-
-		// If you add UpdateLocalMesh later, call it here
 	}
-
-	if state.Global.RefreshUI != nil {
-		state.Global.RefreshUI()
-	}
+	return state.AssetView{}
 }
 
 func findMeshAssetByID(meshes []state.AssetView, id uint64) state.AssetView {

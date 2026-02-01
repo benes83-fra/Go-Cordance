@@ -6,6 +6,7 @@ import (
 	"go-engine/Go-Cordance/internal/editorlink"
 	"log"
 	"path/filepath"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -105,7 +106,34 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 	log.Printf("Texture count: %d", len(st.Assets.Textures))
 
 	// (Meshes are not assignable yet — future feature)
-	meshList.OnSelected = func(id widget.ListItemID) {}
+	meshList.OnSelected = func(id widget.ListItemID) {
+		if st.SelectedIndex < 0 || st.SelectedIndex >= len(st.Entities) {
+			return
+		}
+
+		ent := st.Entities[st.SelectedIndex]
+		asset := st.Assets.Meshes[id]
+
+		// Derive mesh ID (you may want a better mapping later)
+		meshID := filepath.Base(asset.Path)                       // "teapot.gltf"
+		meshID = strings.TrimSuffix(meshID, filepath.Ext(meshID)) // "teapot"
+
+		msg := editorlink.MsgSetComponent{
+			EntityID: uint64(ent.ID),
+			Name:     "Mesh",
+			Fields: map[string]any{
+				"MeshID": meshID,
+			},
+		}
+
+		if editorlink.EditorConn != nil {
+			go editorlink.WriteSetComponent(editorlink.EditorConn, msg)
+		}
+
+		if state.Global.RefreshUI != nil {
+			state.Global.RefreshUI()
+		}
+	}
 
 	// --- MATERIAL LIST ---
 	matList := widget.NewList(
