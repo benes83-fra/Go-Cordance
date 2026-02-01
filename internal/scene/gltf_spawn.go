@@ -7,7 +7,8 @@ import (
 
 func SpawnGLTF(scene *Scene, mm *engine.MeshManager, id, path string) (*ecs.Entity, error) {
 	// engine handles geometry
-	if err := mm.RegisterGLTF(id, path); err != nil {
+	_, err := mm.RegisterGLTF(id, path)
+	if err != nil {
 		return nil, err
 	}
 

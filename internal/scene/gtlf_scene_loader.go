@@ -11,7 +11,8 @@ import (
 // and creates entities with Parent/Children + Transform + Mesh + Material.
 func (s *Scene) SpawnGLTFScene(mm *engine.MeshManager, path string) ([]*ecs.Entity, error) {
 	// 1. Load geometry for all meshes/primitives
-	if err := mm.RegisterGLTFMulti(path); err != nil {
+	_, err := mm.RegisterGLTFMulti(path)
+	if err != nil {
 		return nil, fmt.Errorf("geometry load failed: %w", err)
 	}
 

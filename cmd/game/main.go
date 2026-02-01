@@ -87,13 +87,18 @@ func main() {
 		log.Fatal("Failed to load glTF:", err)
 	}
 
-	sofaMeshAsset, err := assets.ImportGLTFMulti("assets/models/sofa/sofa.gltf", meshMgr)
+	// main.go
+
+	sofaMeshAsset, sofaMeshIDs, err := assets.ImportGLTFMulti("assets/models/sofa/sofa.gltf", meshMgr)
 	if err != nil {
 		log.Fatal(err)
 	}
-	//so far we don't use these variables directly, so we just going to silence them in order not get a compiler error
-	_ = teapotMeshAsset
+	log.Printf("sofa mesh IDs: %+v", sofaMeshIDs)
+
+	// silence unused for now
 	_ = sofaMeshAsset
+	_ = sofaMeshIDs
+	_ = teapotMeshAsset
 
 	// Load shader sources for debug renderer
 	debugVertexSrc, err := engine.LoadShaderSource("assets/shaders/debug_vertex.glsl")

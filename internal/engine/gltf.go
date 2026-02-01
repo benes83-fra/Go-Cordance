@@ -257,7 +257,7 @@ func uploadMeshToGL(mm *MeshManager, id string, vertices []float32, indices []ui
 // Single-mesh loader (default)
 // ---------------------------
 
-func (mm *MeshManager) RegisterGLTF(id, path string) error {
+func (mm *MeshManager) RegisterGLTF(id, path string) ([]string, error) {
 	return mm.loadGLTFInternal(id, path, false)
 }
 
@@ -265,7 +265,7 @@ func (mm *MeshManager) RegisterGLTF(id, path string) error {
 // Multi-mesh loader (optional)
 // ---------------------------
 
-func (mm *MeshManager) RegisterGLTFMulti(path string) error {
+func (mm *MeshManager) RegisterGLTFMulti(path string) ([]string, error) {
 	return mm.loadGLTFInternal("", path, true)
 }
 
@@ -273,17 +273,17 @@ func (mm *MeshManager) RegisterGLTFMulti(path string) error {
 // Shared geometry loader
 // ---------------------------
 
-func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) error {
+func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, error) {
 	baseDir := filepath.Dir(path)
-
+	var meshIDs []string
 	raw, err := ioutil.ReadFile(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var g gltfRoot
 	if err := json.Unmarshal(raw, &g); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Load buffers
@@ -291,7 +291,7 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) error {
 	for i, b := range g.Buffers {
 		data, err := ioutil.ReadFile(filepath.Join(baseDir, b.URI))
 		if err != nil {
-			return err
+			return nil, err
 		}
 		buffers[i] = data
 	}
@@ -316,18 +316,19 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) error {
 			if multi {
 				meshID = fmt.Sprintf("%s/%d", meshName, pi)
 			}
+			meshIDs = append(meshIDs, meshID)
 
 			// POSITION
 			posA, err := getAccessor(&g, buffers, prim.Attributes["POSITION"])
 			if err != nil {
-				return err
+				return nil, err
 			}
 			count := posA.acc.Count
 
 			// NORMAL
 			norA, err := getAccessor(&g, buffers, prim.Attributes["NORMAL"])
 			if err != nil {
-				return err
+				return nil, err
 			}
 
 			// UV (optional)
@@ -336,7 +337,7 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) error {
 			if uvIdx, ok := prim.Attributes["TEXCOORD_0"]; ok {
 				uvA, err = getAccessor(&g, buffers, uvIdx)
 				if err != nil {
-					return err
+					return nil, err
 				}
 				hasUV = true
 			}
@@ -347,7 +348,7 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) error {
 			if tanIdx, ok := prim.Attributes["TANGENT"]; ok {
 				tanA, err = getAccessor(&g, buffers, tanIdx)
 				if err != nil {
-					return err
+					return nil, err
 				}
 				hasTan = true
 			}
@@ -355,7 +356,7 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) error {
 			// INDICES
 			idxA, err := getAccessor(&g, buffers, prim.Indices)
 			if err != nil {
-				return err
+				return nil, err
 			}
 
 			// Decode indices
@@ -377,7 +378,7 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) error {
 						uint32(b[3])<<24
 				}
 			default:
-				return fmt.Errorf("unsupported index type: %d", idxA.acc.ComponentType)
+				return nil, fmt.Errorf("unsupported index type: %d", idxA.acc.ComponentType)
 			}
 
 			// Build interleaved vertices
@@ -427,7 +428,7 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) error {
 		}
 	}
 
-	return nil
+	return meshIDs, nil
 }
 
 // ---------------------------
