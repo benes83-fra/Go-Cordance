@@ -5,6 +5,8 @@ import (
 	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editorlink"
+	"log"
+	"path/filepath"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -176,7 +178,7 @@ func (h *hierarchyDropItem) Dragged(ev *fyne.DragEvent) {}
 func (h *hierarchyDropItem) DragEnd()                   {}
 
 func (h *hierarchyDropItem) DragAccept(data interface{}) bool {
-	_, ok := data.(uint64)
+	_, ok := data.(DragAsset)
 	return ok
 }
 
@@ -185,7 +187,7 @@ func (h *hierarchyDropItem) Drop(data interface{}) {
 	if !ok {
 		return
 	}
-
+	log.Printf("Dropped asset %+v on entity %d", da, h.entityID)
 	switch da.Type {
 
 	case "texture":
@@ -197,6 +199,7 @@ func (h *hierarchyDropItem) Drop(data interface{}) {
 				"TextureAsset": int(da.ID),
 			},
 		}
+		log.Printf("Drag Message for Texture: %+v", msg)
 		if editorlink.EditorConn != nil {
 			go editorlink.WriteSetComponent(editorlink.EditorConn, msg)
 		}
@@ -206,13 +209,18 @@ func (h *hierarchyDropItem) Drop(data interface{}) {
 		}
 
 	case "mesh":
+		// derive a mesh ID/name from the asset (example: basename without extension)
+		av := findMeshAssetByID(state.Global.Assets.Meshes, da.ID)
+		meshID := filepath.Base(av.Path) // or some mapping you already use in the game
+
 		msg := editorlink.MsgSetComponent{
 			EntityID: uint64(h.entityID),
 			Name:     "Mesh",
 			Fields: map[string]any{
-				"MeshAsset": int(da.ID),
+				"MeshID": meshID, // or "MeshName": meshID
 			},
 		}
+		log.Printf("Drag Message for mesh: %+v", msg)
 		if editorlink.EditorConn != nil {
 			go editorlink.WriteSetComponent(editorlink.EditorConn, msg)
 		}
@@ -223,4 +231,13 @@ func (h *hierarchyDropItem) Drop(data interface{}) {
 	if state.Global.RefreshUI != nil {
 		state.Global.RefreshUI()
 	}
+}
+
+func findMeshAssetByID(meshes []state.AssetView, id uint64) state.AssetView {
+	for _, m := range meshes {
+		if m.ID == id {
+			return m
+		}
+	}
+	return state.AssetView{}
 }
