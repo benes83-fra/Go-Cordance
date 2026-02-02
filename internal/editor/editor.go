@@ -283,9 +283,10 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 				st.Assets.Meshes = make([]state.AssetView, len(m.Meshes))
 				for i, v := range m.Meshes {
 					st.Assets.Meshes[i] = state.AssetView{
-						ID:   v.ID,
-						Path: v.Path,
-						Type: v.Type,
+						ID:      v.ID,
+						Path:    v.Path,
+						Type:    v.Type,
+						MeshIDs: v.MeshIDs,
 					}
 				}
 

@@ -88,9 +88,10 @@ type MsgAssetList struct {
 }
 
 type AssetView struct {
-	ID   uint64 `json:"id"`
-	Path string `json:"path"`
-	Type string `json:"type"`
+	ID      uint64   `json:"id"`
+	Path    string   `json:"path"`
+	Type    string   `json:"type"`
+	MeshIDs []string `json:"mesh_ids,omitempty"`
 }
 type MsgRequestAssetList struct{}
 
@@ -108,6 +109,12 @@ type MsgAssetThumbnail struct {
 	Format  string `json:"format"`         // e.g. "png" or "jpeg"
 	DataB64 string `json:"data_b64"`       // base64-encoded image bytes
 	Hash    string `json:"hash,omitempty"` // optional checksum for cache validation
+}
+type MsgMeshList struct {
+	Meshes []struct {
+		ID   string `json:"id"`
+		Path string `json:"path"`
+	} `json:"meshes"`
 }
 
 func readMsg(conn net.Conn) (Msg, error) {
@@ -263,4 +270,17 @@ func WriteAssetThumbnail(conn net.Conn, assetID uint64, format string, data []by
 		Hash:    hash,
 	}
 	return writeMsg(conn, "AssetThumbnail", msg)
+}
+
+func WriteMeshList(conn net.Conn, meshes []struct {
+	ID   string `json:"id"`
+	Path string `json:"path"`
+}) error {
+	if conn == nil {
+		return fmt.Errorf("editorlink: nil connection")
+	}
+	msg := MsgMeshList{
+		Meshes: meshes,
+	}
+	return writeMsg(conn, "MeshList", msg)
 }

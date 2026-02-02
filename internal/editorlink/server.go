@@ -422,8 +422,19 @@ func buildAssetList() MsgAssetList {
 		switch a.Type {
 		case assets.AssetTexture:
 			out.Textures = append(out.Textures, view)
+
 		case assets.AssetMesh:
+			// Data can be string (single mesh) or []string (multi)
+			switch v := a.Data.(type) {
+			case string:
+				view.MeshIDs = []string{v}
+			case []string:
+				view.MeshIDs = v
+			default:
+				// no mesh IDs, leave empty
+			}
 			out.Meshes = append(out.Meshes, view)
+
 		case assets.AssetMaterial:
 			out.Materials = append(out.Materials, view)
 		}

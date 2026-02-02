@@ -5,11 +5,12 @@ import (
 )
 
 type AssetView struct {
-	ID        uint64
-	Path      string
-	Type      string
-	Thumbnail string
-	ThumbHash string
+	ID        uint64   `json: "id"`
+	Path      string   `json:"path"`
+	Type      string   `json:"type"`
+	Thumbnail string   `json: "thumbnail,omitempty"`
+	ThumbHash string   `json:"thumb_hash,omitempty"`
+	MeshIDs   []string `json:"mesh_ids,omitempty"`
 }
 
 type EditorState struct {

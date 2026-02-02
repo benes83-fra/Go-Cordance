@@ -6,7 +6,6 @@ import (
 	"go-engine/Go-Cordance/internal/editorlink"
 	"log"
 	"path/filepath"
-	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -88,35 +87,94 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 	}
 
 	// --- MESH LIST ---
+	// --- MESH LIST ---
 	meshList := widget.NewList(
 		func() int {
-			return len(st.Assets.Meshes)
+			// total number of submeshes across all mesh assets
+			count := 0
+			for _, a := range st.Assets.Meshes {
+				if len(a.MeshIDs) == 0 {
+					// single-mesh asset with no MeshIDs? treat as 1 entry using Path basename
+					count++
+				} else {
+					count += len(a.MeshIDs)
+				}
+			}
+			return count
 		},
 		func() fyne.CanvasObject {
 			return newMeshDragItem()
 		},
 		func(i widget.ListItemID, o fyne.CanvasObject) {
 			item := o.(*meshDragItem)
-			av := st.Assets.Meshes[i]
-			item.assetID = av.ID
-			item.lbl.SetText(filepath.Base(av.Path))
+
+			// map flat index i -> (asset, meshID)
+			idx := int(i)
+			for _, a := range st.Assets.Meshes {
+				if len(a.MeshIDs) == 0 {
+					// single-mesh asset: one entry
+					if idx == 0 {
+						item.assetID = a.ID
+						// show something meaningful; fall back to file name
+						item.meshID = filepath.Base(a.Path)
+						item.lbl.SetText(item.meshID)
+						return
+					}
+					idx--
+					continue
+				}
+
+				if idx < len(a.MeshIDs) {
+					item.assetID = a.ID
+					item.meshID = a.MeshIDs[idx]
+					item.lbl.SetText(a.MeshIDs[idx])
+					return
+				}
+				idx -= len(a.MeshIDs)
+			}
+
+			// safety fallback (should not happen)
+			item.assetID = 0
+			item.meshID = ""
+			item.lbl.SetText("<invalid>")
 		},
 	)
 
-	log.Printf("Texture count: %d", len(st.Assets.Textures))
-
-	// (Meshes are not assignable yet — future feature)
 	meshList.OnSelected = func(id widget.ListItemID) {
 		if st.SelectedIndex < 0 || st.SelectedIndex >= len(st.Entities) {
 			return
 		}
 
-		ent := st.Entities[st.SelectedIndex]
-		asset := st.Assets.Meshes[id]
+		// map flat index id -> (asset, meshID) again
+		idx := int(id)
 
-		// Derive mesh ID (you may want a better mapping later)
-		meshID := filepath.Base(asset.Path)                       // "teapot.gltf"
-		meshID = strings.TrimSuffix(meshID, filepath.Ext(meshID)) // "teapot"
+		var meshID string
+
+		for _, a := range st.Assets.Meshes {
+			if len(a.MeshIDs) == 0 {
+				if idx == 0 {
+
+					meshID = filepath.Base(a.Path)
+					break
+				}
+				idx--
+				continue
+			}
+
+			if idx < len(a.MeshIDs) {
+
+				meshID = a.MeshIDs[idx]
+				break
+			}
+			idx -= len(a.MeshIDs)
+		}
+
+		if meshID == "" {
+			log.Printf("MeshList.OnSelected: no meshID resolved for index %d", id)
+			return
+		}
+
+		ent := st.Entities[st.SelectedIndex]
 
 		msg := editorlink.MsgSetComponent{
 			EntityID: uint64(ent.ID),
@@ -236,6 +294,7 @@ type meshDragItem struct {
 	widget.BaseWidget
 	lbl     *widget.Label
 	assetID uint64
+	meshID  string
 }
 
 func newMeshDragItem() *meshDragItem {
