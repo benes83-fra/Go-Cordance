@@ -22,8 +22,6 @@ type ThumbnailRenderer struct {
 	height   int
 }
 
-// engine/thumbnail.go
-
 var globalThumbRenderer *ThumbnailRenderer
 
 func InitThumbnailRenderer(r *Renderer, mm *MeshManager, width, height int) {
@@ -67,6 +65,10 @@ func (tr *ThumbnailRenderer) initFBO() {
 	gl.RenderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, int32(tr.width), int32(tr.height))
 	gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, tr.depthRb)
 
+	// IMPORTANT: tell GL which color attachment to draw to
+	drawBuf := uint32(gl.COLOR_ATTACHMENT0)
+	gl.DrawBuffers(1, &drawBuf)
+
 	if status := gl.CheckFramebufferStatus(gl.FRAMEBUFFER); status != gl.FRAMEBUFFER_COMPLETE {
 		fmt.Printf("Thumbnail FBO incomplete: 0x%X\n", status)
 	}
@@ -84,9 +86,17 @@ func (tr *ThumbnailRenderer) RenderMeshThumbnail(meshID string, size int) ([]byt
 	gl.GetIntegerv(gl.VIEWPORT, &vp[0])
 
 	gl.BindFramebuffer(gl.FRAMEBUFFER, tr.fbo)
+
+	// Make sure we read from the right color attachment
+	gl.ReadBuffer(gl.COLOR_ATTACHMENT0)
+
 	gl.Viewport(0, 0, int32(size), int32(size))
 	gl.ClearColor(0.2, 0.2, 0.2, 1.0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+	// Enable depth test for proper mesh rendering
+	gl.Enable(gl.DEPTH_TEST)
+	gl.DepthFunc(gl.LEQUAL)
 
 	// Simple camera: look at origin from +Z
 	view := mgl32.LookAtV(

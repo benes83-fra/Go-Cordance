@@ -103,6 +103,21 @@ func generateMeshThumbnail(a *assets.Asset, size int) ([]byte, string, error) {
 		return nil, "", fmt.Errorf("mesh asset %d has unexpected Data type %T", a.ID, v)
 	}
 
-	// Call engine hook (backend‑agnostic)
-	return engine.RenderMeshThumbnail(meshID, size)
+	// --- NEW: disk cache directory ---
+	cacheDir := filepath.Join("cache", "thumbs")
+	os.MkdirAll(cacheDir, 0755)
+
+	// --- Render thumbnail via engine ---
+	data, hash, err := engine.RenderMeshThumbnail(meshID, size)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// --- NEW: write to disk if not cached ---
+	fname := filepath.Join(cacheDir, fmt.Sprintf("%d-%s.png", a.ID, hash))
+	if _, err := os.Stat(fname); os.IsNotExist(err) {
+		_ = os.WriteFile(fname, data, 0644)
+	}
+
+	return data, hash, nil
 }

@@ -413,10 +413,23 @@ func handleAssetThumbnail(assetID uint64, format string, data []byte, hash strin
 	}
 
 	// 2) Update state.Global asset entry with thumbnail path
+	// 2) Update state.Global asset entry with thumbnail path
+	found := false
+
 	for i := range state.Global.Assets.Textures {
 		if state.Global.Assets.Textures[i].ID == assetID {
 			state.Global.Assets.Textures[i].Thumbnail = fname
+			found = true
 			break
+		}
+	}
+
+	if !found {
+		for i := range state.Global.Assets.Meshes {
+			if state.Global.Assets.Meshes[i].ID == assetID {
+				state.Global.Assets.Meshes[i].Thumbnail = fname
+				break
+			}
 		}
 	}
 

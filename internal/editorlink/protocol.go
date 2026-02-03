@@ -1,10 +1,11 @@
 package editorlink
 
 import (
-	"bufio"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"net"
 )
 
@@ -119,14 +120,25 @@ type MsgMeshList struct {
 
 func readMsg(conn net.Conn) (Msg, error) {
 	var m Msg
-	r := bufio.NewReader(conn)
-	line, err := r.ReadBytes('\n')
-	if err != nil {
+	header := make([]byte, 4)
+	if _, err := io.ReadFull(conn, header); err != nil {
 		return m, err
 	}
-	if err := json.Unmarshal(line, &m); err != nil {
-		return m, fmt.Errorf("unmarshal msg: %w", err)
+
+	length := uint32(header[0])<<24 |
+		uint32(header[1])<<16 |
+		uint32(header[2])<<8 |
+		uint32(header[3])
+
+	buf := make([]byte, length)
+	if _, err := io.ReadFull(conn, buf); err != nil {
+		return m, err
 	}
+
+	if err := json.Unmarshal(buf, &m); err != nil {
+		return m, err
+	}
+
 	return m, nil
 }
 
@@ -135,17 +147,27 @@ func writeMsg(conn net.Conn, msgType string, payload any) error {
 	if payload != nil {
 		b, err := json.Marshal(payload)
 		if err != nil {
-			return fmt.Errorf("marshal payload: %w", err)
+			return err
 		}
 		data = b
 	}
+
 	m := Msg{Type: msgType, Data: data}
 	b, err := json.Marshal(m)
 	if err != nil {
-		return fmt.Errorf("marshal msg: %w", err)
+		return err
 	}
-	b = append(b, '\n')
-	_, err = conn.Write(b)
+
+	// prefix with length
+	length := uint32(len(b))
+	header := []byte{
+		byte(length >> 24),
+		byte(length >> 16),
+		byte(length >> 8),
+		byte(length),
+	}
+
+	_, err = conn.Write(append(header, b...))
 	return err
 }
 
@@ -269,6 +291,7 @@ func WriteAssetThumbnail(conn net.Conn, assetID uint64, format string, data []by
 		DataB64: b64,
 		Hash:    hash,
 	}
+	log.Printf("Sending AssetThumbnail with message: %+v", msg)
 	return writeMsg(conn, "AssetThumbnail", msg)
 }
 

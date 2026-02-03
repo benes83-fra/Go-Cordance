@@ -88,6 +88,7 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 
 	// --- MESH LIST ---
 	// --- MESH LIST ---
+	// --- MESH LIST ---
 	meshList := widget.NewList(
 		func() int {
 			// total number of submeshes across all mesh assets
@@ -115,19 +116,53 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 					// single-mesh asset: one entry
 					if idx == 0 {
 						item.assetID = a.ID
-						// show something meaningful; fall back to file name
 						item.meshID = filepath.Base(a.Path)
 						item.lbl.SetText(item.meshID)
+
+						// show thumbnail if available, otherwise request it
+						if a.Thumbnail != "" {
+							item.img.File = a.Thumbnail
+							item.img.Resource = nil
+							item.img.Refresh()
+						} else {
+							item.img.Resource = theme.FileImageIcon()
+							item.img.File = ""
+							item.img.Refresh()
+
+							go func(assetID uint64) {
+								if editorlink.EditorConn != nil {
+									_ = editorlink.WriteRequestThumbnail(editorlink.EditorConn, assetID, 128)
+								}
+							}(a.ID)
+						}
 						return
 					}
 					idx--
 					continue
 				}
+				log.Printf("MeshThumbnail: %s", a.Thumbnail)
 
 				if idx < len(a.MeshIDs) {
 					item.assetID = a.ID
 					item.meshID = a.MeshIDs[idx]
 					item.lbl.SetText(a.MeshIDs[idx])
+
+					// use the parent asset thumbnail for all submeshes
+					if a.Thumbnail != "" {
+						item.img.File = a.Thumbnail
+						item.img.Resource = nil
+						item.img.Refresh()
+					} else {
+						item.img.Resource = theme.FileImageIcon()
+						item.img.File = ""
+						item.img.Refresh()
+
+						go func(assetID uint64) {
+							if editorlink.EditorConn != nil {
+								_ = editorlink.WriteRequestThumbnail(editorlink.EditorConn, assetID, 128)
+							}
+						}(a.ID)
+					}
 					return
 				}
 				idx -= len(a.MeshIDs)
@@ -137,6 +172,9 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 			item.assetID = 0
 			item.meshID = ""
 			item.lbl.SetText("<invalid>")
+			item.img.Resource = theme.FileImageIcon()
+			item.img.File = ""
+			item.img.Refresh()
 		},
 	)
 
@@ -292,15 +330,21 @@ func (t *textureDragItem) DragData() interface{} {
 
 type meshDragItem struct {
 	widget.BaseWidget
+	img     *canvas.Image
 	lbl     *widget.Label
 	assetID uint64
 	meshID  string
 }
 
 func newMeshDragItem() *meshDragItem {
+	img := canvas.NewImageFromResource(theme.FileImageIcon())
+	img.FillMode = canvas.ImageFillContain
+	img.SetMinSize(fyne.NewSize(96, 96))
+
 	lbl := widget.NewLabel("")
 
 	item := &meshDragItem{
+		img: img,
 		lbl: lbl,
 	}
 	item.ExtendBaseWidget(item)
@@ -308,7 +352,9 @@ func newMeshDragItem() *meshDragItem {
 }
 
 func (m *meshDragItem) CreateRenderer() fyne.WidgetRenderer {
-	return widget.NewSimpleRenderer(m.lbl)
+	return widget.NewSimpleRenderer(
+		container.NewHBox(m.img, m.lbl),
+	)
 }
 
 func (m *meshDragItem) Dragged(ev *fyne.DragEvent) {}
