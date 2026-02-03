@@ -67,6 +67,8 @@ func main() {
 
 	// Mesh manager and registrations (runtime)
 	meshMgr := engine.NewMeshManager()
+	engine.InitThumbnailRenderer(renderer, meshMgr, 256, 256)
+
 	meshMgr.RegisterTriangle("triangle")
 	meshMgr.RegisterCube8("Cube8")
 	meshMgr.RegisterCube("cube")

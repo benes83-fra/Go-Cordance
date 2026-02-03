@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"image"
 	"image/png"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -15,6 +14,7 @@ import (
 	_ "image/png"
 
 	"go-engine/Go-Cordance/internal/assets"
+	"go-engine/Go-Cordance/internal/engine"
 
 	"github.com/nfnt/resize"
 )
@@ -30,23 +30,16 @@ func assetPathForID(assetID uint64) (string, bool) {
 	return "", false
 }
 
-func GenerateThumbnailBytes(assetID uint64, size int) ([]byte, string, error) {
-
-	path, ok := assetPathForID(assetID)
-	if !ok {
-		// helpful debug: list known texture IDs/paths once
-		log.Printf("thumbnail: asset id %d not found in assets registry", assetID)
-		for _, a := range assets.All() {
-			log.Printf("thumbnail: known asset ID=%d Path=%s Type=%v", a.ID, a.Path, a.Type)
-		}
-		return nil, "", fmt.Errorf("no path for asset %d", assetID)
+// generator.go
+func generateTextureThumbnail(a *assets.Asset, size int) ([]byte, string, error) {
+	path := a.Path
+	if path == "" {
+		return nil, "", fmt.Errorf("asset %d has empty path", a.ID)
 	}
 
-	// disk cache check
 	cacheDir := filepath.Join("cache", "thumbs")
 	os.MkdirAll(cacheDir, 0755)
 
-	// load source image
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, "", err
@@ -65,18 +58,51 @@ func GenerateThumbnailBytes(assetID uint64, size int) ([]byte, string, error) {
 		return nil, "", err
 	}
 	data := buf.Bytes()
+	hash := sha1Hex(data)
 
-	h := sha1.Sum(data)
-	hash := hex.EncodeToString(h[:])
-
-	// optional: write to disk cache
-	fname := filepath.Join(cacheDir, fmt.Sprintf("%d-%s.png", assetID, hash))
+	fname := filepath.Join(cacheDir, fmt.Sprintf("%d-%s.png", a.ID, hash))
 	if _, err := os.Stat(fname); os.IsNotExist(err) {
 		_ = os.WriteFile(fname, data, 0644)
 	}
-	for _, a := range assets.All() {
-		log.Printf("asset-registry: ID=%d Path=%s Type=%v", a.ID, a.Path, a.Type)
-	}
 
 	return data, hash, nil
+}
+
+func GenerateThumbnailBytes(assetID uint64, size int) ([]byte, string, error) {
+	a := assets.Get(assets.AssetID(assetID))
+	if a == nil {
+		return nil, "", fmt.Errorf("asset %d not found", assetID)
+	}
+
+	switch a.Type {
+	case assets.AssetTexture:
+		return generateTextureThumbnail(a, size)
+	case assets.AssetMesh:
+		return generateMeshThumbnail(a, size)
+	default:
+		return nil, "", fmt.Errorf("no thumbnail generator for asset type %v", a.Type)
+	}
+}
+
+func sha1Hex(data []byte) string {
+	h := sha1.Sum(data)
+	return hex.EncodeToString(h[:])
+}
+func generateMeshThumbnail(a *assets.Asset, size int) ([]byte, string, error) {
+	var meshID string
+
+	switch v := a.Data.(type) {
+	case string:
+		meshID = v
+	case []string:
+		if len(v) == 0 {
+			return nil, "", fmt.Errorf("mesh asset %d has no meshIDs", a.ID)
+		}
+		meshID = v[0]
+	default:
+		return nil, "", fmt.Errorf("mesh asset %d has unexpected Data type %T", a.ID, v)
+	}
+
+	// Call engine hook (backend‑agnostic)
+	return engine.RenderMeshThumbnail(meshID, size)
 }
