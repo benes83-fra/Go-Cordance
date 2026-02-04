@@ -1030,3 +1030,10 @@ func (mm *MeshManager) GetEBO(meshID string) uint32 {
 func (mm *MeshManager) GetVBO(meshID string) uint32 {
 	return mm.vbos[meshID]
 }
+
+func (mm *MeshManager) GetLayout(id string) int {
+	if l, ok := mm.layoutType[id]; ok {
+		return l
+	}
+	return 0
+}

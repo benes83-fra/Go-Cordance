@@ -7,28 +7,108 @@ import (
 	"fmt"
 	"image"
 	"image/png"
+	"log"
+	"runtime"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
-	"github.com/go-gl/mathgl/mgl32"
+	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
 type ThumbnailRenderer struct {
-	r        *Renderer
-	mm       *MeshManager
+	r  *Renderer
+	mm *MeshManager
+
+	// GL objects (live in the thumbnail GL context)
 	fbo      uint32
 	colorTex uint32
 	depthRb  uint32
 	width    int
 	height   int
+
+	program    uint32
+	locModel   int32
+	locView    int32
+	locProj    int32
+	locBaseCol int32
+	locUseTex  int32
+	locDiffuse int32
+
+	// dedicated GL thread + shared hidden window
+	win   *glfw.Window
+	reqCh chan thumbRequest
+}
+
+type thumbRequest struct {
+	meshID string
+	size   int
+	resp   chan thumbResponse
+}
+
+type thumbResponse struct {
+	data []byte
+	hash string
+	err  error
 }
 
 var globalThumbRenderer *ThumbnailRenderer
 
+// Simple thumbnail vertex shader: position/normal/uv, basic MVP.
+const thumbVertexShaderSrc = `
+#version 330 core
+
+layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec3 aNormal;
+layout(location = 2) in vec2 aTexCoord;
+
+uniform mat4 uModel;
+uniform mat4 uView;
+uniform mat4 uProj;
+
+out vec3 FragPos;
+out vec3 Normal;
+out vec2 TexCoord;
+
+void main()
+{
+    FragPos = vec3(uModel * vec4(aPos, 1.0));
+    Normal  = mat3(transpose(inverse(uModel))) * aNormal;
+    TexCoord = aTexCoord;
+    gl_Position = uProj * uView * vec4(FragPos, 1.0);
+}
+`
+
+// Simple thumbnail fragment shader: optional texture, no lights/shadows.
+const thumbFragmentShaderSrc = `
+#version 330 core
+
+in vec3 FragPos;
+in vec3 Normal;
+in vec2 TexCoord;
+
+out vec4 FragColor;
+
+uniform vec4 uBaseColor;
+uniform sampler2D uDiffuseTex;
+uniform bool uUseTexture;
+
+void main()
+{
+    vec3 base = uBaseColor.rgb;
+    if (uUseTexture) {
+        base = texture(uDiffuseTex, TexCoord).rgb;
+    }
+    FragColor = vec4(base, uBaseColor.a);
+}
+`
+
+// InitThumbnailRenderer must be called on the main GL thread
+// while the main window/context is current.
 func InitThumbnailRenderer(r *Renderer, mm *MeshManager, width, height int) {
 	globalThumbRenderer = NewThumbnailRenderer(r, mm, width, height)
 }
 
-// RenderMeshThumbnail is the engine-level hook used by thumbnails.
+// Public API: synchronous thumbnail request.
+// This runs on any goroutine; actual GL work happens on the dedicated GL thread.
 func RenderMeshThumbnail(meshID string, size int) ([]byte, string, error) {
 	if globalThumbRenderer == nil {
 		return nil, "", fmt.Errorf("thumbnail renderer not initialized")
@@ -37,15 +117,84 @@ func RenderMeshThumbnail(meshID string, size int) ([]byte, string, error) {
 }
 
 func NewThumbnailRenderer(r *Renderer, mm *MeshManager, width, height int) *ThumbnailRenderer {
+	if width <= 0 {
+		width = 128
+	}
+	if height <= 0 {
+		height = 128
+	}
+
 	tr := &ThumbnailRenderer{
 		r:      r,
 		mm:     mm,
 		width:  width,
 		height: height,
+		reqCh:  make(chan thumbRequest),
 	}
-	tr.initFBO()
+
+	// Create hidden shared window while main context is current.
+	win, err := createHiddenSharedWindow()
+	if err != nil {
+		log.Printf("thumbnail: failed to create hidden window: %v", err)
+		return tr
+	}
+	tr.win = win
+
+	// Spawn dedicated GL thread that owns this window/context.
+	go tr.glThread()
+
 	return tr
 }
+
+// createHiddenSharedWindow creates a 1x1 invisible window whose context
+// shares objects with the currently-current context (main window).
+func createHiddenSharedWindow() (*glfw.Window, error) {
+	share := glfw.GetCurrentContext()
+	if share == nil {
+		return nil, fmt.Errorf("no current GLFW context to share with")
+	}
+
+	glfw.WindowHint(glfw.Visible, glfw.False)
+	w, err := glfw.CreateWindow(1, 1, "thumb-hidden", nil, share)
+	if err != nil {
+		return nil, err
+	}
+	return w, nil
+}
+
+// glThread owns the thumbnail GL context and processes all thumbnail requests.
+func (tr *ThumbnailRenderer) glThread() {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	if tr.win == nil {
+		log.Printf("thumbnail: no hidden window, GL thread exiting")
+		return
+	}
+
+	tr.win.MakeContextCurrent()
+
+	// gl.Init is safe to call once per context; main has already called it,
+	// but calling again here is harmless in go-gl.
+	if err := gl.Init(); err != nil {
+		log.Printf("thumbnail: gl.Init failed: %v", err)
+		return
+	}
+
+	tr.initFBO()
+	if err := tr.initProgram(); err != nil {
+		log.Printf("thumbnail shader init failed: %v", err)
+	}
+
+	log.Printf("thumbnail GL thread started, FBO=%d", tr.fbo)
+
+	for req := range tr.reqCh {
+		data, hash, err := tr.renderOne(req.meshID, req.size)
+		req.resp <- thumbResponse{data: data, hash: hash, err: err}
+	}
+}
+
+// --- FBO / program setup (same as before, but used only on GL thread) ---
 
 func (tr *ThumbnailRenderer) initFBO() {
 	gl.GenFramebuffers(1, &tr.fbo)
@@ -57,6 +206,8 @@ func (tr *ThumbnailRenderer) initFBO() {
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, int32(tr.width), int32(tr.height), 0, gl.RGBA, gl.UNSIGNED_BYTE, nil)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tr.colorTex, 0)
 
 	// depth renderbuffer
@@ -65,69 +216,165 @@ func (tr *ThumbnailRenderer) initFBO() {
 	gl.RenderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, int32(tr.width), int32(tr.height))
 	gl.FramebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, tr.depthRb)
 
-	// IMPORTANT: tell GL which color attachment to draw to
-	drawBuf := uint32(gl.COLOR_ATTACHMENT0)
-	gl.DrawBuffers(1, &drawBuf)
+	attachments := []uint32{gl.COLOR_ATTACHMENT0}
+	gl.DrawBuffers(1, &attachments[0])
+	gl.ReadBuffer(gl.COLOR_ATTACHMENT0)
 
-	if status := gl.CheckFramebufferStatus(gl.FRAMEBUFFER); status != gl.FRAMEBUFFER_COMPLETE {
-		fmt.Printf("Thumbnail FBO incomplete: 0x%X\n", status)
+	status := gl.CheckFramebufferStatus(gl.FRAMEBUFFER)
+	if status != gl.FRAMEBUFFER_COMPLETE {
+		log.Printf("Thumbnail FBO incomplete: 0x%X", status)
+	} else {
+		log.Printf("Thumbnail FBO complete, colorTex=%d depthRb=%d", tr.colorTex, tr.depthRb)
 	}
 
 	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 }
 
+func (tr *ThumbnailRenderer) ensureFBOSize(size int) {
+	if size <= 0 {
+		return
+	}
+	if tr.width == size && tr.height == size {
+		return
+	}
+	tr.width = size
+	tr.height = size
+
+	gl.BindFramebuffer(gl.FRAMEBUFFER, tr.fbo)
+
+	gl.BindTexture(gl.TEXTURE_2D, tr.colorTex)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, int32(tr.width), int32(tr.height), 0, gl.RGBA, gl.UNSIGNED_BYTE, nil)
+
+	gl.BindRenderbuffer(gl.RENDERBUFFER, tr.depthRb)
+	gl.RenderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, int32(tr.width), int32(tr.height))
+
+	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+}
+
+func (tr *ThumbnailRenderer) initProgram() error {
+	vs, err := thumbCompileShader(thumbVertexShaderSrc, gl.VERTEX_SHADER)
+	if err != nil {
+		return fmt.Errorf("compile thumbnail vertex shader: %w", err)
+	}
+	fs, err := thumbCompileShader(thumbFragmentShaderSrc, gl.FRAGMENT_SHADER)
+	if err != nil {
+		gl.DeleteShader(vs)
+		return fmt.Errorf("compile thumbnail fragment shader: %w", err)
+	}
+	prog, err := linkProgram(vs, fs)
+	gl.DeleteShader(vs)
+	gl.DeleteShader(fs)
+	if err != nil {
+		return fmt.Errorf("link thumbnail program: %w", err)
+	}
+
+	tr.program = prog
+	tr.locModel = gl.GetUniformLocation(prog, gl.Str("uModel\x00"))
+	tr.locView = gl.GetUniformLocation(prog, gl.Str("uView\x00"))
+	tr.locProj = gl.GetUniformLocation(prog, gl.Str("uProj\x00"))
+	tr.locBaseCol = gl.GetUniformLocation(prog, gl.Str("uBaseColor\x00"))
+	tr.locUseTex = gl.GetUniformLocation(prog, gl.Str("uUseTexture\x00"))
+	tr.locDiffuse = gl.GetUniformLocation(prog, gl.Str("uDiffuseTex\x00"))
+
+	gl.UseProgram(tr.program)
+	gl.Uniform1i(tr.locDiffuse, 0)
+	gl.UseProgram(0)
+
+	return nil
+}
+
+// --- Public entry: send request to GL thread ---
+
 func (tr *ThumbnailRenderer) RenderMeshThumbnail(meshID string, size int) ([]byte, string, error) {
+	if tr.fbo == 0 || tr.program == 0 || tr.reqCh == nil {
+		return nil, "", fmt.Errorf("thumbnail renderer not ready (FBO/program/reqCh)")
+	}
+	if size <= 0 {
+		size = 128
+	}
+
+	respCh := make(chan thumbResponse, 1)
+	tr.reqCh <- thumbRequest{
+		meshID: meshID,
+		size:   size,
+		resp:   respCh,
+	}
+	resp := <-respCh
+	return resp.data, resp.hash, resp.err
+}
+
+// --- Actual GL work, runs only on GL thread ---
+
+func (tr *ThumbnailRenderer) renderOne(meshID string, size int) ([]byte, string, error) {
 	if tr.fbo == 0 {
 		return nil, "", fmt.Errorf("thumbnail FBO not initialized")
 	}
+	if tr.program == 0 {
+		return nil, "", fmt.Errorf("thumbnail shader program not initialized")
+	}
 
-	// Save current viewport
+	tr.ensureFBOSize(size)
+
 	var vp [4]int32
 	gl.GetIntegerv(gl.VIEWPORT, &vp[0])
 
 	gl.BindFramebuffer(gl.FRAMEBUFFER, tr.fbo)
-
-	// Make sure we read from the right color attachment
 	gl.ReadBuffer(gl.COLOR_ATTACHMENT0)
 
+	var fb int32
+	gl.GetIntegerv(gl.FRAMEBUFFER_BINDING, &fb)
+	log.Printf("THUMB: FBO after bind = %d (expected %d)", fb, tr.fbo)
+
 	gl.Viewport(0, 0, int32(size), int32(size))
-	gl.ClearColor(0.2, 0.2, 0.2, 1.0)
+
+	gl.Disable(gl.BLEND)
+	gl.Enable(gl.DEPTH_TEST)
+	gl.DepthFunc(gl.LESS)
+
+	gl.ClearColor(1.0, 0.0, 1.0, 1.0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-	// Enable depth test for proper mesh rendering
-	gl.Enable(gl.DEPTH_TEST)
-	gl.DepthFunc(gl.LEQUAL)
-
-	// Simple camera: look at origin from +Z
-	view := mgl32.LookAtV(
-		mgl32.Vec3{0, 0, 3},
-		mgl32.Vec3{0, 0, 0},
-		mgl32.Vec3{0, 1, 0},
-	)
-	proj := mgl32.Perspective(mgl32.DegToRad(45), 1.0, 0.1, 100.0)
-	model := mgl32.Ident4()
-
-	gl.UseProgram(tr.r.Program)
-	gl.UniformMatrix4fv(tr.r.LocView, 1, false, &view[0])
-	gl.UniformMatrix4fv(tr.r.LocProj, 1, false, &proj[0])
-	gl.UniformMatrix4fv(tr.r.LocModel, 1, false, &model[0])
-
-	// basic material: white
-	base := [4]float32{1, 1, 1, 1}
-	gl.Uniform4fv(tr.r.LocBaseCol, 1, &base[0])
-	gl.Uniform1i(tr.r.LocUseTexture, 0)
+	gl.Finish()
+	test := make([]uint8, 4)
+	gl.ReadPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(test))
+	log.Printf("THUMB: pixel(0,0) after clear = %v", test)
 
 	vao := tr.mm.GetVAO(meshID)
+
+	// VAOs are NOT shared → rebuild if needed
+	if vao == 0 || !tr.vaoExistsInThisContext(vao) {
+		vao = tr.rebuildVAO(meshID)
+	}
+
 	count := tr.mm.GetCount(meshID)
 	indexType := tr.mm.GetIndexType(meshID)
 	vertexCount := tr.mm.GetVertexCount(meshID)
 	ebo := tr.mm.GetEBO(meshID)
+
+	log.Printf("THUMB: meshID=%s vao=%d ebo=%d count=%d vertexCount=%d indexType=0x%X",
+		meshID, vao, ebo, count, vertexCount, indexType)
 
 	if vao == 0 {
 		gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 		gl.Viewport(vp[0], vp[1], vp[2], vp[3])
 		return nil, "", fmt.Errorf("mesh %s has VAO=0", meshID)
 	}
+
+	gl.UseProgram(tr.program)
+
+	identity := [16]float32{
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1,
+	}
+	gl.UniformMatrix4fv(tr.locModel, 1, false, &identity[0])
+	gl.UniformMatrix4fv(tr.locView, 1, false, &identity[0])
+	gl.UniformMatrix4fv(tr.locProj, 1, false, &identity[0])
+
+	base := [4]float32{1, 1, 1, 1}
+	gl.Uniform4fv(tr.locBaseCol, 1, &base[0])
+	gl.Uniform1i(tr.locUseTex, 0)
 
 	gl.BindVertexArray(vao)
 	if count > 0 && ebo != 0 {
@@ -137,20 +384,26 @@ func (tr *ThumbnailRenderer) RenderMeshThumbnail(meshID string, size int) ([]byt
 	}
 	gl.BindVertexArray(0)
 
-	// Read back pixels
+	gl.Finish()
+
 	buf := make([]uint8, size*size*4)
+	gl.BindFramebuffer(gl.FRAMEBUFFER, tr.fbo)
+	gl.ReadBuffer(gl.COLOR_ATTACHMENT0)
 	gl.ReadPixels(0, 0, int32(size), int32(size), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(buf))
 
-	// Restore framebuffer + viewport
+	log.Printf("THUMB: first 16 bytes = %v", buf[:16])
+
 	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 	gl.Viewport(vp[0], vp[1], vp[2], vp[3])
 
-	// Convert to image (flip vertically)
 	img := image.NewRGBA(image.Rect(0, 0, size, size))
 	rowStride := size * 4
 	for y := 0; y < size; y++ {
 		srcY := size - 1 - y
 		copy(img.Pix[y*rowStride:(y+1)*rowStride], buf[srcY*rowStride:(srcY+1)*rowStride])
+	}
+	for i := 0; i < len(img.Pix); i += 4 {
+		img.Pix[i+3] = 255
 	}
 
 	var out bytes.Buffer
@@ -159,7 +412,90 @@ func (tr *ThumbnailRenderer) RenderMeshThumbnail(meshID string, size int) ([]byt
 	}
 	data := out.Bytes()
 	h := sha1.Sum(data)
-	hash := hex.EncodeToString(h[:])
+	return data, hex.EncodeToString(h[:]), nil
+}
 
-	return data, hash, nil
+// --- local shader helpers, confined to this file ---
+
+func thumbCompileShader(source string, shaderType uint32) (uint32, error) {
+	shader := gl.CreateShader(shaderType)
+	csources, free := gl.Strs(source + "\x00")
+	gl.ShaderSource(shader, 1, csources, nil)
+	free()
+	gl.CompileShader(shader)
+
+	var status int32
+	gl.GetShaderiv(shader, gl.COMPILE_STATUS, &status)
+	if status == gl.FALSE {
+		var logLen int32
+		gl.GetShaderiv(shader, gl.INFO_LOG_LENGTH, &logLen)
+		logBuf := make([]byte, logLen+1)
+		gl.GetShaderInfoLog(shader, logLen, nil, &logBuf[0])
+		gl.DeleteShader(shader)
+		return 0, fmt.Errorf("shader compile error: %s", string(logBuf))
+	}
+	return shader, nil
+}
+
+func linkProgram(vs, fs uint32) (uint32, error) {
+	prog := gl.CreateProgram()
+	gl.AttachShader(prog, vs)
+	gl.AttachShader(prog, fs)
+	gl.LinkProgram(prog)
+
+	var status int32
+	gl.GetProgramiv(prog, gl.LINK_STATUS, &status)
+	if status == gl.FALSE {
+		var logLen int32
+		gl.GetProgramiv(prog, gl.INFO_LOG_LENGTH, &logLen)
+		logBuf := make([]byte, logLen+1)
+		gl.GetProgramInfoLog(prog, logLen, nil, &logBuf[0])
+		gl.DeleteProgram(prog)
+		return 0, fmt.Errorf("program link error: %s", string(logBuf))
+	}
+	return prog, nil
+}
+
+func (tr *ThumbnailRenderer) rebuildVAO(meshID string) uint32 {
+	vbo := tr.mm.GetVBO(meshID)
+	ebo := tr.mm.GetEBO(meshID)
+	layout := tr.mm.GetLayout(meshID)
+	if vbo == 0 {
+		return 0
+	}
+	var vao uint32
+	gl.GenVertexArrays(1, &vao)
+	gl.BindVertexArray(vao)
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+	if ebo != 0 {
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+	}
+
+	stride := int32(layout * 4)
+
+	// pos
+	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, stride, 0)
+	gl.EnableVertexAttribArray(0)
+
+	// normal
+	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, stride, 3*4)
+	gl.EnableVertexAttribArray(1)
+
+	// uv
+	gl.VertexAttribPointerWithOffset(2, 2, gl.FLOAT, false, stride, 6*4)
+	gl.EnableVertexAttribArray(2)
+
+	if layout == 12 {
+		gl.VertexAttribPointerWithOffset(3, 4, gl.FLOAT, false, stride, 8*4)
+		gl.EnableVertexAttribArray(3)
+	}
+
+	gl.BindVertexArray(0)
+	return vao
+}
+func (tr *ThumbnailRenderer) vaoExistsInThisContext(vao uint32) bool {
+	var tmp int32
+	gl.GetVertexArrayiv(vao, gl.VERTEX_ARRAY_BINDING, &tmp)
+	return gl.GetError() == gl.NO_ERROR
 }

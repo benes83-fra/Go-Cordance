@@ -45,6 +45,8 @@ uniform bool useNormalMap;
 
 float computeShadowPCF(vec4 lightSpacePos, vec3 normal, vec3 lightDirWS)
 {
+
+
     vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
     vec2 uv = projCoords.xy * 0.5 + 0.5;
     float currentDepth = projCoords.z * 0.5 + 0.5;

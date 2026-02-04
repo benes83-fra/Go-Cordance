@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net"
 )
 
@@ -291,7 +290,6 @@ func WriteAssetThumbnail(conn net.Conn, assetID uint64, format string, data []by
 		DataB64: b64,
 		Hash:    hash,
 	}
-	log.Printf("Sending AssetThumbnail with message: %+v", msg)
 	return writeMsg(conn, "AssetThumbnail", msg)
 }
 
