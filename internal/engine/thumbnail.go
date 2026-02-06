@@ -8,6 +8,7 @@ import (
 	"image"
 	"image/png"
 	"log"
+	"math"
 	"runtime"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -362,15 +363,29 @@ func (tr *ThumbnailRenderer) renderOne(meshID string, size int) ([]byte, string,
 
 	gl.UseProgram(tr.program)
 
-	identity := [16]float32{
+	_ = [16]float32{
 		0.5, 0, 0, 0,
 		0, 0.4, 0, 0,
 		0, 0, 0.2, 0,
 		0, 0, 0, 0.5,
 	}
-	gl.UniformMatrix4fv(tr.locModel, 1, false, &identity[0])
-	gl.UniformMatrix4fv(tr.locView, 1, false, &identity[0])
-	gl.UniformMatrix4fv(tr.locProj, 1, false, &identity[0])
+
+	// --- Simple thumbnail camera ---
+	// Projection: 45° FOV, square aspect, near=0.1, far=100
+	proj := perspective(45.0*(math.Pi/180.0), 1.0, 0.1, 100.0)
+
+	// View: camera at (0,0,3), looking at origin
+	view := lookAt(
+		[3]float32{0, 0, 5}, // was 3.0
+		[3]float32{0, 0, 0},
+		[3]float32{0, 1, 0},
+	)
+
+	model := scale(0.60) // was 0.8
+
+	gl.UniformMatrix4fv(tr.locModel, 1, false, &model[0])
+	gl.UniformMatrix4fv(tr.locView, 1, false, &view[0])
+	gl.UniformMatrix4fv(tr.locProj, 1, false, &proj[0])
 
 	base := [4]float32{1, 1, 1, 1}
 	gl.Uniform4fv(tr.locBaseCol, 1, &base[0])
@@ -498,4 +513,57 @@ func (tr *ThumbnailRenderer) vaoExistsInThisContext(vao uint32) bool {
 	var tmp int32
 	gl.GetVertexArrayiv(vao, gl.VERTEX_ARRAY_BINDING, &tmp)
 	return gl.GetError() == gl.NO_ERROR
+}
+
+func scale(s float32) [16]float32 {
+	return [16]float32{
+		s, 0, 0, 0,
+		0, s, 0, 0,
+		0, 0, s, 0,
+		0, 0, 0, 1,
+	}
+}
+
+func perspective(fovY, aspect, near, far float32) [16]float32 {
+	f := 1.0 / float32(math.Tan(float64(fovY)/2))
+	return [16]float32{
+		f / aspect, 0, 0, 0,
+		0, f, 0, 0,
+		0, 0, (far + near) / (near - far), -1,
+		0, 0, (2 * far * near) / (near - far), 0,
+	}
+}
+
+func lookAt(eye, center, up [3]float32) [16]float32 {
+	f := normalize(sub(center, eye))
+	s := normalize(cross(f, up))
+	u := cross(s, f)
+
+	return [16]float32{
+		s[0], u[0], -f[0], 0,
+		s[1], u[1], -f[1], 0,
+		s[2], u[2], -f[2], 0,
+		-dot(s, eye), -dot(u, eye), dot(f, eye), 1,
+	}
+}
+
+func sub(a, b [3]float32) [3]float32 {
+	return [3]float32{a[0] - b[0], a[1] - b[1], a[2] - b[2]}
+}
+
+func dot(a, b [3]float32) float32 {
+	return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
+}
+
+func cross(a, b [3]float32) [3]float32 {
+	return [3]float32{
+		a[1]*b[2] - a[2]*b[1],
+		a[2]*b[0] - a[0]*b[2],
+		a[0]*b[1] - a[1]*b[0],
+	}
+}
+
+func normalize(v [3]float32) [3]float32 {
+	l := float32(math.Sqrt(float64(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])))
+	return [3]float32{v[0] / l, v[1] / l, v[2] / l}
 }
