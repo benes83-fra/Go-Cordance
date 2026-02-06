@@ -236,7 +236,7 @@ func (mm *MeshManager) RegisterCube(id string) {
 	// DIAG: place immediately after each VertexAttribPointerWithOffset call (while VAO still bound)
 
 	mm.indexTypes[id] = gl.UNSIGNED_INT
-	mm.vertexCounts[id] = int32(len(vertices) / 12)
+	mm.vertexCounts[id] = int32(len(vertices12) / 12)
 	mm.counts[id] = int32(len(indices))
 	mm.vbos[id] = vbo
 	mm.ebos[id] = ebo

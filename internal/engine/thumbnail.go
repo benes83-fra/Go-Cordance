@@ -331,7 +331,7 @@ func (tr *ThumbnailRenderer) renderOne(meshID string, size int) ([]byte, string,
 	gl.Enable(gl.DEPTH_TEST)
 	gl.DepthFunc(gl.LESS)
 
-	gl.ClearColor(1.0, 0.0, 1.0, 1.0)
+	gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 	gl.Finish()
@@ -363,10 +363,10 @@ func (tr *ThumbnailRenderer) renderOne(meshID string, size int) ([]byte, string,
 	gl.UseProgram(tr.program)
 
 	identity := [16]float32{
-		1, 0, 0, 0,
-		0, 1, 0, 0,
-		0, 0, 1, 0,
-		0, 0, 0, 1,
+		0.5, 0, 0, 0,
+		0, 0.4, 0, 0,
+		0, 0, 0.2, 0,
+		0, 0, 0, 0.5,
 	}
 	gl.UniformMatrix4fv(tr.locModel, 1, false, &identity[0])
 	gl.UniformMatrix4fv(tr.locView, 1, false, &identity[0])
