@@ -40,9 +40,10 @@ type ThumbnailRenderer struct {
 }
 
 type thumbRequest struct {
-	meshID string
-	size   int
-	resp   chan thumbResponse
+	meshID  string
+	meshIDs []string
+	size    int
+	resp    chan thumbResponse
 }
 
 type thumbResponse struct {
@@ -115,6 +116,14 @@ func RenderMeshThumbnail(meshID string, size int) ([]byte, string, error) {
 		return nil, "", fmt.Errorf("thumbnail renderer not initialized")
 	}
 	return globalThumbRenderer.RenderMeshThumbnail(meshID, size)
+}
+
+// Public API: multi-mesh thumbnail (same GL thread, same FBO).
+func RenderMeshGroupThumbnail(meshIDs []string, size int) ([]byte, string, error) {
+	if globalThumbRenderer == nil {
+		return nil, "", fmt.Errorf("thumbnail renderer not initialized")
+	}
+	return globalThumbRenderer.RenderMeshGroupThumbnail(meshIDs, size)
 }
 
 func NewThumbnailRenderer(r *Renderer, mm *MeshManager, width, height int) *ThumbnailRenderer {
@@ -190,9 +199,21 @@ func (tr *ThumbnailRenderer) glThread() {
 	log.Printf("thumbnail GL thread started, FBO=%d", tr.fbo)
 
 	for req := range tr.reqCh {
-		data, hash, err := tr.renderOne(req.meshID, req.size)
+		var (
+			data []byte
+			hash string
+			err  error
+		)
+
+		if len(req.meshIDs) > 0 {
+			data, hash, err = tr.renderGroup(req.meshIDs, req.size)
+		} else {
+			data, hash, err = tr.renderOne(req.meshID, req.size)
+		}
+
 		req.resp <- thumbResponse{data: data, hash: hash, err: err}
 	}
+
 }
 
 // --- FBO / program setup (same as before, but used only on GL thread) ---
@@ -282,6 +303,27 @@ func (tr *ThumbnailRenderer) initProgram() error {
 	gl.UseProgram(0)
 
 	return nil
+}
+
+func (tr *ThumbnailRenderer) RenderMeshGroupThumbnail(meshIDs []string, size int) ([]byte, string, error) {
+	if tr.fbo == 0 || tr.program == 0 || tr.reqCh == nil {
+		return nil, "", fmt.Errorf("thumbnail renderer not ready (FBO/program/reqCh)")
+	}
+	if size <= 0 {
+		size = 128
+	}
+	if len(meshIDs) == 0 {
+		return nil, "", fmt.Errorf("no meshIDs for group thumbnail")
+	}
+
+	respCh := make(chan thumbResponse, 1)
+	tr.reqCh <- thumbRequest{
+		meshIDs: meshIDs,
+		size:    size,
+		resp:    respCh,
+	}
+	resp := <-respCh
+	return resp.data, resp.hash, resp.err
 }
 
 // --- Public entry: send request to GL thread ---
@@ -407,6 +449,99 @@ func (tr *ThumbnailRenderer) renderOne(meshID string, size int) ([]byte, string,
 	gl.ReadPixels(0, 0, int32(size), int32(size), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(buf))
 
 	log.Printf("THUMB: first 16 bytes = %v", buf[:16])
+
+	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
+	gl.Viewport(vp[0], vp[1], vp[2], vp[3])
+
+	img := image.NewRGBA(image.Rect(0, 0, size, size))
+	rowStride := size * 4
+	for y := 0; y < size; y++ {
+		srcY := size - 1 - y
+		copy(img.Pix[y*rowStride:(y+1)*rowStride], buf[srcY*rowStride:(srcY+1)*rowStride])
+	}
+	for i := 0; i < len(img.Pix); i += 4 {
+		img.Pix[i+3] = 255
+	}
+
+	var out bytes.Buffer
+	if err := png.Encode(&out, img); err != nil {
+		return nil, "", err
+	}
+	data := out.Bytes()
+	h := sha1.Sum(data)
+	return data, hex.EncodeToString(h[:]), nil
+}
+
+func (tr *ThumbnailRenderer) renderGroup(meshIDs []string, size int) ([]byte, string, error) {
+	if tr.fbo == 0 {
+		return nil, "", fmt.Errorf("thumbnail FBO not initialized")
+	}
+	if tr.program == 0 {
+		return nil, "", fmt.Errorf("thumbnail shader program not initialized")
+	}
+
+	tr.ensureFBOSize(size)
+
+	var vp [4]int32
+	gl.GetIntegerv(gl.VIEWPORT, &vp[0])
+
+	gl.BindFramebuffer(gl.FRAMEBUFFER, tr.fbo)
+	gl.ReadBuffer(gl.COLOR_ATTACHMENT0)
+
+	gl.Viewport(0, 0, int32(size), int32(size))
+
+	gl.Disable(gl.BLEND)
+	gl.Enable(gl.DEPTH_TEST)
+	gl.DepthFunc(gl.LESS)
+
+	gl.ClearColor(0.0, 0.0, 0.0, 1.0)
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+	gl.UseProgram(tr.program)
+
+	proj := perspective(45.0*(math.Pi/180.0), 1.0, 0.1, 100.0)
+	view := lookAt(
+		[3]float32{0, 0, 5},
+		[3]float32{0, 0, 0},
+		[3]float32{0, 1, 0},
+	)
+	model := scale(0.60)
+
+	gl.UniformMatrix4fv(tr.locModel, 1, false, &model[0])
+	gl.UniformMatrix4fv(tr.locView, 1, false, &view[0])
+	gl.UniformMatrix4fv(tr.locProj, 1, false, &proj[0])
+
+	base := [4]float32{1, 1, 1, 1}
+	gl.Uniform4fv(tr.locBaseCol, 1, &base[0])
+	gl.Uniform1i(tr.locUseTex, 0)
+
+	for _, meshID := range meshIDs {
+		vao := tr.mm.GetVAO(meshID)
+		if vao == 0 || !tr.vaoExistsInThisContext(vao) {
+			vao = tr.rebuildVAO(meshID)
+		}
+		if vao == 0 {
+			continue
+		}
+
+		count := tr.mm.GetCount(meshID)
+		indexType := tr.mm.GetIndexType(meshID)
+		vertexCount := tr.mm.GetVertexCount(meshID)
+		ebo := tr.mm.GetEBO(meshID)
+
+		gl.BindVertexArray(vao)
+		if count > 0 && ebo != 0 {
+			gl.DrawElements(gl.TRIANGLES, count, indexType, gl.PtrOffset(0))
+		} else {
+			gl.DrawArrays(gl.TRIANGLES, 0, vertexCount)
+		}
+	}
+
+	gl.BindVertexArray(0)
+	gl.Finish()
+
+	buf := make([]uint8, size*size*4)
+	gl.ReadPixels(0, 0, int32(size), int32(size), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(buf))
 
 	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 	gl.Viewport(vp[0], vp[1], vp[2], vp[3])

@@ -89,35 +89,38 @@ func sha1Hex(data []byte) string {
 	return hex.EncodeToString(h[:])
 }
 func generateMeshThumbnail(a *assets.Asset, size int) ([]byte, string, error) {
-	var meshID string
-
 	switch v := a.Data.(type) {
 	case string:
-		meshID = v
+		// single mesh
+		data, hash, err := engine.RenderMeshThumbnail(v, size)
+		if err != nil {
+			return nil, "", err
+		}
+		return cacheMeshThumb(a.ID, data, hash)
+
 	case []string:
 		if len(v) == 0 {
 			return nil, "", fmt.Errorf("mesh asset %d has no meshIDs", a.ID)
 		}
-		meshID = v[0]
+		// multi-mesh: render all submeshes together
+		data, hash, err := engine.RenderMeshGroupThumbnail(v, size)
+		if err != nil {
+			return nil, "", err
+		}
+		return cacheMeshThumb(a.ID, data, hash)
+
 	default:
 		return nil, "", fmt.Errorf("mesh asset %d has unexpected Data type %T", a.ID, v)
 	}
+}
 
-	// --- NEW: disk cache directory ---
+func cacheMeshThumb(id assets.AssetID, data []byte, hash string) ([]byte, string, error) {
 	cacheDir := filepath.Join("cache", "thumbs")
 	os.MkdirAll(cacheDir, 0755)
 
-	// --- Render thumbnail via engine ---
-	data, hash, err := engine.RenderMeshThumbnail(meshID, size)
-	if err != nil {
-		return nil, "", err
-	}
-
-	// --- NEW: write to disk if not cached ---
-	fname := filepath.Join(cacheDir, fmt.Sprintf("%d-%s.png", a.ID, hash))
+	fname := filepath.Join(cacheDir, fmt.Sprintf("%d-%s.png", id, hash))
 	if _, err := os.Stat(fname); os.IsNotExist(err) {
 		_ = os.WriteFile(fname, data, 0644)
 	}
-
 	return data, hash, nil
 }
