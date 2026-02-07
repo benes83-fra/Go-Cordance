@@ -479,6 +479,7 @@ func (tr *ThumbnailRenderer) renderGroup(meshIDs []string, size int) ([]byte, st
 	if tr.program == 0 {
 		return nil, "", fmt.Errorf("thumbnail shader program not initialized")
 	}
+	log.Printf("Meshes IDS tbr %+v", meshIDs)
 
 	tr.ensureFBOSize(size)
 
@@ -514,6 +515,7 @@ func (tr *ThumbnailRenderer) renderGroup(meshIDs []string, size int) ([]byte, st
 	base := [4]float32{1, 1, 1, 1}
 	gl.Uniform4fv(tr.locBaseCol, 1, &base[0])
 	gl.Uniform1i(tr.locUseTex, 0)
+	gl.Disable(gl.DEPTH_TEST)
 
 	for _, meshID := range meshIDs {
 		vao := tr.mm.GetVAO(meshID)
@@ -528,6 +530,8 @@ func (tr *ThumbnailRenderer) renderGroup(meshIDs []string, size int) ([]byte, st
 		indexType := tr.mm.GetIndexType(meshID)
 		vertexCount := tr.mm.GetVertexCount(meshID)
 		ebo := tr.mm.GetEBO(meshID)
+		log.Printf("GROUP: meshID=%s vao=%d ebo=%d count=%d vertexCount=%d indexType=0x%X",
+			meshID, vao, ebo, count, vertexCount, indexType)
 
 		gl.BindVertexArray(vao)
 		if count > 0 && ebo != 0 {
@@ -542,7 +546,7 @@ func (tr *ThumbnailRenderer) renderGroup(meshIDs []string, size int) ([]byte, st
 
 	buf := make([]uint8, size*size*4)
 	gl.ReadPixels(0, 0, int32(size), int32(size), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(buf))
-
+	log.Printf("THUMB: first 16 bytes = %v", buf[:16])
 	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 	gl.Viewport(vp[0], vp[1], vp[2], vp[3])
 

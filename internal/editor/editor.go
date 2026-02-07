@@ -259,7 +259,7 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 			}
 			// call UI handler on main thread
 			fyne.DoAndWait(func() {
-				handleAssetThumbnail(t.AssetID, t.Format, data, t.Hash)
+				handleAssetThumbnail(t.AssetID, t.MeshID, t.Format, data, t.Hash)
 			})
 
 		case "AssetList":
@@ -283,10 +283,11 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 				st.Assets.Meshes = make([]state.AssetView, len(m.Meshes))
 				for i, v := range m.Meshes {
 					st.Assets.Meshes[i] = state.AssetView{
-						ID:      v.ID,
-						Path:    v.Path,
-						Type:    v.Type,
-						MeshIDs: v.MeshIDs,
+						ID:        v.ID,
+						Path:      v.Path,
+						Type:      v.Type,
+						MeshIDs:   v.MeshIDs,
+						MeshThumb: make(map[string]string),
 					}
 				}
 
@@ -392,14 +393,12 @@ func userCacheDir() string {
 
 // handleAssetThumbnail receives decoded thumbnail bytes and stores them in disk cache,
 // updates the editor state, and triggers a UI refresh.
-func handleAssetThumbnail(assetID uint64, format string, data []byte, hash string) {
-	// 1) Save to disk cache (optional)
+func handleAssetThumbnail(assetID uint64, meshID, format string, data []byte, hash string) {
 	cacheDir := filepath.Join(userCacheDir(), "thumbs")
 	if err := os.MkdirAll(cacheDir, 0755); err != nil {
 		log.Printf("editor: failed to create thumbnail cache dir: %v", err)
 	}
 
-	// Use format extension if provided, default to png
 	ext := "png"
 	if format != "" {
 		ext = format
@@ -412,28 +411,70 @@ func handleAssetThumbnail(assetID uint64, format string, data []byte, hash strin
 		}
 	}
 
-	// 2) Update state.Global asset entry with thumbnail path
-	// 2) Update state.Global asset entry with thumbnail path
-	found := false
-
+	// Textures: still only asset-level thumbs
 	for i := range state.Global.Assets.Textures {
 		if state.Global.Assets.Textures[i].ID == assetID {
 			state.Global.Assets.Textures[i].Thumbnail = fname
-			found = true
+			if state.Global.RefreshUI != nil {
+				state.Global.RefreshUI()
+			}
+			return
+		}
+	}
+
+	// Meshes: either asset-level or per-meshID
+	for i := range state.Global.Assets.Meshes {
+		av := &state.Global.Assets.Meshes[i]
+		if av.ID != assetID {
+			continue
+		}
+
+		if meshID == "" {
+			// whole-asset thumbnail
+			av.Thumbnail = fname
+		} else {
+			if av.MeshThumb == nil {
+				av.MeshThumb = make(map[string]string)
+			}
+			av.MeshThumb[meshID] = fname
+		}
+		break
+	}
+
+	if state.Global.RefreshUI != nil {
+		state.Global.RefreshUI()
+	}
+}
+func handleMeshSubThumbnail(assetID uint64, meshID, format string, data []byte, hash string) {
+	cacheDir := filepath.Join(userCacheDir(), "thumbs")
+	if err := os.MkdirAll(cacheDir, 0755); err != nil {
+		log.Printf("editor: failed to create thumbnail cache dir: %v", err)
+	}
+
+	ext := "png"
+	if format != "" {
+		ext = format
+	}
+
+	fname := filepath.Join(cacheDir, fmt.Sprintf("%d-%s-%s.%s", assetID, hash, meshID, ext))
+	if _, err := os.Stat(fname); os.IsNotExist(err) {
+		if err := os.WriteFile(fname, data, 0644); err != nil {
+			log.Printf("editor: failed to write mesh thumbnail file %s: %v", fname, err)
+		}
+	}
+
+	// update state.Global.Assets.Meshes[*].MeshThumb[meshID]
+	for i := range state.Global.Assets.Meshes {
+		av := &state.Global.Assets.Meshes[i]
+		if av.ID == assetID {
+			if av.MeshThumb == nil {
+				av.MeshThumb = make(map[string]string)
+			}
+			av.MeshThumb[meshID] = fname
 			break
 		}
 	}
 
-	if !found {
-		for i := range state.Global.Assets.Meshes {
-			if state.Global.Assets.Meshes[i].ID == assetID {
-				state.Global.Assets.Meshes[i].Thumbnail = fname
-				break
-			}
-		}
-	}
-
-	// 3) Refresh UI on main thread (RefreshUI already calls list refresh)
 	if state.Global.RefreshUI != nil {
 		state.Global.RefreshUI()
 	}

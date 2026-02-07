@@ -221,6 +221,24 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 			}
 		case "RequestThumbnail":
 			thumbnails.HandleRequestThumbnail(msg.Data, EditorConn, Mgr)
+		case "RequestMeshThumbnail":
+			var m MsgRequestMeshThumbnail
+			if err := json.Unmarshal(msg.Data, &m); err != nil {
+				log.Printf("game: bad RequestMeshThumbnail: %v", err)
+				continue
+			}
+
+			data, hash, err := thumbnails.GenerateMeshSubThumbnailBytes(m.AssetID, m.MeshID, m.Size)
+			if err != nil {
+				log.Printf("game: GenerateMeshSubThumbnailBytes failed: %v", err)
+				continue
+			}
+
+			if err := SendAssetMeshThumbnail(conn, m.AssetID, m.MeshID, "png", data, hash); err != nil {
+				log.Printf("game: SendAssetMeshThumbnail failed: %v", err)
+			}
+		case "RequestThumbnailMesh":
+			thumbnails.HandleRequestThumbnailMesh(msg.Data, conn, Mgr)
 
 		default:
 			log.Printf("editorlink: unknown msg type %q", msg.Type)

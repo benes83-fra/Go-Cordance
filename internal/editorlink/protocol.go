@@ -99,13 +99,27 @@ type MsgRequestAssetList struct{}
 type MsgRequestThumbnail struct {
 	AssetID uint64 `json:"asset_id"`
 	// Optional: desired size (pixels). If zero, game chooses default.
-	Size int `json:"size,omitempty"`
+	Size   int    `json:"size,omitempty"`
+	MeshID string `json.:"mesh_id,omitempty`
+}
+type MsgRequestMeshThumbnail struct {
+	AssetID uint64 `json:"asset_id"`
+	MeshID  string `json:"mesh_id"`
+	Size    int    `json:"size"`
+}
+type MsgAssetMeshThumbnail struct {
+	AssetID uint64 `json:"asset_id"`
+	MeshID  string `json:"mesh_id"`
+	Format  string `json:"format"` // "png"
+	DataB64 string `json:"data_b64"`
+	Hash    string `json:"hash"`
 }
 
 // MsgAssetThumbnail carries a generated thumbnail from game -> editor.
 // Data is base64-encoded PNG/JPEG bytes to keep the message JSON-friendly.
 type MsgAssetThumbnail struct {
 	AssetID uint64 `json:"asset_id"`
+	MeshID  string `json:"mesh_id,omitempty"`
 	Format  string `json:"format"`         // e.g. "png" or "jpeg"
 	DataB64 string `json:"data_b64"`       // base64-encoded image bytes
 	Hash    string `json:"hash,omitempty"` // optional checksum for cache validation
@@ -204,6 +218,18 @@ func WriteDuplicateEntity(conn net.Conn, id int64) error {
 type MsgDeleteEntity struct {
 	ID   int64  `json:"id"`
 	Name string `json:"name"`
+}
+type MsgAssetThumbnailMesh struct {
+	AssetID uint64 `json:"asset_id"`
+	MeshID  string `json:"mesh_id"`
+	Format  string `json:"format"`
+	DataB64 string `json:"data_b64"`
+	Hash    string `json:"hash"`
+}
+type MsgRequestThumbnailMesh struct {
+	AssetID uint64 `json:"asset_id"`
+	MeshID  string `json:"mesh_id"`
+	Size    int    `json:"size"`
 }
 
 // Public client helpers:
@@ -304,4 +330,45 @@ func WriteMeshList(conn net.Conn, meshes []struct {
 		Meshes: meshes,
 	}
 	return writeMsg(conn, "MeshList", msg)
+}
+func WriteRequestMeshThumbnail(conn net.Conn, assetID uint64, meshID string, size int) error {
+	m := MsgRequestMeshThumbnail{
+		AssetID: assetID,
+		MeshID:  meshID,
+		Size:    size,
+	}
+	return writeMsg(conn,
+		MsgTypeRequestMeshThumbnail,
+		m)
+
+}
+
+const (
+	MsgTypeAssetMeshThumbnail = "AssetMeshThumbnail"
+)
+
+const (
+	MsgTypeRequestMeshThumbnail = "RequestMeshThumbnail"
+)
+
+func SendAssetMeshThumbnail(conn net.Conn, assetID uint64, meshID string, format string, data []byte, hash string) error {
+	m := MsgAssetMeshThumbnail{
+		AssetID: assetID,
+		MeshID:  meshID,
+		Format:  format,
+		DataB64: base64.StdEncoding.EncodeToString(data),
+		Hash:    hash,
+	}
+	return writeMsg(conn,
+		MsgTypeAssetMeshThumbnail,
+		m)
+}
+
+func WriteRequestThumbnailWithMesh(conn net.Conn, assetID uint64, meshID string, size int) error {
+	msg := MsgRequestThumbnailMesh{
+		AssetID: assetID,
+		MeshID:  meshID,
+		Size:    size,
+	}
+	return writeMsg(conn, "RequestThumbnailMesh", msg)
 }

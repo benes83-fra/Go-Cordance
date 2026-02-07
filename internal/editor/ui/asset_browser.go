@@ -108,20 +108,19 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 		},
 		func(i widget.ListItemID, o fyne.CanvasObject) {
 			item := o.(*meshDragItem)
-
-			// map flat index i -> (asset, meshID)
 			idx := int(i)
+
 			for _, a := range st.Assets.Meshes {
 				if len(a.MeshIDs) == 0 {
-					// single-mesh asset: one entry
+					// single-mesh asset
 					if idx == 0 {
 						item.assetID = a.ID
 						item.meshID = filepath.Base(a.Path)
 						item.lbl.SetText(item.meshID)
 
-						// show thumbnail if available, otherwise request it
-						if a.Thumbnail != "" {
-							item.img.File = a.Thumbnail
+						thumb := a.Thumbnail
+						if thumb != "" {
+							item.img.File = thumb
 							item.img.Resource = nil
 							item.img.Refresh()
 						} else {
@@ -131,7 +130,7 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 
 							go func(assetID uint64) {
 								if editorlink.EditorConn != nil {
-									_ = editorlink.WriteRequestThumbnail(editorlink.EditorConn, assetID, 128)
+									_ = editorlink.WriteRequestThumbnail(editorlink.EditorConn, assetID, 128 /* no meshID */)
 								}
 							}(a.ID)
 						}
@@ -140,16 +139,25 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 					idx--
 					continue
 				}
-				log.Printf("MeshThumbnail: %s", a.Thumbnail)
 
 				if idx < len(a.MeshIDs) {
+					meshID := a.MeshIDs[idx]
 					item.assetID = a.ID
-					item.meshID = a.MeshIDs[idx]
-					item.lbl.SetText(a.MeshIDs[idx])
+					item.meshID = meshID
+					item.lbl.SetText(meshID)
 
-					// use the parent asset thumbnail for all submeshes
-					if a.Thumbnail != "" {
-						item.img.File = a.Thumbnail
+					// prefer per-mesh thumbnail
+					thumb := ""
+					if a.MeshThumb != nil {
+						thumb = a.MeshThumb[meshID]
+					}
+					if thumb == "" {
+						// optional fallback to asset-level thumb
+						thumb = a.Thumbnail
+					}
+
+					if thumb != "" {
+						item.img.File = thumb
 						item.img.Resource = nil
 						item.img.Refresh()
 					} else {
@@ -157,18 +165,18 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 						item.img.File = ""
 						item.img.Refresh()
 
-						go func(assetID uint64) {
+						go func(assetID uint64, meshID string) {
 							if editorlink.EditorConn != nil {
-								_ = editorlink.WriteRequestThumbnail(editorlink.EditorConn, assetID, 128)
+								_ = editorlink.WriteRequestThumbnailWithMesh(editorlink.EditorConn, assetID, meshID, 128)
 							}
-						}(a.ID)
+						}(a.ID, meshID)
 					}
 					return
 				}
 				idx -= len(a.MeshIDs)
 			}
 
-			// safety fallback (should not happen)
+			// fallback
 			item.assetID = 0
 			item.meshID = ""
 			item.lbl.SetText("<invalid>")

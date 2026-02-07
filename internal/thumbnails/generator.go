@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image"
 	"image/png"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -103,6 +104,7 @@ func generateMeshThumbnail(a *assets.Asset, size int) ([]byte, string, error) {
 			return nil, "", fmt.Errorf("mesh asset %d has no meshIDs", a.ID)
 		}
 		// multi-mesh: render all submeshes together
+		log.Printf("We need to render these meshes %+v", v)
 		data, hash, err := engine.RenderMeshGroupThumbnail(v, size)
 		if err != nil {
 			return nil, "", err
@@ -123,4 +125,14 @@ func cacheMeshThumb(id assets.AssetID, data []byte, hash string) ([]byte, string
 		_ = os.WriteFile(fname, data, 0644)
 	}
 	return data, hash, nil
+}
+
+// GenerateMeshSubThumbnailBytes renders ONE submesh by meshID.
+func GenerateMeshSubThumbnailBytes(assetID uint64, meshID string, size int) ([]byte, string, error) {
+	data, hash, err := engine.RenderMeshThumbnail(meshID, size)
+	if err != nil {
+		return nil, "", err
+	}
+	return cacheMeshThumb(assets.AssetID(assetID), data, hash)
+
 }
