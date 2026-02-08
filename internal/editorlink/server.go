@@ -237,8 +237,6 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 			if err := SendAssetMeshThumbnail(conn, m.AssetID, m.MeshID, "png", data, hash); err != nil {
 				log.Printf("game: SendAssetMeshThumbnail failed: %v", err)
 			}
-		case "RequestThumbnailMesh":
-			thumbnails.HandleRequestThumbnailMesh(msg.Data, conn, Mgr)
 
 		default:
 			log.Printf("editorlink: unknown msg type %q", msg.Type)

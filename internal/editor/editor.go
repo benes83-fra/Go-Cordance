@@ -412,7 +412,7 @@ func userCacheDir() string {
 // handleAssetThumbnail receives decoded thumbnail bytes and stores them in disk cache,
 // updates the editor state, and triggers a UI refresh.
 func handleAssetThumbnail(assetID uint64, meshID, format string, data []byte, hash string) {
-	log.Printf("HANDLE AssetThumbnail: assetID=%d meshID=%q hash=%s", assetID, meshID, hash)
+
 	cacheDir := filepath.Join(userCacheDir(), "thumbs")
 	if err := os.MkdirAll(cacheDir, 0755); err != nil {
 		log.Printf("editor: failed to create thumbnail cache dir: %v", err)
