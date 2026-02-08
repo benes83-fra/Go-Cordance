@@ -14,6 +14,56 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+type MeshListEntry struct {
+	IsHeader bool
+	AssetID  uint64
+	MeshID   string // empty for headers
+	Label    string
+}
+
+func findAssetView(st *state.EditorState, id uint64) *state.AssetView {
+	for i := range st.Assets.Meshes {
+		if st.Assets.Meshes[i].ID == id {
+			return &st.Assets.Meshes[i]
+		}
+	}
+	return nil
+}
+
+func buildMeshListEntries(st *state.EditorState) []MeshListEntry {
+	out := []MeshListEntry{}
+
+	for _, a := range st.Assets.Meshes {
+		// Header
+		out = append(out, MeshListEntry{
+			IsHeader: true,
+			AssetID:  a.ID,
+			Label:    filepath.Base(a.Path),
+		})
+
+		// Submeshes
+		if len(a.MeshIDs) == 0 {
+			out = append(out, MeshListEntry{
+				IsHeader: false,
+				AssetID:  a.ID,
+				MeshID:   filepath.Base(a.Path),
+				Label:    filepath.Base(a.Path),
+			})
+		} else {
+			for _, mid := range a.MeshIDs {
+				out = append(out, MeshListEntry{
+					IsHeader: false,
+					AssetID:  a.ID,
+					MeshID:   mid,
+					Label:    mid,
+				})
+			}
+		}
+	}
+
+	return out
+}
+
 func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.List) {
 
 	// --- TEXTURES LIST (image + label cells, lazy thumbnail requests) ---
@@ -87,8 +137,7 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 	}
 
 	// --- MESH LIST ---
-	// --- MESH LIST ---
-	// --- MESH LIST ---
+
 	meshList := widget.NewList(
 		func() int {
 			// total number of submeshes across all mesh assets
@@ -106,6 +155,7 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 		func() fyne.CanvasObject {
 			return newMeshDragItem()
 		},
+
 		func(i widget.ListItemID, o fyne.CanvasObject) {
 			item := o.(*meshDragItem)
 			idx := int(i)
@@ -130,7 +180,7 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 
 							go func(assetID uint64) {
 								if editorlink.EditorConn != nil {
-									_ = editorlink.WriteRequestThumbnail(editorlink.EditorConn, assetID, 128 /* no meshID */)
+									_ = editorlink.WriteRequestThumbnail(editorlink.EditorConn, assetID, 128)
 								}
 							}(a.ID)
 						}
