@@ -134,17 +134,10 @@ type MsgDeleteEntity struct {
 	ID   int64  `json:"id"`
 	Name string `json:"name"`
 }
-type MsgAssetThumbnailMesh struct {
-	AssetID uint64 `json:"asset_id"`
-	MeshID  string `json:"mesh_id"`
-	Format  string `json:"format"`
-	DataB64 string `json:"data_b64"`
-	Hash    string `json:"hash"`
-}
-type MsgRequestThumbnailMesh struct {
-	AssetID uint64 `json:"asset_id"`
-	MeshID  string `json:"mesh_id"`
-	Size    int    `json:"size"`
+
+type MsgDuplicateEntity struct {
+	ID   uint64 `json:"id"`
+	Name string `json:"name"`
 }
 
 func readMsg(conn net.Conn) (Msg, error) {
@@ -219,11 +212,6 @@ func WriteSelectEntities(conn net.Conn, ids []int64) error {
 func WriteSetPivotMode(conn net.Conn, mode string) error {
 	msg := MsgSetPivotMode{Mode: mode}
 	return writeMsg(conn, "SetPivotMode", msg)
-}
-
-type MsgDuplicateEntity struct {
-	ID   uint64 `json:"id"`
-	Name string `json:"name"`
 }
 
 func WriteDuplicateEntity(conn net.Conn, id int64) error {
@@ -337,18 +325,10 @@ func WriteRequestMeshThumbnail(conn net.Conn, assetID uint64, meshID string, siz
 		Size:    size,
 	}
 	return writeMsg(conn,
-		MsgTypeRequestMeshThumbnail,
+		"RequestMeshThumbnail",
 		m)
 
 }
-
-const (
-	MsgTypeAssetMeshThumbnail = "AssetMeshThumbnail"
-)
-
-const (
-	MsgTypeRequestMeshThumbnail = "RequestMeshThumbnail"
-)
 
 func SendAssetMeshThumbnail(conn net.Conn, assetID uint64, meshID string, format string, data []byte, hash string) error {
 	m := MsgAssetMeshThumbnail{
@@ -359,15 +339,6 @@ func SendAssetMeshThumbnail(conn net.Conn, assetID uint64, meshID string, format
 		Hash:    hash,
 	}
 	return writeMsg(conn,
-		MsgTypeAssetMeshThumbnail,
+		"AssetMeshThumbnail",
 		m)
-}
-
-func WriteRequestThumbnailWithMesh(conn net.Conn, assetID uint64, meshID string, size int) error {
-	msg := MsgRequestThumbnailMesh{
-		AssetID: assetID,
-		MeshID:  meshID,
-		Size:    size,
-	}
-	return writeMsg(conn, "RequestThumbnailMesh", msg)
 }
