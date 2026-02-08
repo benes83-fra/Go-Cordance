@@ -98,10 +98,10 @@ type MsgRequestAssetList struct{}
 // MsgRequestThumbnail asks the game to generate/send a thumbnail for AssetID.
 type MsgRequestThumbnail struct {
 	AssetID uint64 `json:"asset_id"`
-	// Optional: desired size (pixels). If zero, game chooses default.
-	Size   int    `json:"size,omitempty"`
-	MeshID string `json.:"mesh_id,omitempty`
+	Size    int    `json:"size,omitempty"`
+	MeshID  string `json:"mesh_id,omitempty"`
 }
+
 type MsgRequestMeshThumbnail struct {
 	AssetID uint64 `json:"asset_id"`
 	MeshID  string `json:"mesh_id"`
@@ -129,6 +129,22 @@ type MsgMeshList struct {
 		ID   string `json:"id"`
 		Path string `json:"path"`
 	} `json:"meshes"`
+}
+type MsgDeleteEntity struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+}
+type MsgAssetThumbnailMesh struct {
+	AssetID uint64 `json:"asset_id"`
+	MeshID  string `json:"mesh_id"`
+	Format  string `json:"format"`
+	DataB64 string `json:"data_b64"`
+	Hash    string `json:"hash"`
+}
+type MsgRequestThumbnailMesh struct {
+	AssetID uint64 `json:"asset_id"`
+	MeshID  string `json:"mesh_id"`
+	Size    int    `json:"size"`
 }
 
 func readMsg(conn net.Conn) (Msg, error) {
@@ -213,23 +229,6 @@ type MsgDuplicateEntity struct {
 func WriteDuplicateEntity(conn net.Conn, id int64) error {
 	msg := MsgDuplicateEntity{ID: uint64(id)}
 	return writeMsg(conn, "DuplicateEntity", msg)
-}
-
-type MsgDeleteEntity struct {
-	ID   int64  `json:"id"`
-	Name string `json:"name"`
-}
-type MsgAssetThumbnailMesh struct {
-	AssetID uint64 `json:"asset_id"`
-	MeshID  string `json:"mesh_id"`
-	Format  string `json:"format"`
-	DataB64 string `json:"data_b64"`
-	Hash    string `json:"hash"`
-}
-type MsgRequestThumbnailMesh struct {
-	AssetID uint64 `json:"asset_id"`
-	MeshID  string `json:"mesh_id"`
-	Size    int    `json:"size"`
 }
 
 // Public client helpers:

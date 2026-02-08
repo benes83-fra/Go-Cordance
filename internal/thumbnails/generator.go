@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	_ "image/jpeg"
 	_ "image/png"
@@ -120,7 +121,9 @@ func cacheMeshThumb(id assets.AssetID, data []byte, hash string) ([]byte, string
 	cacheDir := filepath.Join("cache", "thumbs")
 	os.MkdirAll(cacheDir, 0755)
 
-	fname := filepath.Join(cacheDir, fmt.Sprintf("%d-%s.png", id, hash))
+	safeID := safeName(string(id))
+	fname := filepath.Join(cacheDir, fmt.Sprintf("%s-%s.png", safeID, hash))
+
 	if _, err := os.Stat(fname); os.IsNotExist(err) {
 		_ = os.WriteFile(fname, data, 0644)
 	}
@@ -135,4 +138,10 @@ func GenerateMeshSubThumbnailBytes(assetID uint64, meshID string, size int) ([]b
 	}
 	return cacheMeshThumb(assets.AssetID(assetID), data, hash)
 
+}
+
+func safeName(s string) string {
+	s = strings.ReplaceAll(s, "/", "_")
+	s = strings.ReplaceAll(s, "\\", "_")
+	return s
 }

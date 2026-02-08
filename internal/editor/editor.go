@@ -14,6 +14,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"log"
 
@@ -245,6 +246,22 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 			fyne.DoAndWait(func() {
 				UpdateEntities(world, ents)
 			})
+		case "AssetMeshThumbnail":
+			var t editorlink.MsgAssetMeshThumbnail
+			if err := json.Unmarshal(msg.Data, &t); err != nil {
+				log.Printf("editor: bad AssetMeshThumbnail: %v", err)
+				continue
+			}
+			data, err := base64.StdEncoding.DecodeString(t.DataB64)
+			if err != nil {
+				log.Printf("editor: AssetMeshThumbnail base64 decode error: %v", err)
+				continue
+			}
+
+			fyne.DoAndWait(func() {
+				handleMeshSubThumbnail(t.AssetID, t.MeshID, t.Format, data, t.Hash)
+			})
+
 		case "AssetThumbnail":
 			var t editorlink.MsgAssetThumbnail
 			if err := json.Unmarshal(msg.Data, &t); err != nil {
@@ -257,6 +274,7 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 				log.Printf("editor: AssetThumbnail base64 decode error: %v", err)
 				continue
 			}
+
 			// call UI handler on main thread
 			fyne.DoAndWait(func() {
 				handleAssetThumbnail(t.AssetID, t.MeshID, t.Format, data, t.Hash)
@@ -394,6 +412,7 @@ func userCacheDir() string {
 // handleAssetThumbnail receives decoded thumbnail bytes and stores them in disk cache,
 // updates the editor state, and triggers a UI refresh.
 func handleAssetThumbnail(assetID uint64, meshID, format string, data []byte, hash string) {
+	log.Printf("HANDLE AssetThumbnail: assetID=%d meshID=%q hash=%s", assetID, meshID, hash)
 	cacheDir := filepath.Join(userCacheDir(), "thumbs")
 	if err := os.MkdirAll(cacheDir, 0755); err != nil {
 		log.Printf("editor: failed to create thumbnail cache dir: %v", err)
@@ -404,7 +423,9 @@ func handleAssetThumbnail(assetID uint64, meshID, format string, data []byte, ha
 		ext = format
 	}
 
-	fname := filepath.Join(cacheDir, fmt.Sprintf("%d-%s.%s", assetID, hash, ext))
+	safeMesh := safeName(meshID)
+	fname := filepath.Join(cacheDir, fmt.Sprintf("%d-%s-%s.%s", assetID, hash, safeMesh, ext))
+
 	if _, err := os.Stat(fname); os.IsNotExist(err) {
 		if err := os.WriteFile(fname, data, 0644); err != nil {
 			log.Printf("editor: failed to write thumbnail file %s: %v", fname, err)
@@ -431,8 +452,10 @@ func handleAssetThumbnail(assetID uint64, meshID, format string, data []byte, ha
 
 		if meshID == "" {
 			// whole-asset thumbnail
+
 			av.Thumbnail = fname
 		} else {
+
 			if av.MeshThumb == nil {
 				av.MeshThumb = make(map[string]string)
 			}
@@ -456,7 +479,9 @@ func handleMeshSubThumbnail(assetID uint64, meshID, format string, data []byte, 
 		ext = format
 	}
 
-	fname := filepath.Join(cacheDir, fmt.Sprintf("%d-%s-%s.%s", assetID, hash, meshID, ext))
+	safeMesh := safeName(meshID)
+	fname := filepath.Join(cacheDir, fmt.Sprintf("%d-%s-%s.%s", assetID, hash, safeMesh, ext))
+
 	if _, err := os.Stat(fname); os.IsNotExist(err) {
 		if err := os.WriteFile(fname, data, 0644); err != nil {
 			log.Printf("editor: failed to write mesh thumbnail file %s: %v", fname, err)
@@ -512,4 +537,10 @@ func updateLocalMaterial(world *ecs.World, entityID int64, fields map[string]any
 			return
 		}
 	}
+}
+
+func safeName(s string) string {
+	s = strings.ReplaceAll(s, "/", "_")
+	s = strings.ReplaceAll(s, "\\", "_")
+	return s
 }

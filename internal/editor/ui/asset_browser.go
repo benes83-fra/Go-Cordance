@@ -150,10 +150,12 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 					thumb := ""
 					if a.MeshThumb != nil {
 						thumb = a.MeshThumb[meshID]
+
 					}
 					if thumb == "" {
 						// optional fallback to asset-level thumb
 						thumb = a.Thumbnail
+
 					}
 
 					if thumb != "" {
@@ -167,9 +169,10 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 
 						go func(assetID uint64, meshID string) {
 							if editorlink.EditorConn != nil {
-								_ = editorlink.WriteRequestThumbnailWithMesh(editorlink.EditorConn, assetID, meshID, 128)
+								_ = editorlink.WriteRequestMeshThumbnail(editorlink.EditorConn, assetID, meshID, 128)
 							}
 						}(a.ID, meshID)
+
 					}
 					return
 				}
