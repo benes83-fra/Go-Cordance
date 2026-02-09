@@ -139,6 +139,8 @@ func main() {
 	}
 	matInfo := mats[0]
 
+	load_materials()
+	load_textures()
 	// Create runtime wrappers for textures (ecs.Texture holds GPU id)
 	crateTex := ecs.NewTexture(crateGL)
 	teaTex := ecs.NewTexture(teapotGL)
