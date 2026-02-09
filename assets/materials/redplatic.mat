@@ -1,0 +1,14 @@
+{
+  "name": "RedPlastic",
+  "shader": "PBR",
+  "params": {
+    "baseColor": [1.0, 0.0, 0.0, 1.0],
+    "metallic": 0.0,
+    "roughness": 0.4
+  },
+  "textures": {
+    "albedo": null,
+    "normal": null,
+    "metallic": null
+  }
+}
