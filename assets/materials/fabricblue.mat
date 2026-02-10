@@ -1,13 +1,13 @@
 {
   "name": "FabricBlue",
-  "shader": "PBR",
+  "shader": "default",
   "params": {
     "baseColor": [0.2, 0.3, 0.8, 1.0],
     "metallic": 0.0,
     "roughness": 0.8
   },
   "textures": {
-    "albedo": "textures/fabric_blue.png",
+    "albedo": "textures/fabric_blue.jpg",
     "normal": null,
     "metallic": null
   }

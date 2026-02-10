@@ -452,7 +452,17 @@ func buildAssetList() MsgAssetList {
 			out.Meshes = append(out.Meshes, view)
 
 		case assets.AssetMaterial:
+			mf := a.Data.(assets.MaterialFile)
+
+			view.MaterialData = map[string]any{
+				"name":     mf.Name,
+				"shader":   mf.Shader,
+				"params":   mf.Params,
+				"textures": mf.Textures,
+			}
+
 			out.Materials = append(out.Materials, view)
+
 		}
 	}
 

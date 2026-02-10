@@ -306,7 +306,43 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 	)
 
 	// (Materials not assignable yet — future feature)
-	matList.OnSelected = func(id widget.ListItemID) {}
+	matList.OnSelected = func(id widget.ListItemID) {
+		if st.SelectedIndex < 0 || st.SelectedIndex >= len(st.Entities) {
+			return
+		}
+
+		ent := st.Entities[st.SelectedIndex]
+		av := st.Assets.Materials[id]
+
+		ecsMat := ConvertMaterialAssetToECS(av)
+		if ecsMat == nil {
+			log.Printf("Material asset %d has no valid data", av.ID)
+			return
+		}
+
+		msg := editorlink.MsgSetComponent{
+			EntityID: uint64(ent.ID),
+			Name:     "Material",
+			Fields: map[string]any{
+				"BaseColor":    ecsMat.BaseColor,
+				"UseTexture":   ecsMat.UseTexture,
+				"TextureAsset": ecsMat.TextureAsset,
+				"TextureID":    int(ecsMat.TextureID),
+			},
+		}
+
+		if editorlink.EditorConn != nil {
+			go editorlink.WriteSetComponent(editorlink.EditorConn, msg)
+		}
+
+		if st.UpdateLocalMaterial != nil {
+			st.UpdateLocalMaterial(ent.ID, msg.Fields)
+		}
+
+		if state.Global.RefreshUI != nil {
+			state.Global.RefreshUI()
+		}
+	}
 
 	// --- Tabs ---
 	tabs := container.NewAppTabs(

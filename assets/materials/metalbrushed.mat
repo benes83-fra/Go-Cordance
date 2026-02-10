@@ -1,6 +1,6 @@
 {
   "name": "MetalBrushed",
-  "shader": "PBR",
+  "shader": "default",
   "params": {
     "baseColor": [0.8, 0.8, 0.8, 1.0],
     "metallic": 1.0,
@@ -8,7 +8,7 @@
   },
   "textures": {
     "albedo": "textures/metal_albedo.png",
-    "normal": "textures/metal_normal.png",
+    "normal": "textures/metal_normal.jpg",
     "metallic": null
   }
 }

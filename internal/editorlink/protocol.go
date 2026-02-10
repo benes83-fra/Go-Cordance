@@ -88,10 +88,11 @@ type MsgAssetList struct {
 }
 
 type AssetView struct {
-	ID      uint64   `json:"id"`
-	Path    string   `json:"path"`
-	Type    string   `json:"type"`
-	MeshIDs []string `json:"mesh_ids,omitempty"`
+	ID           uint64         `json:"id"`
+	Path         string         `json:"path"`
+	Type         string         `json:"type"`
+	MeshIDs      []string       `json:"mesh_ids,omitempty"`
+	MaterialData map[string]any `json:"material_data,omitempty"`
 }
 type MsgRequestAssetList struct{}
 

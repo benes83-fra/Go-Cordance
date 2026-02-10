@@ -1,6 +1,6 @@
 {
   "name": "RedPlastic",
-  "shader": "PBR",
+  "shader": "default",
   "params": {
     "baseColor": [1.0, 0.0, 0.0, 1.0],
     "metallic": 0.0,

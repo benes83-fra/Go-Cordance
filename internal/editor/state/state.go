@@ -5,13 +5,14 @@ import (
 )
 
 type AssetView struct {
-	ID        uint64            `json:"id"`
-	Path      string            `json:"path"`
-	Type      string            `json:"type"`
-	Thumbnail string            `json:"thumbnail,omitempty"` // whole-asset thumb
-	ThumbHash string            `json:"thumb_hash,omitempty"`
-	MeshIDs   []string          `json:"mesh_ids,omitempty"`
-	MeshThumb map[string]string `json:"mesh_thumb,omitempty"` // meshID -> file path
+	ID           uint64            `json:"id"`
+	Path         string            `json:"path"`
+	Type         string            `json:"type"`
+	Thumbnail    string            `json:"thumbnail,omitempty"` // whole-asset thumb
+	ThumbHash    string            `json:"thumb_hash,omitempty"`
+	MeshIDs      []string          `json:"mesh_ids,omitempty"`
+	MeshThumb    map[string]string `json:"mesh_thumb,omitempty"` // meshID -> file path
+	MaterialData map[string]any    `json:"material_data,omitempty"`
 }
 
 type EditorState struct {
