@@ -126,7 +126,7 @@ func main() {
 	}
 	ecs.RegisterTexture("Teapot", teapotGL)
 
-	goldyAsset, goldyGL, err := assets.ImportTexture("assets/textures/goldy2.jpg")
+	goldyAsset, goldyGL, err := assets.ImportTexture("assets/textures/goldy.jpg")
 	if err != nil {
 		log.Fatal(err)
 	}

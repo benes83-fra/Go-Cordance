@@ -37,8 +37,6 @@ func load_materials() {
 }
 
 func load_textures() {
-
-	// Load material assets
 	textureDir := "assets/textures"
 	entries, err := os.ReadDir(textureDir)
 	if err != nil {
@@ -49,12 +47,21 @@ func load_textures() {
 		if e.IsDir() {
 			continue
 		}
-		if (filepath.Ext(e.Name()) != ".png") && (filepath.Ext(e.Name()) != ".jpeg") && (filepath.Ext(e.Name()) != ".jpg") {
-			log.Printf("File not allowed as Texture %+v", e.Name())
+
+		ext := filepath.Ext(e.Name())
+		if ext != ".png" && ext != ".jpg" && ext != ".jpeg" {
+			log.Printf("File not allowed as Texture: %s", e.Name())
 			continue
 		}
-		log.Printf("We found textures")
+
 		full := filepath.Join(textureDir, e.Name())
+
+		// --- NEW: skip if already loaded manually ---
+		if assets.FindAssetByPath(full) != nil {
+			log.Printf("Skipping already-loaded texture: %s", full)
+			continue
+		}
+
 		id, _, err := assets.ImportTexture(full)
 		if err != nil {
 			log.Printf("Failed to load Texture %s: %v", full, err)
@@ -63,5 +70,4 @@ func load_textures() {
 
 		log.Printf("Loaded Texture asset %d from %s", id, full)
 	}
-
 }
