@@ -312,9 +312,10 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 				st.Assets.Materials = make([]state.AssetView, len(m.Materials))
 				for i, v := range m.Materials {
 					st.Assets.Materials[i] = state.AssetView{
-						ID:   v.ID,
-						Path: v.Path,
-						Type: v.Type,
+						ID:           v.ID,
+						Path:         v.Path,
+						Type:         v.Type,
+						MaterialData: v.MaterialData,
 					}
 				}
 				if st.RefreshUI != nil {
