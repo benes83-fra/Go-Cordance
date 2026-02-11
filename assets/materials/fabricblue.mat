@@ -2,12 +2,11 @@
   "name": "FabricBlue",
   "shader": "default",
   "params": {
-    "baseColor": [0.2, 0.3, 0.8, 1.0],
-    "metallic": 0.0,
-    "roughness": 0.8
+    "baseColor": [0.2, 0.3, 0.8, 1.0]
+
   },
   "textures": {
-    "albedo": "textures/fabric_blue.jpg",
+    "albedo": "assets/textures/fabric_blue.jpg",
     "normal": null,
     "metallic": null
   }

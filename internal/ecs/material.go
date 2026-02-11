@@ -53,6 +53,7 @@ func (m *Material) EditorFields() map[string]any {
 		"TextureID":    m.TextureID,
 		"NormalID":     m.NormalID,
 		"TextureAsset": m.TextureAsset,
+		"NormalAsset":  m.NormalAsset,
 
 		// Asset pipeline fields (hidden from inspector for now)
 		// They can be exposed later when the editor supports asset picking.
@@ -85,6 +86,8 @@ func (m *Material) SetEditorField(name string, value any) {
 		m.NormalID = uint32(toInt(value))
 	case "TextureAsset":
 		m.TextureAsset = assets.AssetID(toInt(value))
+	case "NormalAsset":
+		m.NormalAsset = assets.AssetID(toInt(value))
 
 		// --- Asset pipeline fields (future use) ---
 		// case "TextureAsset":

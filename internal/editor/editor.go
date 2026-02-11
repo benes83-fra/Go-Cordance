@@ -518,12 +518,28 @@ func updateLocalMaterial(world *ecs.World, entityID int64, fields map[string]any
 				var ok bool
 				mat, ok = comp.(*ecs.Material)
 				if !ok {
-					// Should never happen unless ECS registry is corrupted
 					return
 				}
 			}
 
-			// Now safe to access fields
+			// --- FULL SYNC OF ALL MATERIAL FIELDS ---
+
+			if v, ok := fields["BaseColor"].([4]float32); ok {
+				mat.BaseColor = v
+			}
+			if v, ok := fields["Ambient"].(float32); ok {
+				mat.Ambient = v
+			}
+			if v, ok := fields["Diffuse"].(float32); ok {
+				mat.Diffuse = v
+			}
+			if v, ok := fields["Specular"].(float32); ok {
+				mat.Specular = v
+			}
+			if v, ok := fields["Shininess"].(float32); ok {
+				mat.Shininess = v
+			}
+
 			if v, ok := fields["UseTexture"].(bool); ok {
 				mat.UseTexture = v
 			}
@@ -534,6 +550,17 @@ func updateLocalMaterial(world *ecs.World, entityID int64, fields map[string]any
 				mat.TextureID = uint32(v)
 			}
 
+			if v, ok := fields["UseNormal"].(bool); ok {
+				mat.UseNormal = v
+			}
+			if v, ok := fields["NormalID"].(int); ok {
+				mat.NormalID = uint32(v)
+			}
+			if v, ok := fields["NormalAsset"].(int); ok {
+				mat.NormalAsset = assets.AssetID(v)
+			}
+
+			mat.Dirty = true
 			return
 		}
 	}
