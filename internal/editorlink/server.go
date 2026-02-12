@@ -311,9 +311,25 @@ func buildSceneSnapshot(sc *scene.Scene) SceneSnapshot {
 		}
 		if c := ent.GetComponent((*ecs.Material)(nil)); c != nil {
 			mat := c.(*ecs.Material)
+
 			view.BaseColor = Vec4(mat.BaseColor)
+			view.Ambient = mat.Ambient
+			view.Diffuse = mat.Diffuse
+			view.Specular = mat.Specular
+			view.Shininess = mat.Shininess
+
+			view.UseTexture = mat.UseTexture
+			view.TextureID = mat.TextureID
+			view.TextureAsset = uint64(mat.TextureAsset)
+
+			view.UseNormal = mat.UseNormal
+			view.NormalID = mat.NormalID
+			view.NormalAsset = uint64(mat.NormalAsset)
+
 			view.Components = append(view.Components, "Material")
+
 		}
+
 		if c := ent.GetComponent((*ecs.RigidBody)(nil)); c != nil {
 			view.Components = append(view.Components, "RigidBody")
 		}
@@ -429,6 +445,7 @@ func buildAssetList() MsgAssetList {
 	}
 
 	for _, a := range assets.All() {
+
 		view := AssetView{
 			ID:   uint64(a.ID),
 			Path: a.Path,

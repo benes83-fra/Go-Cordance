@@ -22,27 +22,34 @@ func ConvertMaterialAssetToECS(av state.AssetView) *ecs.Material {
 		}
 	}
 
-	// Default lighting params (your engine expects these)
+	// Default lighting params
 	mat.Ambient = 0.2
 	mat.Diffuse = 0.8
 	mat.Specular = 0.5
 	mat.Shininess = 32.0
 
-	// Albedo texture
+	// --- Resolve textures using editor AssetList (NOT game registry) ---
+
+	// Albedo
 	if texPath, ok := textures["albedo"].(string); ok && texPath != "" {
-		if texAsset := assets.FindAssetByPath(texPath); texAsset != nil {
-			mat.UseTexture = true
-			mat.TextureAsset = texAsset.ID
-			mat.TextureID = assets.ResolveTextureGLID(texAsset.ID)
+		for _, tex := range state.Global.Assets.Textures {
+			if tex.Path == texPath {
+				mat.UseTexture = true
+				mat.TextureAsset = assets.AssetID(tex.ID) // <-- FIX
+				// TextureID is resolved by the game later
+				break
+			}
 		}
 	}
 
 	// Normal map
 	if nPath, ok := textures["normal"].(string); ok && nPath != "" {
-		if nAsset := assets.FindAssetByPath(nPath); nAsset != nil {
-			mat.UseNormal = true
-			mat.NormalAsset = nAsset.ID
-			mat.NormalID = assets.ResolveTextureGLID(nAsset.ID)
+		for _, tex := range state.Global.Assets.Textures {
+			if tex.Path == nPath {
+				mat.UseNormal = true
+				mat.NormalAsset = assets.AssetID(tex.ID) // <-- FIX
+				break
+			}
 		}
 	}
 

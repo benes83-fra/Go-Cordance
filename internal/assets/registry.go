@@ -39,8 +39,11 @@ func All() []*Asset {
 }
 
 func FindAssetByPath(path string) *Asset {
+
 	path = normalize(path)
+
 	for _, a := range registry {
+
 		if a.Path == path {
 			return a
 		}

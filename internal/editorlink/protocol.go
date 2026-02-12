@@ -13,12 +13,27 @@ type Vec4 [4]float32
 
 // This is the “editor view” of an entity: what Fyne’s inspector needs.
 type EntityView struct {
-	ID         uint64   `json:"id"`
-	Name       string   `json:"name"`
-	Position   Vec3     `json:"position"`
-	Rotation   Vec4     `json:"rotation"` // fill later if you want
-	Scale      Vec3     `json:"scale"`    // fill later if you want
-	BaseColor  Vec4     `json:"baseColor"`
+	ID       uint64 `json:"id"`
+	Name     string `json:"name"`
+	Position Vec3   `json:"position"`
+	Rotation Vec4   `json:"rotation"`
+	Scale    Vec3   `json:"scale"`
+
+	// Material fields
+	BaseColor Vec4    `json:"baseColor"`
+	Ambient   float32 `json:"ambient"`
+	Diffuse   float32 `json:"diffuse"`
+	Specular  float32 `json:"specular"`
+	Shininess float32 `json:"shininess"`
+
+	UseTexture   bool   `json:"useTexture"`
+	TextureID    uint32 `json:"textureID"`
+	TextureAsset uint64 `json:"textureAsset"`
+
+	UseNormal   bool   `json:"useNormal"`
+	NormalID    uint32 `json:"normalID"`
+	NormalAsset uint64 `json:"normalAsset"`
+
 	Components []string `json:"components"`
 }
 

@@ -319,13 +319,15 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 			log.Printf("Material asset %d has no valid data", av.ID)
 			return
 		}
+		// Derive UseTexture from IDs to avoid bad flags
+		useTex := (ecsMat.TextureAsset != 0 || ecsMat.TextureID != 0)
 
 		msg := editorlink.MsgSetComponent{
 			EntityID: uint64(ent.ID),
 			Name:     "Material",
 			Fields: map[string]any{
 				"BaseColor":    ecsMat.BaseColor,
-				"UseTexture":   ecsMat.UseTexture,
+				"UseTexture":   useTex,
 				"TextureAsset": ecsMat.TextureAsset,
 				"TextureID":    int(ecsMat.TextureID),
 			},
