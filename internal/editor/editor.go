@@ -464,6 +464,13 @@ func handleAssetThumbnail(assetID uint64, meshID, format string, data []byte, ha
 		}
 		break
 	}
+	for i := range state.Global.Assets.Materials {
+		if state.Global.Assets.Materials[i].ID == assetID {
+			state.Global.Assets.Materials[i].Thumbnail = fname
+			state.Global.RefreshUI()
+			return
+		}
+	}
 
 	if state.Global.RefreshUI != nil {
 		state.Global.RefreshUI()
