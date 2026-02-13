@@ -21,6 +21,13 @@ type MeshListEntry struct {
 	Label    string
 }
 
+type materialItem struct {
+	widget.BaseWidget
+	img     *canvas.Image
+	lbl     *widget.Label
+	assetID uint64
+}
+
 func findAssetView(st *state.EditorState, id uint64) *state.AssetView {
 	for i := range st.Assets.Meshes {
 		if st.Assets.Meshes[i].ID == id {
@@ -28,6 +35,26 @@ func findAssetView(st *state.EditorState, id uint64) *state.AssetView {
 		}
 	}
 	return nil
+}
+func newMaterialItem() *materialItem {
+	img := canvas.NewImageFromResource(theme.FileImageIcon())
+	img.FillMode = canvas.ImageFillContain
+	img.SetMinSize(fyne.NewSize(96, 96))
+
+	lbl := widget.NewLabel("")
+
+	item := &materialItem{
+		img: img,
+		lbl: lbl,
+	}
+	item.ExtendBaseWidget(item)
+	return item
+}
+
+func (m *materialItem) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(
+		container.NewHBox(m.img, m.lbl),
+	)
 }
 
 func buildMeshListEntries(st *state.EditorState) []MeshListEntry {
@@ -298,10 +325,30 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 			return len(st.Assets.Materials)
 		},
 		func() fyne.CanvasObject {
-			return widget.NewLabel("material")
+			return newMaterialItem() // ✔ FIXED
 		},
 		func(i widget.ListItemID, o fyne.CanvasObject) {
-			o.(*widget.Label).SetText(st.Assets.Materials[i].Path)
+			item := o.(*materialItem) // ✔ now valid
+			av := st.Assets.Materials[i]
+
+			item.assetID = av.ID
+			item.lbl.SetText(filepath.Base(av.Path))
+
+			if av.Thumbnail != "" {
+				item.img.File = av.Thumbnail
+				item.img.Resource = nil
+				item.img.Refresh()
+			} else {
+				item.img.Resource = theme.FileImageIcon()
+				item.img.File = ""
+				item.img.Refresh()
+
+				go func(assetID uint64) {
+					if editorlink.EditorConn != nil {
+						_ = editorlink.WriteRequestThumbnail(editorlink.EditorConn, assetID, 128)
+					}
+				}(av.ID)
+			}
 		},
 	)
 
