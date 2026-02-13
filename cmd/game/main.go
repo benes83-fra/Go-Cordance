@@ -82,6 +82,7 @@ func main() {
 	meshMgr.RegisterGizmoPlane("gizmo_plane")
 	meshMgr.RegisterGizmoCircle("gizmo_circle", 64)
 	meshMgr.RegisterBillboardQuad("billboardQuad")
+	meshMgr.RegisterSphere("__preview_sphere", 32, 32)
 
 	// Load GLTF meshes that require runtime resources
 	teapotMeshAsset, err := assets.ImportGLTFMesh("teapot", "assets/models/teapot/teapot.gltf", meshMgr)

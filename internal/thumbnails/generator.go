@@ -81,6 +81,9 @@ func GenerateThumbnailBytes(assetID uint64, size int) ([]byte, string, error) {
 		return generateTextureThumbnail(a, size)
 	case assets.AssetMesh:
 		return generateMeshThumbnail(a, size)
+	case assets.AssetMaterial:
+		return generateMaterialThumbnail(a, size)
+
 	default:
 		return nil, "", fmt.Errorf("no thumbnail generator for asset type %v", a.Type)
 	}
@@ -144,4 +147,47 @@ func safeName(s string) string {
 	s = strings.ReplaceAll(s, "/", "_")
 	s = strings.ReplaceAll(s, "\\", "_")
 	return s
+}
+
+func generateMaterialThumbnail(a *assets.Asset, size int) ([]byte, string, error) {
+	mf := a.Data.(assets.MaterialFile)
+
+	pm := convertMaterialFileToPreview(mf)
+	if pm == nil {
+		return nil, "", fmt.Errorf("material %d has no preview data", a.ID)
+	}
+
+	return engine.RenderMaterialThumbnail(pm, size)
+}
+
+func convertMaterialFileToPreview(mf assets.MaterialFile) *engine.PreviewMaterial {
+	pm := &engine.PreviewMaterial{}
+
+	// BaseColor
+	if bc, ok := mf.Params["baseColor"].([]interface{}); ok && len(bc) == 4 {
+		pm.BaseColor = [4]float32{
+			float32(bc[0].(float64)),
+			float32(bc[1].(float64)),
+			float32(bc[2].(float64)),
+			float32(bc[3].(float64)),
+		}
+	}
+
+	// Albedo
+	if texPath := mf.Textures["albedo"]; texPath != "" {
+		if a := assets.FindAssetByPath(texPath); a != nil {
+			pm.UseTexture = true
+			pm.TextureID = assets.ResolveTextureGLID(a.ID)
+		}
+	}
+
+	// Normal map
+	if nPath := mf.Textures["normal"]; nPath != "" {
+		if a := assets.FindAssetByPath(nPath); a != nil {
+			pm.UseNormal = true
+			pm.NormalID = assets.ResolveTextureGLID(a.ID)
+		}
+	}
+
+	return pm
 }

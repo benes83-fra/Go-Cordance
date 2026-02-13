@@ -39,11 +39,21 @@ type ThumbnailRenderer struct {
 	reqCh chan thumbRequest
 }
 
+type PreviewMaterial struct {
+	BaseColor  [4]float32
+	UseTexture bool
+	TextureID  uint32
+	UseNormal  bool
+	NormalID   uint32
+	// later: roughness, metallic, etc.
+}
+
 type thumbRequest struct {
-	meshID  string
-	meshIDs []string
-	size    int
-	resp    chan thumbResponse
+	meshID   string
+	meshIDs  []string
+	size     int
+	material *PreviewMaterial
+	resp     chan thumbResponse
 }
 
 type thumbResponse struct {
@@ -126,6 +136,14 @@ func RenderMeshGroupThumbnail(meshIDs []string, size int) ([]byte, string, error
 	return globalThumbRenderer.RenderMeshGroupThumbnail(meshIDs, size)
 }
 
+// Public API: material thumbnail
+func RenderMaterialThumbnail(mat *PreviewMaterial, size int) ([]byte, string, error) {
+	if globalThumbRenderer == nil {
+		return nil, "", fmt.Errorf("thumbnail renderer not initialized")
+	}
+	return globalThumbRenderer.RenderMaterialThumbnail(mat, size)
+}
+
 func NewThumbnailRenderer(r *Renderer, mm *MeshManager, width, height int) *ThumbnailRenderer {
 	if width <= 0 {
 		width = 128
@@ -204,8 +222,10 @@ func (tr *ThumbnailRenderer) glThread() {
 			hash string
 			err  error
 		)
+		if req.material != nil {
+			data, hash, err = tr.renderMaterial(req.material, req.size)
 
-		if len(req.meshIDs) > 0 {
+		} else if len(req.meshIDs) > 0 {
 			data, hash, err = tr.renderGroup(req.meshIDs, req.size)
 		} else {
 			data, hash, err = tr.renderOne(req.meshID, req.size)
@@ -346,6 +366,23 @@ func (tr *ThumbnailRenderer) RenderMeshThumbnail(meshID string, size int) ([]byt
 	return resp.data, resp.hash, resp.err
 }
 
+func (tr *ThumbnailRenderer) RenderMaterialThumbnail(mat *PreviewMaterial, size int) ([]byte, string, error) {
+	if tr.fbo == 0 || tr.program == 0 || tr.reqCh == nil {
+		return nil, "", fmt.Errorf("thumbnail renderer not ready")
+	}
+
+	respCh := make(chan thumbResponse, 1)
+	tr.reqCh <- thumbRequest{
+		meshID: "__preview_sphere",
+		size:   size,
+		resp:   respCh,
+		// NEW: include material
+		material: mat,
+	}
+	resp := <-respCh
+	return resp.data, resp.hash, resp.err
+}
+
 // --- Actual GL work, runs only on GL thread ---
 
 func (tr *ThumbnailRenderer) renderOne(meshID string, size int) ([]byte, string, error) {
@@ -366,7 +403,6 @@ func (tr *ThumbnailRenderer) renderOne(meshID string, size int) ([]byte, string,
 
 	var fb int32
 	gl.GetIntegerv(gl.FRAMEBUFFER_BINDING, &fb)
-	log.Printf("THUMB: FBO after bind = %d (expected %d)", fb, tr.fbo)
 
 	gl.Viewport(0, 0, int32(size), int32(size))
 
@@ -380,7 +416,6 @@ func (tr *ThumbnailRenderer) renderOne(meshID string, size int) ([]byte, string,
 	gl.Finish()
 	test := make([]uint8, 4)
 	gl.ReadPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(test))
-	log.Printf("THUMB: pixel(0,0) after clear = %v", test)
 
 	vao := tr.mm.GetVAO(meshID)
 
@@ -393,9 +428,6 @@ func (tr *ThumbnailRenderer) renderOne(meshID string, size int) ([]byte, string,
 	indexType := tr.mm.GetIndexType(meshID)
 	vertexCount := tr.mm.GetVertexCount(meshID)
 	ebo := tr.mm.GetEBO(meshID)
-
-	log.Printf("THUMB: meshID=%s vao=%d ebo=%d count=%d vertexCount=%d indexType=0x%X",
-		meshID, vao, ebo, count, vertexCount, indexType)
 
 	if vao == 0 {
 		gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
@@ -448,8 +480,6 @@ func (tr *ThumbnailRenderer) renderOne(meshID string, size int) ([]byte, string,
 	gl.ReadBuffer(gl.COLOR_ATTACHMENT0)
 	gl.ReadPixels(0, 0, int32(size), int32(size), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(buf))
 
-	log.Printf("THUMB: first 16 bytes = %v", buf[:16])
-
 	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 	gl.Viewport(vp[0], vp[1], vp[2], vp[3])
 
@@ -479,7 +509,6 @@ func (tr *ThumbnailRenderer) renderGroup(meshIDs []string, size int) ([]byte, st
 	if tr.program == 0 {
 		return nil, "", fmt.Errorf("thumbnail shader program not initialized")
 	}
-	log.Printf("Meshes IDS tbr %+v", meshIDs)
 
 	tr.ensureFBOSize(size)
 
@@ -530,8 +559,6 @@ func (tr *ThumbnailRenderer) renderGroup(meshIDs []string, size int) ([]byte, st
 		indexType := tr.mm.GetIndexType(meshID)
 		vertexCount := tr.mm.GetVertexCount(meshID)
 		ebo := tr.mm.GetEBO(meshID)
-		log.Printf("GROUP: meshID=%s vao=%d ebo=%d count=%d vertexCount=%d indexType=0x%X",
-			meshID, vao, ebo, count, vertexCount, indexType)
 
 		gl.BindVertexArray(vao)
 		if count > 0 && ebo != 0 {
@@ -546,7 +573,7 @@ func (tr *ThumbnailRenderer) renderGroup(meshIDs []string, size int) ([]byte, st
 
 	buf := make([]uint8, size*size*4)
 	gl.ReadPixels(0, 0, int32(size), int32(size), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(buf))
-	log.Printf("THUMB: first 16 bytes = %v", buf[:16])
+
 	gl.BindFramebuffer(gl.FRAMEBUFFER, 0)
 	gl.Viewport(vp[0], vp[1], vp[2], vp[3])
 
@@ -705,4 +732,82 @@ func cross(a, b [3]float32) [3]float32 {
 func normalize(v [3]float32) [3]float32 {
 	l := float32(math.Sqrt(float64(v[0]*v[0] + v[1]*v[1] + v[2]*v[2])))
 	return [3]float32{v[0] / l, v[1] / l, v[2] / l}
+}
+
+func (tr *ThumbnailRenderer) renderMaterial(mat *PreviewMaterial, size int) ([]byte, string, error) {
+	gl.Uniform4fv(tr.locBaseCol, 1, &mat.BaseColor[0])
+
+	if mat.UseTexture && mat.TextureID != 0 {
+		gl.ActiveTexture(gl.TEXTURE0)
+		gl.BindTexture(gl.TEXTURE_2D, mat.TextureID)
+		gl.Uniform1i(tr.locUseTex, 1)
+	} else {
+		gl.Uniform1i(tr.locUseTex, 0)
+	}
+
+	// same sphere rendering as before
+
+	tr.ensureFBOSize(size)
+
+	gl.BindFramebuffer(gl.FRAMEBUFFER, tr.fbo)
+	gl.Viewport(0, 0, int32(size), int32(size))
+
+	gl.Disable(gl.BLEND)
+	gl.Enable(gl.DEPTH_TEST)
+	gl.ClearColor(0.1, 0.1, 0.1, 1.0)
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+	gl.UseProgram(tr.program)
+
+	// Camera
+	proj := perspective(45*(math.Pi/180), 1.0, 0.1, 100.0)
+	view := lookAt([3]float32{0, 0, 3}, [3]float32{0, 0, 0}, [3]float32{0, 1, 0})
+	model := scale(0.9)
+
+	gl.UniformMatrix4fv(tr.locModel, 1, false, &model[0])
+	gl.UniformMatrix4fv(tr.locView, 1, false, &view[0])
+	gl.UniformMatrix4fv(tr.locProj, 1, false, &proj[0])
+
+	// Material uniforms
+	gl.Uniform4fv(tr.locBaseCol, 1, &mat.BaseColor[0])
+
+	if mat.UseTexture && mat.TextureID != 0 {
+		gl.ActiveTexture(gl.TEXTURE0)
+		gl.BindTexture(gl.TEXTURE_2D, uint32(mat.TextureID))
+		gl.Uniform1i(tr.locUseTex, 1)
+	} else {
+		gl.Uniform1i(tr.locUseTex, 0)
+	}
+
+	// Draw sphere
+	vao := tr.mm.GetVAO("__preview_sphere")
+	count := tr.mm.GetCount("__preview_sphere")
+	indexType := tr.mm.GetIndexType("__preview_sphere")
+	_ = tr.mm.GetEBO("__preview_sphere")
+
+	gl.BindVertexArray(vao)
+	gl.DrawElements(gl.TRIANGLES, count, indexType, gl.PtrOffset(0))
+	gl.BindVertexArray(0)
+
+	// Read pixels → PNG
+	buf := make([]uint8, size*size*4)
+	gl.ReadPixels(0, 0, int32(size), int32(size), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(buf))
+
+	// Flip vertically
+	img := image.NewRGBA(image.Rect(0, 0, size, size))
+	row := size * 4
+	for y := 0; y < size; y++ {
+		copy(img.Pix[y*row:(y+1)*row], buf[(size-1-y)*row:(size-y)*row])
+	}
+
+	var out bytes.Buffer
+	png.Encode(&out, img)
+	data := out.Bytes()
+	hash := sha1Hex(data)
+
+	return data, hash, nil
+}
+func sha1Hex(data []byte) string {
+	h := sha1.Sum(data)
+	return hex.EncodeToString(h[:])
 }

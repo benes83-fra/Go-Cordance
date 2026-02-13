@@ -20,19 +20,7 @@ type EntityView struct {
 	Scale    Vec3   `json:"scale"`
 
 	// Material fields
-	BaseColor Vec4    `json:"baseColor"`
-	Ambient   float32 `json:"ambient"`
-	Diffuse   float32 `json:"diffuse"`
-	Specular  float32 `json:"specular"`
-	Shininess float32 `json:"shininess"`
-
-	UseTexture   bool   `json:"useTexture"`
-	TextureID    uint32 `json:"textureID"`
-	TextureAsset uint64 `json:"textureAsset"`
-
-	UseNormal   bool   `json:"useNormal"`
-	NormalID    uint32 `json:"normalID"`
-	NormalAsset uint64 `json:"normalAsset"`
+	BaseColor Vec4 `json:"baseColor"`
 
 	Components []string `json:"components"`
 }

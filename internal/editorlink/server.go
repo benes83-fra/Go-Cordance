@@ -313,18 +313,6 @@ func buildSceneSnapshot(sc *scene.Scene) SceneSnapshot {
 			mat := c.(*ecs.Material)
 
 			view.BaseColor = Vec4(mat.BaseColor)
-			view.Ambient = mat.Ambient
-			view.Diffuse = mat.Diffuse
-			view.Specular = mat.Specular
-			view.Shininess = mat.Shininess
-
-			view.UseTexture = mat.UseTexture
-			view.TextureID = mat.TextureID
-			view.TextureAsset = uint64(mat.TextureAsset)
-
-			view.UseNormal = mat.UseNormal
-			view.NormalID = mat.NormalID
-			view.NormalAsset = uint64(mat.NormalAsset)
 
 			view.Components = append(view.Components, "Material")
 
