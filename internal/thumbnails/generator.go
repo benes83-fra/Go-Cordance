@@ -124,7 +124,8 @@ func cacheMeshThumb(id assets.AssetID, data []byte, hash string) ([]byte, string
 	cacheDir := filepath.Join("cache", "thumbs")
 	os.MkdirAll(cacheDir, 0755)
 
-	safeID := safeName(string(id))
+	safeID := fmt.Sprintf("%d", id)
+
 	fname := filepath.Join(cacheDir, fmt.Sprintf("%s-%s.png", safeID, hash))
 
 	if _, err := os.Stat(fname); os.IsNotExist(err) {
@@ -157,7 +158,12 @@ func generateMaterialThumbnail(a *assets.Asset, size int) ([]byte, string, error
 		return nil, "", fmt.Errorf("material %d has no preview data", a.ID)
 	}
 
-	return engine.RenderMaterialThumbnail(pm, size)
+	data, hash, err := engine.RenderMaterialThumbnail(pm, size)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return cacheMaterialThumb(a.ID, data, hash)
 }
 
 func convertMaterialFileToPreview(mf assets.MaterialFile) *engine.PreviewMaterial {
@@ -190,4 +196,18 @@ func convertMaterialFileToPreview(mf assets.MaterialFile) *engine.PreviewMateria
 	}
 
 	return pm
+}
+
+func cacheMaterialThumb(id assets.AssetID, data []byte, hash string) ([]byte, string, error) {
+	cacheDir := filepath.Join("cache", "thumbs")
+	os.MkdirAll(cacheDir, 0755)
+
+	safeID := fmt.Sprintf("%d", id)
+
+	fname := filepath.Join(cacheDir, fmt.Sprintf("%s-mat-%s.png", safeID, hash))
+
+	if _, err := os.Stat(fname); os.IsNotExist(err) {
+		_ = os.WriteFile(fname, data, 0644)
+	}
+	return data, hash, nil
 }
