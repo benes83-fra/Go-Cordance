@@ -8,6 +8,7 @@ const (
 	AssetTexture AssetType = iota
 	AssetMesh
 	AssetMaterial
+	AssetShader
 )
 
 type Asset struct {

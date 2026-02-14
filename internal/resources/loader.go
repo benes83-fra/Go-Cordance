@@ -1,7 +1,7 @@
 package resources
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 )
 
@@ -9,7 +9,7 @@ import (
 // It does not modify the contents; callers that need null-termination
 // should do so explicitly or use engine.LoadShaderSource for shaders.
 func ReadTextFile(path string) (string, error) {
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
 	}
