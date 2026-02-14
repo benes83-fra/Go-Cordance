@@ -109,13 +109,24 @@ void main()
     if (uUseTexture) {
         base = texture(uDiffuseTex, TexCoord).rgb;
     }
-    FragColor = vec4(base, uBaseColor.a);
+
+    // Simple directional light
+    vec3 lightDir = normalize(vec3(0.4, 0.6, 1.0));
+    float diff = max(dot(normalize(Normal), lightDir), 0.0);
+
+    // Ambient + diffuse
+    vec3 color = base * (0.25 + diff * 0.75);
+
+    FragColor = vec4(color, uBaseColor.a);
 }
+
 `
 
 // InitThumbnailRenderer must be called on the main GL thread
 // while the main window/context is current.
 func InitThumbnailRenderer(r *Renderer, mm *MeshManager, width, height int) {
+	mm.RegisterSphere("__preview_sphere", 64, 32)
+
 	globalThumbRenderer = NewThumbnailRenderer(r, mm, width, height)
 }
 
