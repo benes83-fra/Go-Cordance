@@ -125,7 +125,7 @@ void main()
 // InitThumbnailRenderer must be called on the main GL thread
 // while the main window/context is current.
 func InitThumbnailRenderer(r *Renderer, mm *MeshManager, width, height int) {
-	mm.RegisterSphere("__preview_sphere", 64, 32)
+	mm.RegisterSphere("__preview_sphere", 64, 64)
 
 	globalThumbRenderer = NewThumbnailRenderer(r, mm, width, height)
 }
@@ -772,8 +772,14 @@ func (tr *ThumbnailRenderer) renderMaterial(mat *PreviewMaterial, size int) ([]b
 
 	// Camera
 	proj := perspective(45*(math.Pi/180), 1.0, 0.1, 100.0)
-	view := lookAt([3]float32{0, 0, 3}, [3]float32{0, 0, 0}, [3]float32{0, 1, 0})
-	model := scale(0.9)
+
+	// Zoomed out + tilted down 20 degrees
+	eye := [3]float32{0, 0.35, 3.7}
+	center := [3]float32{0, 0, 0}
+	up := [3]float32{0, 1, 0}
+
+	view := lookAt(eye, center, up)
+	model := scale(1.25)
 
 	gl.UniformMatrix4fv(tr.locModel, 1, false, &model[0])
 	gl.UniformMatrix4fv(tr.locView, 1, false, &view[0])
@@ -789,9 +795,13 @@ func (tr *ThumbnailRenderer) renderMaterial(mat *PreviewMaterial, size int) ([]b
 	} else {
 		gl.Uniform1i(tr.locUseTex, 0)
 	}
+	vao := tr.mm.GetVAO("__preview_sphere")
+	if vao == 0 || !tr.vaoExistsInThisContext(vao) {
+		vao = tr.rebuildVAO("__preview_sphere")
+	}
 
 	// Draw sphere
-	vao := tr.mm.GetVAO("__preview_sphere")
+
 	count := tr.mm.GetCount("__preview_sphere")
 	indexType := tr.mm.GetIndexType("__preview_sphere")
 	_ = tr.mm.GetEBO("__preview_sphere")
