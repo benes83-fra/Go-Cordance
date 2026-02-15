@@ -31,12 +31,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	//load all Shaders
 	loader.LoadShaders()
 	if err := loader.LoadAllShaders(); err != nil {
 		log.Fatalf("Shader compile error: %v", err)
 	}
 	// Compile shaders and create renderer (runtime)
-	vertexSrc, err := engine.LoadShaderSource("assets/shaders/vertex.glsl")
+	/*vertexSrc, err := engine.LoadShaderSource("assets/shaders/vertex.glsl")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -44,7 +45,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	renderer := engine.NewRenderer(vertexSrc, fragmentSrc, width, height)
+
+	renderer := engine.NewRenderer(vertexSrc, fragmentSrc, width, height)*/
+	prog := engine.MustGetShaderProgram("default_shader")
+	renderer := engine.NewRendererWithProgram(prog.ID, width, height)
 	renderer.InitUniforms()
 
 	// load shadow shader sources

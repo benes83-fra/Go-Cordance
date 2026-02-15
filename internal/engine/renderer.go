@@ -123,22 +123,43 @@ func (r *Renderer) InitUniforms() {
 
 }
 
-func NewRenderer(vertexSrc, fragmentSrc string, width, height int) *Renderer {
-	r := &Renderer{}
+func newRendererBase(width, height int) *Renderer {
+	r := &Renderer{
+		ScreenWidth:    width,
+		ScreenHeight:   height,
+		LightColor:     [3]float32{1.0, 1.0, 1.0},
+		LightIntensity: 1.0,
+	}
 
-	// Compile shader program
-	r.Program = compileProgram(vertexSrc, fragmentSrc)
-	r.ScreenWidth = width
-	r.ScreenHeight = height
-	// GL state
 	gl.Enable(gl.DEPTH_TEST)
 	gl.ClearColor(0.1, 0.1, 0.1, 1.0)
 	gl.Viewport(0, 0, int32(width), int32(height))
-	r.LightColor = [3]float32{1.0, 1.0, 1.0}
-	r.LightIntensity = 1.0
+
 	return r
 }
 
+// existing constructor: unchanged from the outside
+func NewRenderer(vertexSrc, fragmentSrc string, width, height int) *Renderer {
+	r := newRendererBase(width, height)
+	r.Program = compileProgram(vertexSrc, fragmentSrc)
+	// legacy path can choose to call InitUniforms explicitly where it always did before
+	return r
+}
+
+func NewRendererWithProgram(program uint32, width, height int) *Renderer {
+	r := newRendererBase(width, height)
+	r.Program = program
+	gl.UseProgram(program)
+	r.InitUniforms()
+	return r
+}
+
+// optional: switch program on an existing renderer (for hot-reload)
+func (r *Renderer) SetProgram(program uint32) {
+	r.Program = program
+	gl.UseProgram(program)
+	r.InitUniforms()
+}
 func compileShader(src string, t uint32) uint32 {
 	shader := gl.CreateShader(t)
 	csrc, free := gl.Strs(src + "\x00")
