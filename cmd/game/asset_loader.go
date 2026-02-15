@@ -71,3 +71,37 @@ func load_textures() {
 		log.Printf("Loaded Texture asset %d from %s", id, full)
 	}
 }
+
+func load_shaders() {
+	shaderDir := "assets/shaders"
+	entries, err := os.ReadDir(shaderDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		if filepath.Ext(e.Name()) != ".shader" { // your JSON shader asset extension
+			log.Printf("File not allowed as Shader: %s", e.Name())
+			continue
+		}
+
+		full := filepath.Join(shaderDir, e.Name())
+
+		// Skip if already loaded
+		if assets.FindAssetByPath(full) != nil {
+			log.Printf("Skipping already-loaded shader: %s", full)
+			continue
+		}
+
+		id, err := assets.LoadShader(full)
+		if err != nil {
+			log.Printf("Failed to load shader %s: %v", full, err)
+			continue
+		}
+
+		log.Printf("Loaded shader asset %d from %s", id, full)
+	}
+}

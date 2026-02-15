@@ -493,6 +493,8 @@ func assetTypeToString(t assets.AssetType) string {
 		return "Mesh"
 	case assets.AssetMaterial:
 		return "Material"
+	case assets.AssetShader:
+		return "Shader"
 	}
 	return "Unknown"
 }

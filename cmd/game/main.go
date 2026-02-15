@@ -141,6 +141,11 @@ func main() {
 
 	load_materials()
 	load_textures()
+	load_shaders()
+	if err := LoadAllShaders(); err != nil {
+		log.Fatalf("Shader compile error: %v", err)
+	}
+
 	// Create runtime wrappers for textures (ecs.Texture holds GPU id)
 	crateTex := ecs.NewTexture(crateGL)
 	teaTex := ecs.NewTexture(teapotGL)
