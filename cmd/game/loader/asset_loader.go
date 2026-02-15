@@ -1,13 +1,15 @@
-package main
+package loader
 
 import (
 	"go-engine/Go-Cordance/internal/assets"
+	"go-engine/Go-Cordance/internal/engine"
+	"go-engine/Go-Cordance/internal/shaderlang"
 	"log"
 	"os"
 	"path/filepath"
 )
 
-func load_materials() {
+func LoadMaterials() {
 
 	// Load material assets
 	materialDir := "assets/materials"
@@ -36,7 +38,7 @@ func load_materials() {
 
 }
 
-func load_textures() {
+func LoadTextures() {
 	textureDir := "assets/textures"
 	entries, err := os.ReadDir(textureDir)
 	if err != nil {
@@ -72,11 +74,12 @@ func load_textures() {
 	}
 }
 
-func load_shaders() {
+func LoadShaders() {
 	shaderDir := "assets/shaders"
 	entries, err := os.ReadDir(shaderDir)
 	if err != nil {
 		log.Fatal(err)
+
 	}
 
 	for _, e := range entries {
@@ -84,7 +87,6 @@ func load_shaders() {
 			continue
 		}
 		if filepath.Ext(e.Name()) != ".json" { // your JSON shader asset extension
-			log.Printf("File not allowed as Shader: %s", e.Name())
 			continue
 		}
 
@@ -104,4 +106,39 @@ func load_shaders() {
 
 		log.Printf("Loaded shader asset %d from %s", id, full)
 	}
+
+}
+
+func LoadAllShaders() error {
+	for _, a := range assets.All() {
+		if a.Type != assets.AssetShader {
+			continue
+		}
+
+		src := a.Data.(shaderlang.ShaderSource)
+
+		// Load GLSL text
+		vert, err := shaderlang.LoadGLSL(src.VertexPath)
+		if err != nil {
+			return err
+		}
+		frag, err := shaderlang.LoadGLSL(src.FragmentPath)
+		if err != nil {
+			return err
+		}
+
+		// Apply defines
+		vert = shaderlang.ApplyDefines(vert, src.Defines)
+		frag = shaderlang.ApplyDefines(frag, src.Defines)
+
+		// Compile in engine
+		prog, err := engine.LoadShaderProgram(src.Name, vert, frag)
+		if err != nil {
+			return err
+		}
+
+		engine.RegisterShaderProgram(src.Name, prog)
+	}
+
+	return nil
 }

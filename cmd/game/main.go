@@ -8,6 +8,7 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 
+	loader "go-engine/Go-Cordance/cmd/game/loader"
 	"go-engine/Go-Cordance/internal/assets"
 	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/ecs/gizmo"
@@ -30,7 +31,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	loader.LoadShaders()
+	if err := loader.LoadAllShaders(); err != nil {
+		log.Fatalf("Shader compile error: %v", err)
+	}
 	// Compile shaders and create renderer (runtime)
 	vertexSrc, err := engine.LoadShaderSource("assets/shaders/vertex.glsl")
 	if err != nil {
@@ -139,12 +143,8 @@ func main() {
 	}
 	matInfo := mats[0]
 
-	load_materials()
-	load_textures()
-	load_shaders()
-	if err := LoadAllShaders(); err != nil {
-		log.Fatalf("Shader compile error: %v", err)
-	}
+	loader.LoadMaterials()
+	loader.LoadTextures()
 
 	// Create runtime wrappers for textures (ecs.Texture holds GPU id)
 	crateTex := ecs.NewTexture(crateGL)
