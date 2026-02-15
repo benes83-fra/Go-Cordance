@@ -83,7 +83,7 @@ func load_shaders() {
 		if e.IsDir() {
 			continue
 		}
-		if filepath.Ext(e.Name()) != ".shader" { // your JSON shader asset extension
+		if filepath.Ext(e.Name()) != ".json" { // your JSON shader asset extension
 			log.Printf("File not allowed as Shader: %s", e.Name())
 			continue
 		}

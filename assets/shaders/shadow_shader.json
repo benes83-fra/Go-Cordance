@@ -1,0 +1,8 @@
+{
+    "name": "shadow_shader",
+    "vertex": "assets/shaders/shadow_vertex.glsl",
+    "fragment": "assets/shaders/shadow_fragment.glsl",
+    "defines": {
+        "USE_FOG": 1
+    }
+}

@@ -1,0 +1,8 @@
+{
+    "name": "debug_shader",
+    "vertex": "assets/shaders/debug_vertex.glsl",
+    "fragment": "assets/shaders/debug_fragment.glsl",
+    "defines": {
+        "USE_FOG": 1
+    }
+}

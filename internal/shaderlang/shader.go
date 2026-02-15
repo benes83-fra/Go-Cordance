@@ -28,11 +28,34 @@ func ApplyDefines(src string, defs map[string]any) string {
 		return src
 	}
 
-	var b strings.Builder
-	for k, v := range defs {
-		b.WriteString(fmt.Sprintf("#define %s %v\n", k, v))
+	lines := strings.Split(src, "\n")
+
+	// Find #version line
+	versionIndex := -1
+	for i, line := range lines {
+		if strings.HasPrefix(strings.TrimSpace(line), "#version") {
+			versionIndex = i
+			break
+		}
 	}
-	b.WriteString("\n")
-	b.WriteString(src)
-	return b.String()
+
+	// Build define block
+	var defBlock strings.Builder
+	for k, v := range defs {
+		defBlock.WriteString(fmt.Sprintf("#define %s %v\n", k, v))
+	}
+	defBlock.WriteString("\n")
+
+	// If no #version found, prepend defines normally
+	if versionIndex == -1 {
+		return defBlock.String() + src
+	}
+
+	// Insert defines *after* #version
+	out := make([]string, 0, len(lines)+len(defs)+2)
+	out = append(out, lines[versionIndex]) // keep #version first
+	out = append(out, defBlock.String())   // then defines
+	out = append(out, lines[versionIndex+1:]...)
+
+	return strings.Join(out, "\n")
 }

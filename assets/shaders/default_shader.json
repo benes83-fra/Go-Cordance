@@ -1,0 +1,8 @@
+{
+    "name": "default_shader",
+    "vertex": "assets/shaders/vertex.glsl",
+    "fragment": "assets/shaders/fragment.glsl",
+    "defines": {
+        "USE_FOG": 1
+    }
+}
