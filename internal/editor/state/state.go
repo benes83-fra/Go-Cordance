@@ -13,6 +13,7 @@ type AssetView struct {
 	MeshIDs      []string          `json:"mesh_ids,omitempty"`
 	MeshThumb    map[string]string `json:"mesh_thumb,omitempty"` // meshID -> file path
 	MaterialData map[string]any    `json:"material_data,omitempty"`
+	ShaderData   map[string]any    `json:"shader_data,omitempty"`
 }
 
 type EditorState struct {
@@ -27,12 +28,14 @@ type EditorState struct {
 	ShowLightGizmos     bool
 	IsRebuilding        bool
 	LastComponents      map[int64][]string
+	Shaders             []AssetView
 	// in EditorState
 
 	Assets struct {
 		Textures  []AssetView
 		Meshes    []AssetView
 		Materials []AssetView
+		Shaders   []AssetView
 	}
 }
 

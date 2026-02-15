@@ -11,6 +11,7 @@ import (
 	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editor/undo"
+	"go-engine/Go-Cordance/internal/shaderlang"
 	"go-engine/Go-Cordance/internal/thumbnails"
 
 	"go-engine/Go-Cordance/internal/scene"
@@ -430,6 +431,7 @@ func buildAssetList() MsgAssetList {
 		Textures:  []AssetView{},
 		Meshes:    []AssetView{},
 		Materials: []AssetView{},
+		Shaders:   []AssetView{},
 	}
 
 	for _, a := range assets.All() {
@@ -467,6 +469,15 @@ func buildAssetList() MsgAssetList {
 			}
 
 			out.Materials = append(out.Materials, view)
+		case assets.AssetShader:
+			sf := a.Data.(shaderlang.ShaderSource)
+			view.ShaderData = map[string]any{
+				"name":     sf.Name,
+				"vertex":   sf.VertexPath,
+				"fragment": sf.FragmentPath,
+				"defines":  sf.Defines,
+			}
+			out.Shaders = append(out.Shaders, view)
 
 		}
 	}

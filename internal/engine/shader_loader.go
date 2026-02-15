@@ -16,7 +16,7 @@ func LoadShaderProgram(name, vertSrc, fragSrc string) (*ShaderProgram, error) {
 
 	fs := compileShader(fragSrc, gl.FRAGMENT_SHADER)
 
-	prog, err := linkProgram(vs, fs)
+	prog, err := buildProgram(vs, fs)
 	if err != nil {
 		return nil, err
 	}
@@ -54,4 +54,23 @@ func MustGetShaderProgram(name string) *ShaderProgram {
 		panic("shader program not registered: " + name)
 	}
 	return p
+}
+
+func buildProgram(vs, fs uint32) (uint32, error) {
+	prog := gl.CreateProgram()
+	gl.AttachShader(prog, vs)
+	gl.AttachShader(prog, fs)
+	gl.LinkProgram(prog)
+
+	var status int32
+	gl.GetProgramiv(prog, gl.LINK_STATUS, &status)
+	if status == gl.FALSE {
+		var logLen int32
+		gl.GetProgramiv(prog, gl.INFO_LOG_LENGTH, &logLen)
+		logBuf := make([]byte, logLen+1)
+		gl.GetProgramInfoLog(prog, logLen, nil, &logBuf[0])
+		gl.DeleteProgram(prog)
+		return 0, fmt.Errorf("program link error: %s", string(logBuf))
+	}
+	return prog, nil
 }

@@ -393,11 +393,32 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 		}
 	}
 
+	shaderList := widget.NewList(
+		func() int {
+			return len(st.Assets.Shaders)
+		},
+		func() fyne.CanvasObject {
+			return newShaderItem()
+		},
+		func(i widget.ListItemID, o fyne.CanvasObject) {
+			item := o.(*shaderItem)
+			av := st.Assets.Shaders[i]
+
+			item.assetID = av.ID
+			item.lbl.SetText(filepath.Base(av.Path))
+
+			// shaders don’t have thumbnails yet → use icon
+			item.img.Resource = theme.FileImageIcon()
+			item.img.Refresh()
+		},
+	)
+
 	// --- Tabs ---
 	tabs := container.NewAppTabs(
 		container.NewTabItem("Textures", texList),
 		container.NewTabItem("Meshes", meshList),
 		container.NewTabItem("Materials", matList),
+		container.NewTabItem("Shaders", shaderList),
 	)
 
 	tabs.SetTabLocation(container.TabLocationTop)
@@ -516,4 +537,32 @@ func (m *meshDragItem) DragData() interface{} {
 type DragAsset struct {
 	ID   uint64
 	Type string // "texture", "mesh", "material"
+}
+
+type shaderItem struct {
+	widget.BaseWidget
+	img     *canvas.Image
+	lbl     *widget.Label
+	assetID uint64
+}
+
+func newShaderItem() *shaderItem {
+	img := canvas.NewImageFromResource(theme.FileImageIcon())
+	img.FillMode = canvas.ImageFillContain
+	img.SetMinSize(fyne.NewSize(96, 96))
+
+	lbl := widget.NewLabel("")
+
+	item := &shaderItem{
+		img: img,
+		lbl: lbl,
+	}
+	item.ExtendBaseWidget(item)
+	return item
+}
+
+func (s *shaderItem) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(
+		container.NewHBox(s.img, s.lbl),
+	)
 }

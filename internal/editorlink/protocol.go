@@ -88,6 +88,7 @@ type MsgAssetList struct {
 	Textures  []AssetView `json:"textures"`
 	Meshes    []AssetView `json:"meshes"`
 	Materials []AssetView `json:"materials"`
+	Shaders   []AssetView `json:"shaders"`
 }
 
 type AssetView struct {
@@ -96,6 +97,7 @@ type AssetView struct {
 	Type         string         `json:"type"`
 	MeshIDs      []string       `json:"mesh_ids,omitempty"`
 	MaterialData map[string]any `json:"material_data,omitempty"`
+	ShaderData   map[string]any `json:"shader_data,omitempty"`
 }
 type MsgRequestAssetList struct{}
 

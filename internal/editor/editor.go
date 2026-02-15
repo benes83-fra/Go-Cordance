@@ -318,6 +318,16 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 						MaterialData: v.MaterialData,
 					}
 				}
+				st.Assets.Shaders = make([]state.AssetView, len(m.Shaders))
+				for i, v := range m.Shaders {
+					st.Assets.Shaders[i] = state.AssetView{
+						ID:         v.ID,
+						Path:       v.Path,
+						Type:       v.Type,
+						ShaderData: v.ShaderData,
+					}
+				}
+
 				if st.RefreshUI != nil {
 					st.RefreshUI()
 				}
