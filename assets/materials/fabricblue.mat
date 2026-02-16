@@ -1,6 +1,6 @@
 {
   "name": "FabricBlue",
-  "shader": "default",
+  "shader": "default_shader",
   "params": {
     "baseColor": [0.2, 0.3, 0.8, 1.0]
 

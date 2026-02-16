@@ -2,6 +2,7 @@ package ecs
 
 import (
 	"go-engine/Go-Cordance/internal/assets"
+	"go-engine/Go-Cordance/internal/engine"
 )
 
 // Material holds surface properties for lighting/shading.
@@ -21,6 +22,8 @@ type Material struct {
 	// --- New asset pipeline fields (optional, non-breaking) ---
 	TextureAsset assets.AssetID // future: replace TextureID
 	NormalAsset  assets.AssetID // future: replace NormalID
+	ShaderName string
+	Shader     *engine.ShaderProgram
 
 	Dirty bool
 }

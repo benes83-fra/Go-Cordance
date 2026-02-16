@@ -329,7 +329,7 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 
 		// Upload each light
 		for i, L := range lights {
-			log.Printf("Light[%d] type=%d pos=%v", i, L.Type, L.Position)
+			//log.Printf("Light[%d] type=%d pos=%v", i, L.Type, L.Position)
 			gl.Uniform3f(rs.Renderer.LocLightColor[i], L.Color[0], L.Color[1], L.Color[2])
 			gl.Uniform1f(rs.Renderer.LocLightIntensity[i], L.Intensity)
 			gl.Uniform3f(rs.Renderer.LocLightDir[i], L.Direction[0], L.Direction[1], L.Direction[2])
