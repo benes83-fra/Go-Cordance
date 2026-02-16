@@ -52,7 +52,7 @@ func main() {
 	renderer.InitUniforms()
 
 	// load shadow shader sources
-	shadowVertSrc, err := engine.LoadShaderSource("assets/shaders/shadow_vertex.glsl")
+	/*shadowVertSrc, err := engine.LoadShaderSource("assets/shaders/shadow_vertex.glsl")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -60,10 +60,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	*/
+	shadow_prog := engine.MustGetShaderProgram("shadow_shader")
 	// initialize shadow resources (choose resolution)
 	shadowW, shadowH := 2048, 2048
-	renderer.InitShadow(shadowVertSrc, shadowFragSrc, shadowW, shadowH)
+	renderer.InitShadowWithProgram(shadow_prog.ID, shadowW, shadowH)
 
 	// Resize callback updates viewport
 	window.SetFramebufferSizeCallback(func(_ *glfw.Window, w, h int) {
@@ -111,7 +112,7 @@ func main() {
 	_ = teapotMeshAsset
 
 	// Load shader sources for debug renderer
-	debugVertexSrc, err := engine.LoadShaderSource("assets/shaders/debug_vertex.glsl")
+	/*debugVertexSrc, err := engine.LoadShaderSource("assets/shaders/debug_vertex.glsl")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -119,6 +120,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+		*/
+	debug_prog := engine.MustGetShaderProgram("debug_shader")
 
 	// Load textures (runtime GPU resources)
 	// Load textures via asset pipeline (non-breaking)
@@ -155,7 +158,7 @@ func main() {
 	teaTex := ecs.NewTexture(teapotGL)
 	goldyTex := ecs.NewTexture(goldyGL)
 	// Create renderers / debug systems that require runtime resources
-	debugRenderer := engine.NewDebugRenderer(debugVertexSrc, debugFragmentSrc)
+	debugRenderer := engine.NewDebugRendererWithProg(debug_prog.ID)
 	debugSys := ecs.NewDebugRenderSystem(debugRenderer, meshMgr, nil) // camSys set later
 	lightDebug := ecs.NewLightDebugRenderSystem(debugRenderer, meshMgr, nil)
 	gizmoSys := gizmo.NewGizmoRenderSystem(debugRenderer, meshMgr, nil)
