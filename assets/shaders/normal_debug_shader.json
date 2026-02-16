@@ -1,0 +1,6 @@
+{
+    "name": "normal_debug_shader",
+    "vertex": "assets/shaders/vertex.glsl",
+    "fragment": "assets/shaders/normal_debug_frag.glsl",
+    "defines": {}
+}

@@ -1,0 +1,8 @@
+{
+    "name": "visualdebug_shader",
+    "vertex": "assets/shaders/vertex.glsl",
+    "fragment": "assets/shaders/db_frag.glsl",
+    "defines": {
+        "USE_FOG": 1
+    }
+}

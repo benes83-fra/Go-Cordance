@@ -1,0 +1,6 @@
+{
+    "name": "uv_debug_shader",
+    "vertex": "assets/shaders/vertex.glsl",
+    "fragment": "assets/shaders/uv_debug_frag.glsl",
+    "defines": {}
+}

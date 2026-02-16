@@ -1,0 +1,6 @@
+{
+    "name": "flatcolor_shader",
+    "vertex": "assets/shaders/vertex.glsl",
+    "fragment": "assets/shaders/flatcolor_frag.glsl",
+    "defines": {}
+}

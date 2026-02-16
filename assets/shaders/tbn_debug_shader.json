@@ -1,0 +1,6 @@
+{
+    "name": "tbn_debug_shader",
+    "vertex": "assets/shaders/vertex.glsl",
+    "fragment": "assets/shaders/tbn_debug_frag.glsl",
+    "defines": {}
+}
