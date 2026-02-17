@@ -58,6 +58,9 @@ func (m *Material) EditorFields() map[string]any {
 		"TextureAsset": m.TextureAsset,
 		"NormalAsset":  m.NormalAsset,
 
+		"ShaderName": m.ShaderName,
+
+
 		// Asset pipeline fields (hidden from inspector for now)
 		// They can be exposed later when the editor supports asset picking.
 		// "TextureAsset": m.TextureAsset,
@@ -91,6 +94,10 @@ func (m *Material) SetEditorField(name string, value any) {
 		m.TextureAsset = assets.AssetID(toInt(value))
 	case "NormalAsset":
 		m.NormalAsset = assets.AssetID(toInt(value))
+	case "ShaderName":
+		m.ShaderName = value.(string)
+		m.Shader = engine.MustGetShaderProgram(m.ShaderName)
+   
 
 		// --- Asset pipeline fields (future use) ---
 		// case "TextureAsset":

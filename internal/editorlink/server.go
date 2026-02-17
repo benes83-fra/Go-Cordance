@@ -11,6 +11,7 @@ import (
 	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editor/undo"
+	"go-engine/Go-Cordance/internal/engine"
 	"go-engine/Go-Cordance/internal/shaderlang"
 	"go-engine/Go-Cordance/internal/thumbnails"
 
@@ -20,6 +21,7 @@ import (
 var EditorConn net.Conn
 var lastLightVersion = map[uint64]uint64{} // entityID -> version
 var Mgr *thumbnails.Manager
+var RenderSystem *ecs.RenderSystem
 
 // StartServer exposes the given Scene to a single editor client.
 func StartServer(addr string, sc *scene.Scene, camSys *ecs.CameraSystem) {
@@ -237,6 +239,23 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 
 			if err := SendAssetMeshThumbnail(conn, m.AssetID, m.MeshID, "png", data, hash); err != nil {
 				log.Printf("game: SendAssetMeshThumbnail failed: %v", err)
+			}
+		case "SetGlobalShader":
+			var m MsgSetGlobalShader
+			if err := json.Unmarshal(msg.Data, &m); err != nil {
+				log.Printf("bad SetGlobalShader: %v", err)
+				continue
+			}
+
+			prog, err := engine.GetShaderProgram(m.Name)
+			if err != nil {
+				log.Printf("Shader not found: %v", err)
+				break
+			}
+
+			if RenderSystem != nil {
+				RenderSystem.SetGlobalShader(prog)
+				log.Printf("Global shader switched to %s", m.Name)
 			}
 
 		default:

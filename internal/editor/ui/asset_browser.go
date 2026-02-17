@@ -2,6 +2,7 @@ package ui
 
 import (
 	"go-engine/Go-Cordance/internal/assets"
+
 	"go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editorlink"
 	"log"
@@ -412,6 +413,21 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 			item.img.Refresh()
 		},
 	)
+	shaderList.OnSelected = func(id widget.ListItemID) {
+		av := st.Assets.Shaders[id]
+
+		name, ok := av.ShaderData["name"].(string)
+		if !ok {
+			log.Printf("Shader asset %d missing name", av.ID)
+			return
+		}
+
+		if editorlink.EditorConn != nil {
+			go editorlink.SendSetGlobalShader(editorlink.EditorConn, name)
+		}
+
+		log.Printf("Requested global shader switch to %s", name)
+	}
 
 	// --- Tabs ---
 	tabs := container.NewAppTabs(

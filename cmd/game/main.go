@@ -120,7 +120,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-		*/
+	*/
 	debug_prog := engine.MustGetShaderProgram("debug_shader")
 
 	// Load textures (runtime GPU resources)
@@ -176,6 +176,7 @@ func main() {
 	camSys := ecs.NewCameraSystem(window)
 	camSys.SetWorld(sc.World())
 	renderSys := ecs.NewRenderSystem(renderer, meshMgr, camSys)
+	editorlink.RenderSystem = renderSys
 	camCtrl := ecs.NewCameraControllerSystem(window)
 	billboardSys := ecs.NewBillboardSystem(camSys)
 

@@ -146,6 +146,10 @@ type MsgDuplicateEntity struct {
 	Name string `json:"name"`
 }
 
+type MsgSetGlobalShader struct {
+	Name string `json:"name"`
+}
+
 func readMsg(conn net.Conn) (Msg, error) {
 	var m Msg
 	header := make([]byte, 4)
@@ -347,4 +351,9 @@ func SendAssetMeshThumbnail(conn net.Conn, assetID uint64, meshID string, format
 	return writeMsg(conn,
 		"AssetMeshThumbnail",
 		m)
+}
+
+func SendSetGlobalShader(conn net.Conn, name string) error {
+	msg := MsgSetGlobalShader{Name: name}
+	return writeMsg(conn, "SetGlobalShader", msg)
 }

@@ -22,9 +22,9 @@ type RenderSystem struct {
 	OrbitalEnabled bool
 	SelectedEntity uint64
 
-	DebugShowMode  int32 // 0..6 as in shader
-	DebugFlipGreen bool
-
+	DebugShowMode    int32 // 0..6 as in shader
+	DebugFlipGreen   bool
+	ActiveShader     *engine.ShaderProgram
 	shadowLightIndex int
 }
 
@@ -247,11 +247,13 @@ func (rs *RenderSystem) RenderShadowPass(entities []*Entity) {
 func (rs *RenderSystem) Update(dt float32, entities []*Entity) {
 	rs.UpdateLightGizmos()
 	rs.RenderShadowPass(entities)
+
 	rs.RenderMainPass(entities)
 }
 
 func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 	glutil.RunGLChecked("MainPass: UseProgram+Uniforms", func() {
+
 		gl.UseProgram(rs.Renderer.Program)
 
 		// Bind shadow map
@@ -544,5 +546,40 @@ func (rs *RenderSystem) UpdateLightGizmos() {
 				rs.LightDir[2] * 5,
 			}
 		}
+	}
+}
+
+func (rs *RenderSystem) selectShaderForPass(entities []*Entity) {
+	var chosen *engine.ShaderProgram
+
+	// Example: use selected entity’s material shader
+	for _, e := range entities {
+		if uint64(e.ID) != rs.SelectedEntity {
+			continue
+		}
+		if mat, ok := e.GetComponent((*Material)(nil)).(*Material); ok {
+			if mat.Shader != nil {
+				chosen = mat.Shader
+			}
+		}
+	}
+
+	// fallback to default renderer program
+	if chosen == nil {
+		gl.UseProgram(rs.Renderer.Program)
+		return
+	}
+
+	// bind chosen shader ONCE
+	gl.UseProgram(chosen.ID)
+	rs.Renderer.Program = chosen.ID
+	rs.Renderer.InitUniforms()
+}
+
+func (rs *RenderSystem) SetGlobalShader(p *engine.ShaderProgram) {
+	rs.ActiveShader = p
+	if p != nil {
+		rs.Renderer.Program = p.ID
+		rs.Renderer.InitUniforms()
 	}
 }
