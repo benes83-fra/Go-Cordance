@@ -62,6 +62,113 @@ type Renderer struct {
 }
 
 func (r *Renderer) InitUniforms() {
+	// Clear old locations
+	r.LocModel = -1
+	r.LocView = -1
+	r.LocProj = -1
+	r.LocBaseCol = -1
+	r.LocAmbient = -1
+	r.LocDiffuse = -1
+	r.LocSpecular = -1
+	r.LocShininess = -1
+	r.LocDiffuseTex = -1
+	r.LocUseTexture = -1
+	r.LocNormalMap = -1
+	r.LocUseNormalMap = -1
+	r.LocViewPos = -1
+	r.LocLightCount = -1
+	r.LocLightSpace = -1
+	r.LocShadowMap = -1
+	r.LocShadowMapSize = -1
+	r.LocShadowLightIndex = -1
+	r.LocShowMode = -1
+	r.LocFlipNormalG = -1
+	for i := 0; i < 8; i++ {
+		r.LocLightColor[i] = -1
+		r.LocLightIntensity[i] = -1
+		r.LocLightDir[i] = -1
+		r.LocLightPos[i] = -1
+		r.LocLightRange[i] = -1
+		r.LocLightAngle[i] = -1
+		r.LocLightType[i] = -1
+	}
+
+	// Re-query for the active program
+	gl.UseProgram(r.Program)
+
+	r.LocModel = gl.GetUniformLocation(r.Program, gl.Str("model\x00"))
+	r.LocView = gl.GetUniformLocation(r.Program, gl.Str("view\x00"))
+	r.LocProj = gl.GetUniformLocation(r.Program, gl.Str("projection\x00"))
+	r.LocBaseCol = gl.GetUniformLocation(r.Program, gl.Str("BaseColor\x00"))
+	r.LocAmbient = gl.GetUniformLocation(r.Program, gl.Str("matAmbient\x00"))
+	r.LocDiffuse = gl.GetUniformLocation(r.Program, gl.Str("matDiffuse\x00"))
+	r.LocSpecular = gl.GetUniformLocation(r.Program, gl.Str("matSpecular\x00"))
+	r.LocShininess = gl.GetUniformLocation(r.Program, gl.Str("matShininess\x00"))
+
+	r.LocDiffuseTex = gl.GetUniformLocation(r.Program, gl.Str("diffuseTex\x00"))
+	r.LocUseTexture = gl.GetUniformLocation(r.Program, gl.Str("useTexture\x00"))
+	r.LocNormalMap = gl.GetUniformLocation(r.Program, gl.Str("normalMap\x00"))
+	r.LocUseNormalMap = gl.GetUniformLocation(r.Program, gl.Str("useNormalMap\x00"))
+
+	r.LocViewPos = gl.GetUniformLocation(r.Program, gl.Str("viewPos\x00"))
+
+	r.LocLightCount = gl.GetUniformLocation(r.Program, gl.Str("lightCount\x00"))
+	r.LocLightSpace = gl.GetUniformLocation(r.Program, gl.Str("lightSpaceMatrix\x00"))
+	r.LocShadowMap = gl.GetUniformLocation(r.Program, gl.Str("shadowMap\x00"))
+	r.LocShadowMapSize = gl.GetUniformLocation(r.Program, gl.Str("uShadowMapSize\x00"))
+	r.LocShadowLightIndex = gl.GetUniformLocation(r.Program, gl.Str("shadowLightIndex\x00"))
+
+	r.LocShowMode = gl.GetUniformLocation(r.Program, gl.Str("showMode\x00"))
+	r.LocFlipNormalG = gl.GetUniformLocation(r.Program, gl.Str("flipNormalGreen\x00"))
+
+	// Light arrays
+	for i := 0; i < 8; i++ {
+		nameDir := fmt.Sprintf("lightDir[%d]\x00", i)
+		nameCol := fmt.Sprintf("lightColor[%d]\x00", i)
+		nameInt := fmt.Sprintf("lightIntensity[%d]\x00", i)
+		namePos := fmt.Sprintf("lightPos[%d]\x00", i)
+		nameRange := fmt.Sprintf("lightRange[%d]\x00", i)
+		nameAngle := fmt.Sprintf("lightAngle[%d]\x00", i)
+		nameType := fmt.Sprintf("lightType[%d]\x00", i)
+
+		r.LocLightDir[i] = gl.GetUniformLocation(r.Program, gl.Str(nameDir))
+		r.LocLightColor[i] = gl.GetUniformLocation(r.Program, gl.Str(nameCol))
+		r.LocLightIntensity[i] = gl.GetUniformLocation(r.Program, gl.Str(nameInt))
+		r.LocLightPos[i] = gl.GetUniformLocation(r.Program, gl.Str(namePos))
+		r.LocLightRange[i] = gl.GetUniformLocation(r.Program, gl.Str(nameRange))
+		r.LocLightAngle[i] = gl.GetUniformLocation(r.Program, gl.Str(nameAngle))
+		r.LocLightType[i] = gl.GetUniformLocation(r.Program, gl.Str(nameType))
+	}
+	// main shader will sample shadow map and receive lightSpaceMatrix
+	r.LocLightSpace = gl.GetUniformLocation(r.Program, gl.Str("lightSpaceMatrix\x00"))
+	r.LocShadowMap = gl.GetUniformLocation(r.Program, gl.Str("shadowMap\x00"))
+	r.LocShadowMapSize = gl.GetUniformLocation(r.Program, gl.Str("uShadowMapSize\x00"))
+
+	//for debugging purpose
+	// renderer.InitUniforms (add these lines)
+	r.LocNormalMap = gl.GetUniformLocation(r.Program, gl.Str("normalMap\x00"))
+	r.LocUseNormalMap = gl.GetUniformLocation(r.Program, gl.Str("useNormalMap\x00"))
+	r.LocFlipNormalG = gl.GetUniformLocation(r.Program, gl.Str("flipNormalGreen\x00"))
+	r.LocShowMode = gl.GetUniformLocation(r.Program, gl.Str("showMode\x00"))
+	r.LocShadowLightIndex = gl.GetUniformLocation(r.Program, gl.Str("shadowLightIndex\x00"))
+
+	names := map[string]int32{
+		"model": r.LocModel, "view": r.LocView, "projection": r.LocProj,
+		"baseColor": r.LocBaseCol, "viewPos": r.LocViewPos,
+		"matAmbient": r.LocAmbient, "matDiffuse": r.LocDiffuse,
+		"matSpecular": r.LocSpecular, "matShininess": r.LocShininess,
+		"diffuseTex": r.LocDiffuseTex, "useTexture": r.LocUseTexture,
+	}
+	log.Println("LocLightSpace =", r.LocLightSpace, "LocShadowLightIndex =", r.LocShadowLightIndex)
+
+	for n, loc := range names {
+		if loc == -1 {
+			fmt.Printf("WARN: uniform %s not found in program\n", n)
+		}
+	}
+} /*
+
+func (r *Renderer) InitUniforms() {
 	r.LocModel = gl.GetUniformLocation(r.Program, gl.Str("model\x00"))
 	r.LocView = gl.GetUniformLocation(r.Program, gl.Str("view\x00"))
 	r.LocProj = gl.GetUniformLocation(r.Program, gl.Str("projection\x00"))
@@ -121,7 +228,7 @@ func (r *Renderer) InitUniforms() {
 		}
 	}
 
-}
+}*/
 
 func newRendererBase(width, height int) *Renderer {
 	r := &Renderer{
@@ -214,9 +321,7 @@ type DebugRenderer struct {
 	lineVBO uint32
 }
 
-
-
-func NewDebugRendererWithProg (prog uint32) *DebugRenderer {
+func NewDebugRendererWithProg(prog uint32) *DebugRenderer {
 	dr := &DebugRenderer{
 		Program:  prog,
 		LocModel: gl.GetUniformLocation(prog, gl.Str("model\x00")),
@@ -243,42 +348,39 @@ func NewDebugRendererWithProg (prog uint32) *DebugRenderer {
 	return dr
 }
 
-
-
 func NewDebugRenderer(vertexSrc, fragmentSrc string) *DebugRenderer {
 	prog := compileProgram(vertexSrc, fragmentSrc)
 	/*
-	dr := &DebugRenderer{
-		Program:  prog,
-		LocModel: gl.GetUniformLocation(prog, gl.Str("model\x00")),
-		LocView:  gl.GetUniformLocation(prog, gl.Str("view\x00")),
-		LocProj:  gl.GetUniformLocation(prog, gl.Str("projection\x00")),
-		LocColor: gl.GetUniformLocation(prog, gl.Str("debugColor\x00")),
-	}
+		dr := &DebugRenderer{
+			Program:  prog,
+			LocModel: gl.GetUniformLocation(prog, gl.Str("model\x00")),
+			LocView:  gl.GetUniformLocation(prog, gl.Str("view\x00")),
+			LocProj:  gl.GetUniformLocation(prog, gl.Str("projection\x00")),
+			LocColor: gl.GetUniformLocation(prog, gl.Str("debugColor\x00")),
+		}
 
-	// Create VAO/VBO for a single line segment
-	gl.GenVertexArrays(1, &dr.lineVAO)
-	gl.GenBuffers(1, &dr.lineVBO)
+		// Create VAO/VBO for a single line segment
+		gl.GenVertexArrays(1, &dr.lineVAO)
+		gl.GenBuffers(1, &dr.lineVBO)
 
-	gl.BindVertexArray(dr.lineVAO)
-	gl.BindBuffer(gl.ARRAY_BUFFER, dr.lineVBO)
+		gl.BindVertexArray(dr.lineVAO)
+		gl.BindBuffer(gl.ARRAY_BUFFER, dr.lineVBO)
 
-	// allocate space for 2 vec3 positions (start + end)
-	gl.BufferData(gl.ARRAY_BUFFER, 6*4, nil, gl.DYNAMIC_DRAW)
+		// allocate space for 2 vec3 positions (start + end)
+		gl.BufferData(gl.ARRAY_BUFFER, 6*4, nil, gl.DYNAMIC_DRAW)
 
-	gl.EnableVertexAttribArray(0)
-	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, 3*4, 0)
+		gl.EnableVertexAttribArray(0)
+		gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, 3*4, 0)
 
-	gl.BindVertexArray(0)
+		gl.BindVertexArray(0)
 
-	return dr
+		return dr
 	*/
 	return NewDebugRendererWithProg(prog)
 }
 func (dr *DebugRenderer) DrawLine(start, end mgl32.Vec3, color mgl32.Vec3, view, proj mgl32.Mat4) {
 	gl.UseProgram(dr.Program)
 
-	
 	// Upload uniforms
 	model := mgl32.Ident4()
 	gl.UniformMatrix4fv(dr.LocView, 1, false, &view[0])
@@ -339,8 +441,7 @@ func (r *Renderer) InitShadow(shadowVertSrc, shadowFragSrc string, width, height
 	// But store a location name for convenience (we'll get it from main program in InitUniforms)
 }
 
-
-func (r *Renderer) InitShadowWithProgram(program uint32,  width, height int) {
+func (r *Renderer) InitShadowWithProgram(program uint32, width, height int) {
 	r.ShadowWidth = width
 	r.ShadowHeight = height
 
