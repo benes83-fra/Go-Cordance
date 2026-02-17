@@ -11,7 +11,6 @@ import (
 	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editor/undo"
-	"go-engine/Go-Cordance/internal/engine"
 	"go-engine/Go-Cordance/internal/shaderlang"
 	"go-engine/Go-Cordance/internal/thumbnails"
 
@@ -22,6 +21,7 @@ var EditorConn net.Conn
 var lastLightVersion = map[uint64]uint64{} // entityID -> version
 var Mgr *thumbnails.Manager
 var RenderSystem *ecs.RenderSystem
+var RequestedShader string
 
 // StartServer exposes the given Scene to a single editor client.
 func StartServer(addr string, sc *scene.Scene, camSys *ecs.CameraSystem) {
@@ -247,16 +247,7 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 				continue
 			}
 
-			prog, err := engine.GetShaderProgram(m.Name)
-			if err != nil {
-				log.Printf("Shader not found: %v", err)
-				break
-			}
-
-			if RenderSystem != nil {
-				RenderSystem.SetGlobalShader(prog)
-				log.Printf("Global shader switched to %s", m.Name)
-			}
+			RequestedShader = m.Name
 
 		default:
 			log.Printf("editorlink: unknown msg type %q", msg.Type)

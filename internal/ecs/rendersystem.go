@@ -254,7 +254,10 @@ func (rs *RenderSystem) Update(dt float32, entities []*Entity) {
 func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 	glutil.RunGLChecked("MainPass: UseProgram+Uniforms", func() {
 
-		gl.UseProgram(rs.Renderer.Program)
+		if !engine.UseProgramChecked("MainPass", rs.Renderer.Program) {
+			return
+		}
+		//gl.UseProgram(rs.Renderer.Program)
 
 		// Bind shadow map
 		gl.ActiveTexture(gl.TEXTURE2)
@@ -264,11 +267,16 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 			gl.Uniform1i(rs.Renderer.LocShadowMap, 2)
 		}
 		if rs.Renderer.LocShadowMapSize != -1 {
-			gl.Uniform2f(
+			engine.SetVec2(
 				rs.Renderer.LocShadowMapSize,
 				float32(rs.Renderer.ShadowWidth),
 				float32(rs.Renderer.ShadowHeight),
 			)
+			/*gl.Uniform2f(
+				rs.Renderer.LocShadowMapSize,
+				float32(rs.Renderer.ShadowWidth),
+				float32(rs.Renderer.ShadowHeight),
+			)*/
 		}
 		// --- Rebuild and upload lights (from old Update) ---
 		rs.Renderer.LightColor = [3]float32{1, 1, 1}
@@ -327,10 +335,10 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		// After collecting all lights:
 
 		// Upload light count
-		gl.Uniform1i(rs.Renderer.LocLightCount, int32(len(lights)))
-
+		//gl.Uniform1i(rs.Renderer.LocLightCount, int32(len(lights)))
+		engine.SetInt(rs.Renderer.LocLightCount, int32(len(lights)))
 		// Upload each light
-		for i, L := range lights {
+		/*for i, L := range lights {
 			//log.Printf("Light[%d] type=%d pos=%v", i, L.Type, L.Position)
 			gl.Uniform3f(rs.Renderer.LocLightColor[i], L.Color[0], L.Color[1], L.Color[2])
 			gl.Uniform1f(rs.Renderer.LocLightIntensity[i], L.Intensity)
@@ -340,6 +348,29 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 			gl.Uniform1f(rs.Renderer.LocLightRange[i], L.Range)
 			gl.Uniform1f(rs.Renderer.LocLightAngle[i], L.Angle)
 			gl.Uniform1i(rs.Renderer.LocLightType[i], L.Type)
+		}*/
+		for i, L := range lights {
+			if rs.Renderer.LocLightColor[i] != -1 {
+				engine.SetVec3(rs.Renderer.LocLightColor[i], L.Color[0], L.Color[1], L.Color[2])
+			}
+			if rs.Renderer.LocLightIntensity[i] != -1 {
+				engine.SetFloat(rs.Renderer.LocLightIntensity[i], L.Intensity)
+			}
+			if rs.Renderer.LocLightDir[i] != -1 {
+				engine.SetVec3(rs.Renderer.LocLightDir[i], L.Direction[0], L.Direction[1], L.Direction[2])
+			}
+			if rs.Renderer.LocLightPos[i] != -1 {
+				engine.SetVec3(rs.Renderer.LocLightPos[i], L.Position[0], L.Position[1], L.Position[2])
+			}
+			if rs.Renderer.LocLightRange[i] != -1 {
+				engine.SetFloat(rs.Renderer.LocLightRange[i], L.Range)
+			}
+			if rs.Renderer.LocLightAngle[i] != -1 {
+				engine.SetFloat(rs.Renderer.LocLightAngle[i], L.Angle)
+			}
+			if rs.Renderer.LocLightType[i] != -1 {
+				engine.SetInt(rs.Renderer.LocLightType[i], L.Type)
+			}
 		}
 
 		// Upload camera position
@@ -361,8 +392,11 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		}
 
 		// Debug flags
-		gl.Uniform1i(rs.Renderer.LocShowMode, rs.DebugShowMode)
-		gl.Uniform1i(rs.Renderer.LocFlipNormalG, boolToInt(rs.DebugFlipGreen))
+		engine.SetInt(rs.Renderer.LocShowMode, rs.DebugShowMode)
+		engine.SetInt(rs.Renderer.LocFlipNormalG, boolToInt(rs.DebugFlipGreen))
+		/*
+			gl.Uniform1i(rs.Renderer.LocShowMode, rs.DebugShowMode)
+			gl.Uniform1i(rs.Renderer.LocFlipNormalG, boolToInt(rs.DebugFlipGreen))*/
 	})
 
 	view := rs.CameraSystem.View
@@ -412,51 +446,85 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 			sz = 1
 		}
 		model = model.Mul4(mgl32.Scale3D(sx, sy, sz))
+		engine.SetMat4(rs.Renderer.LocModel, &model[0])
+		engine.SetMat4(rs.Renderer.LocView, &view[0])
+		engine.SetMat4(rs.Renderer.LocProj, &proj[0])
 
-		gl.UniformMatrix4fv(rs.Renderer.LocModel, 1, false, &model[0])
-		gl.UniformMatrix4fv(rs.Renderer.LocView, 1, false, &view[0])
-		gl.UniformMatrix4fv(rs.Renderer.LocProj, 1, false, &proj[0])
-
-		// Material
-		if mat.Dirty {
-			log.Printf("Material updated on entity %d", e.ID)
-			mat.Dirty = false
-		}
-
-		gl.Uniform4fv(rs.Renderer.LocBaseCol, 1, &mat.BaseColor[0])
+		engine.SetVec4fv(rs.Renderer.LocBaseCol, &mat.BaseColor[0])
 		if uint64(e.ID) == rs.SelectedEntity {
 			highlight := [4]float32{1, 1, 0, 1}
-			gl.Uniform4fv(rs.Renderer.LocBaseCol, 1, &highlight[0])
+			engine.SetVec4fv(rs.Renderer.LocBaseCol, &highlight[0])
 		}
-		gl.Uniform1f(rs.Renderer.LocAmbient, mat.Ambient)
-		gl.Uniform1f(rs.Renderer.LocDiffuse, mat.Diffuse)
-		gl.Uniform1f(rs.Renderer.LocSpecular, mat.Specular)
-		gl.Uniform1f(rs.Renderer.LocShininess, mat.Shininess)
+		engine.SetFloat(rs.Renderer.LocAmbient, mat.Ambient)
+		engine.SetFloat(rs.Renderer.LocDiffuse, mat.Diffuse)
+		engine.SetFloat(rs.Renderer.LocSpecular, mat.Specular)
+		engine.SetFloat(rs.Renderer.LocShininess, mat.Shininess)
+
+		/*
+			gl.UniformMatrix4fv(rs.Renderer.LocModel, 1, false, &model[0])
+			gl.UniformMatrix4fv(rs.Renderer.LocView, 1, false, &view[0])
+			gl.UniformMatrix4fv(rs.Renderer.LocProj, 1, false, &proj[0])
+
+			// Material
+			if mat.Dirty {
+				log.Printf("Material updated on entity %d", e.ID)
+				mat.Dirty = false
+			}
+
+			gl.Uniform4fv(rs.Renderer.LocBaseCol, 1, &mat.BaseColor[0])
+			if uint64(e.ID) == rs.SelectedEntity {
+				highlight := [4]float32{1, 1, 0, 1}
+				gl.Uniform4fv(rs.Renderer.LocBaseCol, 1, &highlight[0])
+			}
+			gl.Uniform1f(rs.Renderer.LocAmbient, mat.Ambient)
+			gl.Uniform1f(rs.Renderer.LocDiffuse, mat.Diffuse)
+			gl.Uniform1f(rs.Renderer.LocSpecular, mat.Specular)
+			gl.Uniform1f(rs.Renderer.LocShininess, mat.Shininess)
+		*/
 
 		// Diffuse texture
-
 		if mat.TextureAsset != 0 {
 			textureID := assets.ResolveTextureGLID(assets.AssetID(mat.TextureAsset))
 			gl.ActiveTexture(gl.TEXTURE0)
 			gl.BindTexture(gl.TEXTURE_2D, textureID)
-			gl.Uniform1i(rs.Renderer.LocDiffuseTex, 0)
-			gl.Uniform1i(rs.Renderer.LocUseTexture, 1)
+			engine.SetInt(rs.Renderer.LocDiffuseTex, 0)
+			engine.SetInt(rs.Renderer.LocUseTexture, 1)
 		} else {
-			gl.Uniform1i(rs.Renderer.LocUseTexture, 0)
+			engine.SetInt(rs.Renderer.LocUseTexture, 0)
 		}
 
-		// Upload material only if dirty
-
-		// Normal map
 		if normalMapComp != nil && normalMapComp.ID != 0 && rs.MeshManager.HasTangents(mesh.ID) {
 			gl.ActiveTexture(gl.TEXTURE1)
 			gl.BindTexture(gl.TEXTURE_2D, normalMapComp.ID)
-			gl.Uniform1i(rs.Renderer.LocNormalMap, 1)
-			gl.Uniform1i(rs.Renderer.LocUseNormalMap, 1)
+			engine.SetInt(rs.Renderer.LocNormalMap, 1)
+			engine.SetInt(rs.Renderer.LocUseNormalMap, 1)
 		} else {
-			gl.Uniform1i(rs.Renderer.LocUseNormalMap, 0)
+			engine.SetInt(rs.Renderer.LocUseNormalMap, 0)
 		}
 
+		/*
+			if mat.TextureAsset != 0 {
+				textureID := assets.ResolveTextureGLID(assets.AssetID(mat.TextureAsset))
+				gl.ActiveTexture(gl.TEXTURE0)
+				gl.BindTexture(gl.TEXTURE_2D, textureID)
+				gl.Uniform1i(rs.Renderer.LocDiffuseTex, 0)
+				gl.Uniform1i(rs.Renderer.LocUseTexture, 1)
+			} else {
+				gl.Uniform1i(rs.Renderer.LocUseTexture, 0)
+			}
+
+			// Upload material only if dirty
+
+			// Normal map
+			if normalMapComp != nil && normalMapComp.ID != 0 && rs.MeshManager.HasTangents(mesh.ID) {
+				gl.ActiveTexture(gl.TEXTURE1)
+				gl.BindTexture(gl.TEXTURE_2D, normalMapComp.ID)
+				gl.Uniform1i(rs.Renderer.LocNormalMap, 1)
+				gl.Uniform1i(rs.Renderer.LocUseNormalMap, 1)
+			} else {
+				gl.Uniform1i(rs.Renderer.LocUseNormalMap, 0)
+			}
+		*/
 		// Draw
 		vao := rs.MeshManager.GetVAO(mesh.ID)
 		indexCount := rs.MeshManager.GetCount(mesh.ID)
@@ -578,8 +646,6 @@ func (rs *RenderSystem) selectShaderForPass(entities []*Entity) {
 
 func (rs *RenderSystem) SetGlobalShader(p *engine.ShaderProgram) {
 	rs.ActiveShader = p
-	if p != nil {
-		rs.Renderer.Program = p.ID
-		rs.Renderer.InitUniforms()
-	}
+	rs.Renderer.SwitchProgram(p)
+	log.Printf("New Shader is : %v", p)
 }

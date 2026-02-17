@@ -477,3 +477,32 @@ func (r *Renderer) InitShadowWithProgram(program uint32, width, height int) {
 	// For main shader, we will set LocShadowMap on the main program (use InitUniforms or set later)
 	// But store a location name for convenience (we'll get it from main program in InitUniforms)
 }
+
+// engine/renderer.go
+func (r *Renderer) SwitchProgram(p *ShaderProgram) {
+	if p == nil {
+		log.Println("Renderer.SwitchProgram: nil program ignored")
+		return
+	}
+
+	// Bind program
+	if !UseProgramChecked("SwitchProgram", p.ID) {
+		log.Printf("SwitchProgram: refusing to switch to invalid program %d", p.ID)
+		return
+	}
+	//gl.UseProgram(p.ID)
+	r.Program = p.ID
+
+	// Rebuild uniform locations
+	r.InitUniforms()
+
+	// Optional: validate required uniforms exist
+	if r.LocModel == -1 || r.LocView == -1 || r.LocProj == -1 {
+		log.Printf("WARNING: Shader %d missing core uniforms (model/view/projection)", p.ID)
+	}
+
+	// Optional: validate shadow uniforms
+	if r.LocLightSpace == -1 {
+		log.Printf("WARNING: Shader %d missing lightSpaceMatrix", p.ID)
+	}
+}

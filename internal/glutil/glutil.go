@@ -44,6 +44,7 @@ func LogGLErrors(context string) {
 			return
 		}
 		log.Printf("GLERR [%s]: 0x%X %s", context, err, glErrToString(err))
+		panic("Stopped")
 	}
 }
 
