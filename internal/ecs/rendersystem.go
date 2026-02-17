@@ -647,5 +647,4 @@ func (rs *RenderSystem) selectShaderForPass(entities []*Entity) {
 func (rs *RenderSystem) SetGlobalShader(p *engine.ShaderProgram) {
 	rs.ActiveShader = p
 	rs.Renderer.SwitchProgram(p)
-	log.Printf("New Shader is : %v", p)
 }

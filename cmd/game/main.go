@@ -395,7 +395,6 @@ func main() {
 		if editorlink.RequestedShader != "" {
 			p := engine.MustGetShaderProgram(editorlink.RequestedShader)
 			renderSys.SetGlobalShader(p)
-			log.Println("Shader Changed")
 			editorlink.RequestedShader = ""
 		}
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)

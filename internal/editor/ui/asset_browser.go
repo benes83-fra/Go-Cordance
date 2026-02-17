@@ -2,6 +2,7 @@ package ui
 
 import (
 	"go-engine/Go-Cordance/internal/assets"
+	"strings"
 
 	"go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editorlink"
@@ -409,7 +410,8 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 			item.lbl.SetText(filepath.Base(av.Path))
 
 			// shaders don’t have thumbnails yet → use icon
-			item.img.Resource = theme.FileImageIcon()
+			name, _ := av.ShaderData["name"].(string)
+			item.SetIconForShader(name)
 			item.img.Refresh()
 		},
 	)
@@ -581,4 +583,31 @@ func (s *shaderItem) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(
 		container.NewHBox(s.img, s.lbl),
 	)
+}
+
+func (s *shaderItem) SetIconForShader(name string) {
+	lower := strings.ToLower(name)
+
+	switch {
+	case strings.Contains(lower, "debug"):
+		s.img.Resource = theme.WarningIcon()
+	case strings.Contains(lower, "depth"):
+		s.img.Resource = theme.VisibilityOffIcon()
+	case strings.Contains(lower, "shadow"):
+		s.img.Resource = theme.VisibilityIcon()
+	case strings.Contains(lower, "flat"):
+		s.img.Resource = theme.ColorPaletteIcon()
+	case strings.Contains(lower, "tbn"):
+		s.img.Resource = theme.GridIcon()
+	case strings.Contains(lower, "visual"):
+		s.img.Resource = theme.InfoIcon()
+	case strings.Contains(lower, "light"):
+		s.img.Resource = theme.ColorChromaticIcon()
+	case strings.Contains(lower, "post"):
+		s.img.Resource = theme.MediaReplayIcon()
+	default:
+		s.img.Resource = theme.ComputerIcon()
+	}
+
+	s.img.Refresh()
 }
