@@ -1,0 +1,6 @@
+{
+    "name": "toon_shader",
+    "vertex": "assets/shaders/toon_vertex.glsl",
+    "fragment": "assets/shaders/toon_fragment.glsl",
+    "defines": {}
+}

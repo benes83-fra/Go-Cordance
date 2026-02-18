@@ -1,0 +1,6 @@
+{
+    "name": "pbr_shader",
+    "vertex": "assets/shaders/pbr_vertex.glsl",
+    "fragment": "assets/shaders/pbr_fragment.glsl",
+    "defines": {}
+}

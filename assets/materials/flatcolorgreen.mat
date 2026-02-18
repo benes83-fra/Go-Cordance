@@ -1,0 +1,10 @@
+{
+  "name": "FlatColorGreen",
+  "shader": "flatcolor_shader",
+  "params": {
+    "baseColor": [0.0, 1.0, 0.0, 1.0]
+  },
+  "textures": {
+    "albedo": null
+  }
+}

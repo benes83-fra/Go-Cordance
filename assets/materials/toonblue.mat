@@ -1,0 +1,11 @@
+{
+  "name": "ToonBlue",
+  "shader": "toon_shader",
+  "params": {
+    "baseColor": [0.2, 0.4, 1.0, 1.0],
+    "levels": 4
+  },
+  "textures": {
+    "albedo": null
+  }
+}

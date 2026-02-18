@@ -1,0 +1,6 @@
+{
+  "name": "NormalDebug",
+  "shader": "normal_debug_shader",
+  "params": {},
+  "textures": {}
+}
