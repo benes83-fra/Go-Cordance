@@ -362,6 +362,10 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 
 		ent := st.Entities[st.SelectedIndex]
 		av := st.Assets.Materials[id]
+		shaderName := ""
+		if s, ok := av.MaterialData["shader"].(string); ok {
+			shaderName = s
+		}
 
 		ecsMat := ConvertMaterialAssetToECS(av)
 		if ecsMat == nil {
@@ -379,6 +383,7 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 				"UseTexture":   useTex,
 				"TextureAsset": ecsMat.TextureAsset,
 				"TextureID":    int(ecsMat.TextureID),
+				"ShaderName":   shaderName,
 			},
 		}
 
@@ -411,6 +416,7 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 
 			// shaders don’t have thumbnails yet → use icon
 			name, _ := av.ShaderData["name"].(string)
+
 			item.SetIconForShader(name)
 			item.img.Refresh()
 		},

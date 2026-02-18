@@ -576,7 +576,9 @@ func updateLocalMaterial(world *ecs.World, entityID int64, fields map[string]any
 		if !useTextureSet {
 			mat.UseTexture = (mat.TextureID != 0 || mat.TextureAsset != 0)
 		}
-
+		if v, ok := fields["ShaderName"].(string); ok{
+			mat.ShaderName= v
+		}
 		// Normal flags + IDs/assets
 		useNormalSet := false
 		if v, ok := fields["UseNormal"].(bool); ok {

@@ -22,8 +22,8 @@ type Material struct {
 	// --- New asset pipeline fields (optional, non-breaking) ---
 	TextureAsset assets.AssetID // future: replace TextureID
 	NormalAsset  assets.AssetID // future: replace NormalID
-	ShaderName string
-	Shader     *engine.ShaderProgram
+	ShaderName   string
+	Shader       *engine.ShaderProgram
 
 	Dirty bool
 }
@@ -60,7 +60,6 @@ func (m *Material) EditorFields() map[string]any {
 
 		"ShaderName": m.ShaderName,
 
-
 		// Asset pipeline fields (hidden from inspector for now)
 		// They can be exposed later when the editor supports asset picking.
 		// "TextureAsset": m.TextureAsset,
@@ -96,8 +95,11 @@ func (m *Material) SetEditorField(name string, value any) {
 		m.NormalAsset = assets.AssetID(toInt(value))
 	case "ShaderName":
 		m.ShaderName = value.(string)
-		m.Shader = engine.MustGetShaderProgram(m.ShaderName)
-   
+		if m.ShaderName != "" {
+			m.Shader = engine.MustGetShaderProgram(m.ShaderName)
+		} else {
+			m.Shader = nil
+		}
 
 		// --- Asset pipeline fields (future use) ---
 		// case "TextureAsset":
