@@ -478,16 +478,22 @@ func (r *Renderer) InitShadowWithProgram(program uint32, width, height int) {
 	// But store a location name for convenience (we'll get it from main program in InitUniforms)
 }
 
+var DebugUniformWarings = false
+
 // engine/renderer.go
 func (r *Renderer) SwitchProgram(p *ShaderProgram) {
 	if p == nil {
-		log.Println("Renderer.SwitchProgram: nil program ignored")
+		if DebugUniformWarings {
+			log.Println("Renderer.SwitchProgram: nil program ignored")
+		}
 		return
 	}
 
 	// Bind program
 	if !UseProgramChecked("SwitchProgram", p.ID) {
-		log.Printf("SwitchProgram: refusing to switch to invalid program %d", p.ID)
+		if DebugUniformWarings {
+			log.Printf("SwitchProgram: refusing to switch to invalid program %d", p.ID)
+		}
 		return
 	}
 	//gl.UseProgram(p.ID)

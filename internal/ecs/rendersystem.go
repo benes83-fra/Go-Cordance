@@ -542,7 +542,7 @@ func (rs *RenderSystem) uploadGlobals(entities []*Entity) {
 		if shadowLightIdx >= 0 && shadowLight != nil && shadowTransform != nil {
 			lightSpace, _, ok := rs.computeShadowLightSpace(entities)
 			if ok {
-				log.Printf("Shadow light index = %d", shadowLightIdx)
+				//log.Printf("Shadow light index = %d", shadowLightIdx)
 				if rs.Renderer.LocLightSpace != -1 {
 					gl.UniformMatrix4fv(rs.Renderer.LocLightSpace, 1, false, &lightSpace[0])
 				}
