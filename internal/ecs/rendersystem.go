@@ -26,6 +26,7 @@ type RenderSystem struct {
 	DebugFlipGreen   bool
 	ActiveShader     *engine.ShaderProgram
 	shadowLightIndex int
+	DefaultShader    *engine.ShaderProgram
 }
 
 func NewRenderSystem(r *engine.Renderer, mm *engine.MeshManager, cs *CameraSystem) *RenderSystem {
@@ -35,6 +36,7 @@ func NewRenderSystem(r *engine.Renderer, mm *engine.MeshManager, cs *CameraSyste
 		CameraSystem:   cs,
 		LightDir:       [3]float32{1.0, -0.7, -0.3}, // starting direction
 		OrbitalEnabled: true,
+		DefaultShader:  engine.MustGetShaderProgram("default_shader"),
 	}
 }
 
@@ -252,209 +254,30 @@ func (rs *RenderSystem) Update(dt float32, entities []*Entity) {
 }
 
 func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
-	// --- Precompute lights & shadow data once (CPU only) ---
-
-	// Collect lights
-	lights := make([]engine.LightData, 0, 8)
-	shadowLightIdx := -1
-	var shadowLight *LightComponent
-	var shadowTransform *Transform
-
-	for _, e := range entities {
-		lc, ok := e.GetComponent((*LightComponent)(nil)).(*LightComponent)
-		if !ok {
-			continue
-		}
-
-		tr, _ := e.GetComponent((*Transform)(nil)).(*Transform)
-
-		// Defaults
-		dir := [3]float32{0, 0, -1}
-		pos := [3]float32{0, 0, 0}
-
-		if tr != nil {
-			pos = tr.Position
-
-			q := mgl32.Quat{
-				W: tr.Rotation[0],
-				V: mgl32.Vec3{tr.Rotation[1], tr.Rotation[2], tr.Rotation[3]},
-			}
-			fwd := q.Rotate(mgl32.Vec3{0, 0, -1})
-			dir = [3]float32{fwd.X(), fwd.Y(), fwd.Z()}
-		}
-
-		// legacy orbital gizmo light override
-		if rs.LightEntity != nil && e == rs.LightEntity && lc.Type == LightDirectional {
-			dir = rs.LightDir
-		}
-
-		idx := len(lights)
-		lights = append(lights, engine.LightData{
-			Type:      int32(lc.Type),
-			Color:     lc.Color,
-			Intensity: lc.Intensity,
-			Direction: dir,
-			Position:  pos,
-			Range:     lc.Range,
-			Angle:     lc.Angle,
-		})
-
-		if shadowLightIdx == -1 && lc.CastsShadows && (lc.Type == LightDirectional || lc.Type == LightSpot) {
-			shadowLightIdx = idx
-			shadowLight = lc
-			shadowTransform = tr
-		}
+	// 1) Bind baseline shader for the frame.
+	//    If you later want a global override, you can use rs.ActiveShader here.
+	// 1) Determine baseline shader for this frame
+	base := rs.DefaultShader
+	if rs.ActiveShader != nil {
+		base = rs.ActiveShader
 	}
 
-	// Compute lightSpace once (if we have a shadow light)
-	var lightSpace mgl32.Mat4
-	if shadowLightIdx >= 0 && shadowLight != nil && shadowTransform != nil {
-		if ls, _, ok := rs.computeShadowLightSpace(entities); ok {
-			lightSpace = ls
-		}
+	if base == nil {
+		// Fallback: keep whatever renderer.Program currently is.
+	} else {
+		rs.Renderer.SwitchProgram(base)
 	}
 
-	// Cache camera position once
-	camPos := rs.CameraSystem.Position
-
-	// Remember the "base" program for this frame (global/default shader)
-	baseProgram := rs.Renderer.Program
-
-	// --- Bind base program and upload globals once ---
-
-	glutil.RunGLChecked("MainPass: UseProgram+Uniforms", func() {
-		if !engine.UseProgramChecked("MainPass", baseProgram) {
-			return
-		}
-
-		// Bind shadow map
-		gl.ActiveTexture(gl.TEXTURE2)
-		gl.BindTexture(gl.TEXTURE_2D, rs.Renderer.ShadowTex)
-
-		if rs.Renderer.LocShadowMap != -1 {
-			engine.SetInt(rs.Renderer.LocShadowMap, 2)
-		}
-		if rs.Renderer.LocShadowMapSize != -1 {
-			engine.SetVec2(
-				rs.Renderer.LocShadowMapSize,
-				float32(rs.Renderer.ShadowWidth),
-				float32(rs.Renderer.ShadowHeight),
-			)
-		}
-
-		// Upload lights
-		engine.SetInt(rs.Renderer.LocLightCount, int32(len(lights)))
-		for i, L := range lights {
-			if rs.Renderer.LocLightColor[i] != -1 {
-				engine.SetVec3(rs.Renderer.LocLightColor[i], L.Color[0], L.Color[1], L.Color[2])
-			}
-			if rs.Renderer.LocLightIntensity[i] != -1 {
-				engine.SetFloat(rs.Renderer.LocLightIntensity[i], L.Intensity)
-			}
-			if rs.Renderer.LocLightDir[i] != -1 {
-				engine.SetVec3(rs.Renderer.LocLightDir[i], L.Direction[0], L.Direction[1], L.Direction[2])
-			}
-			if rs.Renderer.LocLightPos[i] != -1 {
-				engine.SetVec3(rs.Renderer.LocLightPos[i], L.Position[0], L.Position[1], L.Position[2])
-			}
-			if rs.Renderer.LocLightRange[i] != -1 {
-				engine.SetFloat(rs.Renderer.LocLightRange[i], L.Range)
-			}
-			if rs.Renderer.LocLightAngle[i] != -1 {
-				engine.SetFloat(rs.Renderer.LocLightAngle[i], L.Angle)
-			}
-			if rs.Renderer.LocLightType[i] != -1 {
-				engine.SetInt(rs.Renderer.LocLightType[i], L.Type)
-			}
-		}
-
-		// Camera position
-		if rs.Renderer.LocViewPos != -1 {
-			gl.Uniform3fv(rs.Renderer.LocViewPos, 1, &camPos[0])
-		}
-
-		// Shadow light data
-		if shadowLightIdx >= 0 && shadowLight != nil && shadowTransform != nil {
-			if rs.Renderer.LocLightSpace != -1 {
-				gl.UniformMatrix4fv(rs.Renderer.LocLightSpace, 1, false, &lightSpace[0])
-			}
-			if rs.Renderer.LocShadowLightIndex != -1 {
-				gl.Uniform1i(rs.Renderer.LocShadowLightIndex, int32(shadowLightIdx))
-			}
-		}
-
-		// Debug flags
-		engine.SetInt(rs.Renderer.LocShowMode, rs.DebugShowMode)
-		engine.SetInt(rs.Renderer.LocFlipNormalG, boolToInt(rs.DebugFlipGreen))
-	})
+	// 2) Upload globals for the currently bound program.
+	rs.uploadGlobals(entities)
 
 	view := rs.CameraSystem.View
 	proj := rs.CameraSystem.Projection
 
-	// Track which GL program is currently bound so we only switch when needed.
-	currentProgram := baseProgram
+	// Track which shader is currently bound so we only switch when needed.
+	currentShader := base
 
-	// Helper: re-upload global uniforms after a program switch
-	uploadGlobals := func() {
-		// Bind shadow map
-		gl.ActiveTexture(gl.TEXTURE2)
-		gl.BindTexture(gl.TEXTURE_2D, rs.Renderer.ShadowTex)
-
-		if rs.Renderer.LocShadowMap != -1 {
-			engine.SetInt(rs.Renderer.LocShadowMap, 2)
-		}
-		if rs.Renderer.LocShadowMapSize != -1 {
-			engine.SetVec2(
-				rs.Renderer.LocShadowMapSize,
-				float32(rs.Renderer.ShadowWidth),
-				float32(rs.Renderer.ShadowHeight),
-			)
-		}
-
-		engine.SetInt(rs.Renderer.LocLightCount, int32(len(lights)))
-		for i, L := range lights {
-			if rs.Renderer.LocLightColor[i] != -1 {
-				engine.SetVec3(rs.Renderer.LocLightColor[i], L.Color[0], L.Color[1], L.Color[2])
-			}
-			if rs.Renderer.LocLightIntensity[i] != -1 {
-				engine.SetFloat(rs.Renderer.LocLightIntensity[i], L.Intensity)
-			}
-			if rs.Renderer.LocLightDir[i] != -1 {
-				engine.SetVec3(rs.Renderer.LocLightDir[i], L.Direction[0], L.Direction[1], L.Direction[2])
-			}
-			if rs.Renderer.LocLightPos[i] != -1 {
-				engine.SetVec3(rs.Renderer.LocLightPos[i], L.Position[0], L.Position[1], L.Position[2])
-			}
-			if rs.Renderer.LocLightRange[i] != -1 {
-				engine.SetFloat(rs.Renderer.LocLightRange[i], L.Range)
-			}
-			if rs.Renderer.LocLightAngle[i] != -1 {
-				engine.SetFloat(rs.Renderer.LocLightAngle[i], L.Angle)
-			}
-			if rs.Renderer.LocLightType[i] != -1 {
-				engine.SetInt(rs.Renderer.LocLightType[i], L.Type)
-			}
-		}
-
-		if rs.Renderer.LocViewPos != -1 {
-			gl.Uniform3fv(rs.Renderer.LocViewPos, 1, &camPos[0])
-		}
-
-		if shadowLightIdx >= 0 && shadowLight != nil && shadowTransform != nil {
-			if rs.Renderer.LocLightSpace != -1 {
-				gl.UniformMatrix4fv(rs.Renderer.LocLightSpace, 1, false, &lightSpace[0])
-			}
-			if rs.Renderer.LocShadowLightIndex != -1 {
-				gl.Uniform1i(rs.Renderer.LocShadowLightIndex, int32(shadowLightIdx))
-			}
-		}
-
-		engine.SetInt(rs.Renderer.LocShowMode, rs.DebugShowMode)
-		engine.SetInt(rs.Renderer.LocFlipNormalG, boolToInt(rs.DebugFlipGreen))
-	}
-
-	// --- Per-entity draw loop with per-material shader selection ---
-
+	// 3) Draw all meshes
 	for _, e := range entities {
 		var t *Transform
 		var mesh *Mesh
@@ -477,29 +300,20 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 			continue
 		}
 
-		// Decide which program this entity should use:
-		desiredProgram := baseProgram
-		var desiredShader *engine.ShaderProgram
-
+		// --- Per-material shader selection (additive) ---
+		desiredShader := base
 		if mat.Shader != nil {
-			desiredProgram = mat.Shader.ID
 			desiredShader = mat.Shader
 		}
 
-		// Switch program only when necessary
-		if desiredProgram != currentProgram {
-			if desiredShader != nil {
-				// Switch to material-specific shader
-				rs.Renderer.SwitchProgram(desiredShader)
-			} else {
-				// Switch back to base/global program
-				gl.UseProgram(baseProgram)
-				rs.Renderer.Program = baseProgram
-				rs.Renderer.InitUniforms()
+		if desiredShader != currentShader {
+			currentShader = desiredShader
+			if currentShader != nil {
+				rs.Renderer.SwitchProgram(currentShader)
+				// After switching program, all uniform locations changed,
+				// so we re-upload the global state once for this shader.
+				rs.uploadGlobals(entities)
 			}
-			currentProgram = desiredProgram
-			// After switching, uniform locations changed → re-upload globals
-			uploadGlobals()
 		}
 
 		// Build model matrix
@@ -522,12 +336,10 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 			sz = 1
 		}
 		model = model.Mul4(mgl32.Scale3D(sx, sy, sz))
-
 		engine.SetMat4(rs.Renderer.LocModel, &model[0])
 		engine.SetMat4(rs.Renderer.LocView, &view[0])
 		engine.SetMat4(rs.Renderer.LocProj, &proj[0])
 
-		// Material uniforms
 		engine.SetVec4fv(rs.Renderer.LocBaseCol, &mat.BaseColor[0])
 		if uint64(e.ID) == rs.SelectedEntity {
 			highlight := [4]float32{1, 1, 0, 1}
@@ -566,6 +378,7 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		vertexCount := rs.MeshManager.GetVertexCount(mesh.ID)
 		ebo := rs.MeshManager.GetEBO(mesh.ID)
 
+		// Basic sanity: VAO must be valid
 		if vao == 0 {
 			log.Printf("SKIP draw: mesh=%s has VAO=0", mesh.ID)
 			return
@@ -616,6 +429,133 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 
 		gl.BindVertexArray(0)
 	}
+}
+
+// uploadGlobals binds the current rs.Renderer.Program and uploads
+// shadow map, lights, camera position, lightSpace and debug flags.
+// It assumes rs.Renderer.Program already points to the active shader.
+func (rs *RenderSystem) uploadGlobals(entities []*Entity) {
+	glutil.RunGLChecked("MainPass: UseProgram+Uniforms", func() {
+
+		if !engine.UseProgramChecked("MainPass", rs.Renderer.Program) {
+			return
+		}
+
+		// Bind shadow map
+		gl.ActiveTexture(gl.TEXTURE2)
+		gl.BindTexture(gl.TEXTURE_2D, rs.Renderer.ShadowTex)
+
+		if rs.Renderer.LocShadowMap != -1 {
+			gl.Uniform1i(rs.Renderer.LocShadowMap, 2)
+		}
+		if rs.Renderer.LocShadowMapSize != -1 {
+			engine.SetVec2(
+				rs.Renderer.LocShadowMapSize,
+				float32(rs.Renderer.ShadowWidth),
+				float32(rs.Renderer.ShadowHeight),
+			)
+		}
+
+		// --- Rebuild and upload lights ---
+		rs.Renderer.LightColor = [3]float32{1, 1, 1}
+		rs.Renderer.LightIntensity = 1.0
+
+		lights := make([]engine.LightData, 0, 8)
+		shadowLightIdx := -1
+		var shadowLight *LightComponent
+		var shadowTransform *Transform
+
+		for _, e := range entities {
+			lc, ok := e.GetComponent((*LightComponent)(nil)).(*LightComponent)
+			if !ok {
+				continue
+			}
+
+			tr, _ := e.GetComponent((*Transform)(nil)).(*Transform)
+
+			// Defaults
+			dir := [3]float32{0, 0, -1}
+			pos := [3]float32{0, 0, 0}
+
+			if tr != nil {
+				pos = tr.Position
+
+				q := mgl32.Quat{
+					W: tr.Rotation[0],
+					V: mgl32.Vec3{tr.Rotation[1], tr.Rotation[2], tr.Rotation[3]},
+				}
+				fwd := q.Rotate(mgl32.Vec3{0, 0, -1})
+				dir = [3]float32{fwd.X(), fwd.Y(), fwd.Z()}
+			}
+
+			// legacy orbital gizmo light override
+			if rs.LightEntity != nil && e == rs.LightEntity && lc.Type == LightDirectional {
+				dir = rs.LightDir
+			}
+			idx := len(lights)
+			lights = append(lights, engine.LightData{
+				Type:      int32(lc.Type),
+				Color:     lc.Color,
+				Intensity: lc.Intensity,
+				Direction: dir,
+				Position:  pos,
+				Range:     lc.Range,
+				Angle:     lc.Angle,
+			})
+			if shadowLightIdx == -1 && lc.CastsShadows && (lc.Type == LightDirectional || lc.Type == LightSpot) {
+				shadowLightIdx = idx
+				shadowLight = lc
+				shadowTransform = tr
+			}
+		}
+
+		engine.SetInt(rs.Renderer.LocLightCount, int32(len(lights)))
+		for i, L := range lights {
+			if rs.Renderer.LocLightColor[i] != -1 {
+				engine.SetVec3(rs.Renderer.LocLightColor[i], L.Color[0], L.Color[1], L.Color[2])
+			}
+			if rs.Renderer.LocLightIntensity[i] != -1 {
+				engine.SetFloat(rs.Renderer.LocLightIntensity[i], L.Intensity)
+			}
+			if rs.Renderer.LocLightDir[i] != -1 {
+				engine.SetVec3(rs.Renderer.LocLightDir[i], L.Direction[0], L.Direction[1], L.Direction[2])
+			}
+			if rs.Renderer.LocLightPos[i] != -1 {
+				engine.SetVec3(rs.Renderer.LocLightPos[i], L.Position[0], L.Position[1], L.Position[2])
+			}
+			if rs.Renderer.LocLightRange[i] != -1 {
+				engine.SetFloat(rs.Renderer.LocLightRange[i], L.Range)
+			}
+			if rs.Renderer.LocLightAngle[i] != -1 {
+				engine.SetFloat(rs.Renderer.LocLightAngle[i], L.Angle)
+			}
+			if rs.Renderer.LocLightType[i] != -1 {
+				engine.SetInt(rs.Renderer.LocLightType[i], L.Type)
+			}
+		}
+
+		// Upload camera position
+		camPos := rs.CameraSystem.Position
+		gl.Uniform3fv(rs.Renderer.LocViewPos, 1, &camPos[0])
+
+		// Upload lightSpace + shadow light index
+		if shadowLightIdx >= 0 && shadowLight != nil && shadowTransform != nil {
+			lightSpace, _, ok := rs.computeShadowLightSpace(entities)
+			if ok {
+				log.Printf("Shadow light index = %d", shadowLightIdx)
+				if rs.Renderer.LocLightSpace != -1 {
+					gl.UniformMatrix4fv(rs.Renderer.LocLightSpace, 1, false, &lightSpace[0])
+				}
+				if rs.Renderer.LocShadowLightIndex != -1 {
+					gl.Uniform1i(rs.Renderer.LocShadowLightIndex, int32(shadowLightIdx))
+				}
+			}
+		}
+
+		// Debug flags
+		engine.SetInt(rs.Renderer.LocShowMode, rs.DebugShowMode)
+		engine.SetInt(rs.Renderer.LocFlipNormalG, boolToInt(rs.DebugFlipGreen))
+	})
 }
 
 func (rs *RenderSystem) UpdateLightGizmos() {
