@@ -9,6 +9,8 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
+var DebugUniformWarings = false
+
 type Renderer struct {
 	Program    uint32
 	LocModel   int32
@@ -159,11 +161,13 @@ func (r *Renderer) InitUniforms() {
 		"matSpecular": r.LocSpecular, "matShininess": r.LocShininess,
 		"diffuseTex": r.LocDiffuseTex, "useTexture": r.LocUseTexture,
 	}
-	log.Println("LocLightSpace =", r.LocLightSpace, "LocShadowLightIndex =", r.LocShadowLightIndex)
+	//log.Println("LocLightSpace =", r.LocLightSpace, "LocShadowLightIndex =", r.LocShadowLightIndex)
 
 	for n, loc := range names {
 		if loc == -1 {
-			fmt.Printf("WARN: uniform %s not found in program\n", n)
+			if DebugUniformWarings {
+				fmt.Printf("WARN: uniform %s not found in program\n", n)
+			}
 		}
 	}
 } /*
@@ -477,8 +481,6 @@ func (r *Renderer) InitShadowWithProgram(program uint32, width, height int) {
 	// For main shader, we will set LocShadowMap on the main program (use InitUniforms or set later)
 	// But store a location name for convenience (we'll get it from main program in InitUniforms)
 }
-
-var DebugUniformWarings = false
 
 // engine/renderer.go
 func (r *Renderer) SwitchProgram(p *ShaderProgram) {
