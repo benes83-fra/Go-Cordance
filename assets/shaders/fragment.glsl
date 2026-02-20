@@ -9,13 +9,20 @@ in float TangentW;
 in vec2 TexCoord;
 
 out vec4 FragColor;
-
+layout(std140) uniform MaterialBlock {
+    vec4 BaseColor;
+    float matAmbient;
+    float matDiffuse;
+    float matSpecular;
+    float matShininess;
+};
+/*
 uniform vec4 BaseColor;
 uniform float matAmbient;
 uniform float matDiffuse;
 uniform float matSpecular;
 uniform float matShininess;
-
+*/
 uniform vec3 viewPos;
 
 

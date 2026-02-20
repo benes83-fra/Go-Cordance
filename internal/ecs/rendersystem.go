@@ -6,6 +6,7 @@ import (
 	"go-engine/Go-Cordance/internal/glutil"
 	"log"
 	"math"
+	"unsafe"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -22,22 +23,47 @@ type RenderSystem struct {
 	OrbitalEnabled bool
 	SelectedEntity uint64
 
-	DebugShowMode    int32 // 0..6 as in shader
+	DebugShowMode    int32
 	DebugFlipGreen   bool
 	ActiveShader     *engine.ShaderProgram
 	shadowLightIndex int
 	DefaultShader    *engine.ShaderProgram
+
+	// --- NEW: GPU material UBO ---
+	materialUBO     uint32
+	materialBinding uint32
+}
+
+// std140-compatible layout for the MaterialBlock
+type gpuMaterial struct {
+	BaseColor [4]float32
+	Ambient   float32
+	Diffuse   float32
+	Specular  float32
+	Shininess float32
+	// std140 will pad this out to a multiple of vec4; we don't need explicit padding fields.
 }
 
 func NewRenderSystem(r *engine.Renderer, mm *engine.MeshManager, cs *CameraSystem) *RenderSystem {
-	return &RenderSystem{
+	rs := &RenderSystem{
 		Renderer:       r,
 		MeshManager:    mm,
 		CameraSystem:   cs,
-		LightDir:       [3]float32{1.0, -0.7, -0.3}, // starting direction
+		LightDir:       [3]float32{1.0, -0.7, -0.3},
 		OrbitalEnabled: true,
 		DefaultShader:  engine.MustGetShaderProgram("default_shader"),
 	}
+
+	// --- NEW: create material UBO ---
+	rs.materialBinding = 1 // must match GLSL binding = 1
+	var ubo uint32
+	gl.GenBuffers(1, &ubo)
+	gl.BindBuffer(gl.UNIFORM_BUFFER, ubo)
+	gl.BufferData(gl.UNIFORM_BUFFER, int(unsafe.Sizeof(gpuMaterial{})), nil, gl.DYNAMIC_DRAW)
+	gl.BindBuffer(gl.UNIFORM_BUFFER, 0)
+	rs.materialUBO = ubo
+
+	return rs
 }
 
 func (rs *RenderSystem) computeShadowLightSpace(entities []*Entity) (mgl32.Mat4, int, bool) {
@@ -339,6 +365,23 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		engine.SetMat4(rs.Renderer.LocModel, &model[0])
 		engine.SetMat4(rs.Renderer.LocView, &view[0])
 		engine.SetMat4(rs.Renderer.LocProj, &proj[0])
+		if rs.materialUBO != 0 {
+			m := gpuMaterial{
+				BaseColor: mat.BaseColor,
+				Ambient:   mat.Ambient,
+				Diffuse:   mat.Diffuse,
+				Specular:  mat.Specular,
+				Shininess: mat.Shininess,
+			}
+			// Selection highlight: override base color if needed
+			if uint64(e.ID) == rs.SelectedEntity {
+				m.BaseColor = [4]float32{1, 1, 0, 1}
+			}
+
+			gl.BindBuffer(gl.UNIFORM_BUFFER, rs.materialUBO)
+			gl.BufferSubData(gl.UNIFORM_BUFFER, 0, int(unsafe.Sizeof(m)), unsafe.Pointer(&m))
+			gl.BindBuffer(gl.UNIFORM_BUFFER, 0)
+		}
 
 		engine.SetVec4fv(rs.Renderer.LocBaseCol, &mat.BaseColor[0])
 		if uint64(e.ID) == rs.SelectedEntity {
@@ -555,6 +598,14 @@ func (rs *RenderSystem) uploadGlobals(entities []*Entity) {
 		// Debug flags
 		engine.SetInt(rs.Renderer.LocShowMode, rs.DebugShowMode)
 		engine.SetInt(rs.Renderer.LocFlipNormalG, boolToInt(rs.DebugFlipGreen))
+		if rs.materialUBO != 0 {
+			// Query block index once per program; you can cache if you like later.
+			blockIndex := gl.GetUniformBlockIndex(rs.Renderer.Program, gl.Str("MaterialBlock\x00"))
+			if blockIndex != gl.INVALID_INDEX {
+				gl.UniformBlockBinding(rs.Renderer.Program, blockIndex, rs.materialBinding)
+				gl.BindBufferBase(gl.UNIFORM_BUFFER, rs.materialBinding, rs.materialUBO)
+			}
+		}
 	})
 }
 

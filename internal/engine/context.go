@@ -16,7 +16,7 @@ func InitGLFW(width, height int, title string) (*glfw.Window, error) {
 	}
 
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
-	glfw.WindowHint(glfw.ContextVersionMinor, 1)
+	glfw.WindowHint(glfw.ContextVersionMinor, 2)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	// On macOS uncomment the following:
 	// glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
