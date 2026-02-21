@@ -93,6 +93,13 @@ float computeShadowPCF(vec4 lightSpacePos, vec3 normal, vec3 lightDirWS)
 
 
 void main() {
+    if (materialType != 0) {
+        // This shader is only for Blinn/Phong.
+        // If materialType != 0, output BaseColor so the wrong shader never produces garbage.
+        FragColor = BaseColor;
+        return;
+    }
+
     // Reconstruct TBN
     vec3 N = normalize(Normal);
     // Orthogonalize tangent against normal

@@ -26,6 +26,11 @@ in VS_OUT {
 out vec4 FragColor;
 
 void main() {
+    if (materialType != 1) {
+        FragColor = BaseColor;
+        return;
+    }
+
     vec3 N = normalize(fs_in.Normal);
     vec3 V = normalize(viewPos - fs_in.WorldPos);
 

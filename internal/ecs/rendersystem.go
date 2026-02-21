@@ -298,13 +298,13 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 	}
 
 	// 2) Upload globals for the currently bound program.
-	rs.uploadGlobals(entities)
 
 	view := rs.CameraSystem.View
 	proj := rs.CameraSystem.Projection
 
 	// Track which shader is currently bound so we only switch when needed.
 	currentShader := base
+	rs.uploadGlobals(entities, currentShader)
 
 	// 3) Draw all meshes
 	for _, e := range entities {
@@ -330,6 +330,7 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		}
 
 		// --- Per-material shader selection (additive) ---
+		resolveMaterialShader(mat)
 		desiredShader := base
 		if mat.Shader != nil {
 			desiredShader = mat.Shader
@@ -341,7 +342,7 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 				rs.Renderer.SwitchProgram(currentShader)
 				// After switching program, all uniform locations changed,
 				// so we re-upload the global state once for this shader.
-				rs.uploadGlobals(entities)
+				rs.uploadGlobals(entities, currentShader)
 			}
 		}
 
@@ -369,6 +370,24 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		engine.SetMat4(rs.Renderer.LocView, &view[0])
 		engine.SetMat4(rs.Renderer.LocProj, &proj[0])
 		if rs.materialUBO != 0 {
+
+			matType := mat.Type
+
+			// Default Blinn/Phong shader
+			if currentShader == rs.DefaultShader {
+				matType = int(MaterialBlinnPhong)
+			}
+
+			// PBR shader
+			if sp, err := engine.GetShaderProgram("pbr_shader"); err == nil && currentShader == sp {
+				matType = int(MaterialPBR)
+			}
+
+			// Toon shader
+			if sp, err := engine.GetShaderProgram("toon_shader"); err == nil && currentShader == sp {
+				matType = int(MaterialToon)
+			}
+
 			m := gpuMaterial{
 				BaseColor:    mat.BaseColor,
 				Ambient:      mat.Ambient,
@@ -377,9 +396,8 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 				Shininess:    mat.Shininess,
 				Metallic:     mat.Metallic,
 				Roughness:    mat.Roughness,
-				MaterialType: int32(mat.Type), // new enum
+				MaterialType: int32(matType),
 			}
-
 			// Selection highlight: override base color if needed
 			if uint64(e.ID) == rs.SelectedEntity {
 				m.BaseColor = [4]float32{1, 1, 0, 1}
@@ -481,10 +499,21 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 	}
 }
 
+func selectMaterialShader(mat *Material) {
+	switch mat.ShaderName {
+	case "pbr_shade":
+		mat.Type = int(MaterialPBR)
+	case "toon_shader":
+		mat.Type = int(MaterialToon)
+	case "default_shader":
+		mat.Type = int(MaterialBlinnPhong)
+	}
+}
+
 // uploadGlobals binds the current rs.Renderer.Program and uploads
 // shadow map, lights, camera position, lightSpace and debug flags.
 // It assumes rs.Renderer.Program already points to the active shader.
-func (rs *RenderSystem) uploadGlobals(entities []*Entity) {
+func (rs *RenderSystem) uploadGlobals(entities []*Entity, shader *engine.ShaderProgram) {
 	glutil.RunGLChecked("MainPass: UseProgram+Uniforms", func() {
 
 		if !engine.UseProgramChecked("MainPass", rs.Renderer.Program) {
@@ -605,14 +634,12 @@ func (rs *RenderSystem) uploadGlobals(entities []*Entity) {
 		// Debug flags
 		engine.SetInt(rs.Renderer.LocShowMode, rs.DebugShowMode)
 		engine.SetInt(rs.Renderer.LocFlipNormalG, boolToInt(rs.DebugFlipGreen))
-		if rs.materialUBO != 0 {
-			// Query block index once per program; you can cache if you like later.
-			blockIndex := gl.GetUniformBlockIndex(rs.Renderer.Program, gl.Str("MaterialBlock\x00"))
-			if blockIndex != gl.INVALID_INDEX {
-				gl.UniformBlockBinding(rs.Renderer.Program, blockIndex, rs.materialBinding)
-				gl.BindBufferBase(gl.UNIFORM_BUFFER, rs.materialBinding, rs.materialUBO)
-			}
+		if shader.HasMaterialBlock {
+			blockIndex := gl.GetUniformBlockIndex(shader.ID, gl.Str("MaterialBlock\x00"))
+			gl.UniformBlockBinding(shader.ID, blockIndex, rs.materialBinding)
+			gl.BindBufferBase(gl.UNIFORM_BUFFER, rs.materialBinding, rs.materialUBO)
 		}
+
 	})
 }
 

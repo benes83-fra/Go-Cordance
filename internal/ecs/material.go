@@ -122,3 +122,23 @@ func (m *Material) SetEditorField(name string, value any) {
 
 	m.Dirty = true
 }
+
+// in ecs/material.go or next to selectMaterialShader
+
+func resolveMaterialShader(mat *Material) {
+	if mat == nil {
+		return
+	}
+	if mat.ShaderName == "" {
+		mat.Shader = nil
+		return
+	}
+
+	sp, err := engine.GetShaderProgram(mat.ShaderName)
+	if err != nil {
+		// fallback: no shader, keep default
+		mat.Shader = nil
+		return
+	}
+	mat.Shader = sp
+}

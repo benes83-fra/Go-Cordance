@@ -9,13 +9,13 @@ import (
 )
 
 type ShaderProgram struct {
-	ID       uint32
-	Uniforms map[string]int32
+	ID               uint32
+	Uniforms         map[string]int32
+	HasMaterialBlock bool
 }
 
 func LoadShaderProgram(name, vertSrc, fragSrc string) (*ShaderProgram, error) {
 	vs := compileShader(vertSrc, gl.VERTEX_SHADER)
-
 	fs := compileShader(fragSrc, gl.FRAGMENT_SHADER)
 
 	prog, err := buildProgram(vs, fs)
@@ -26,10 +26,16 @@ func LoadShaderProgram(name, vertSrc, fragSrc string) (*ShaderProgram, error) {
 	gl.DeleteShader(vs)
 	gl.DeleteShader(fs)
 
-	return &ShaderProgram{
+	sp := &ShaderProgram{
 		ID:       prog,
 		Uniforms: map[string]int32{},
-	}, nil
+	}
+
+	// --- NEW: detect MaterialBlock ---
+	blockIndex := gl.GetUniformBlockIndex(prog, gl.Str("MaterialBlock\x00"))
+	sp.HasMaterialBlock = blockIndex != gl.INVALID_INDEX
+
+	return sp, nil
 }
 
 // global registry of compiled shader programs

@@ -22,6 +22,11 @@ in vec2 UV;
 out vec4 FragColor;
 
 void main() {
+    if (materialType != 2) {
+        FragColor = BaseColor;
+        return;
+    }
+
     vec3 N = normalize(Normal);
     vec3 L = normalize(vec3(0.4, -1.0, 0.2));
 
