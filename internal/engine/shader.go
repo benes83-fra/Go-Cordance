@@ -37,6 +37,29 @@ func LoadShaderProgram(name, vertSrc, fragSrc string) (*ShaderProgram, error) {
 
 	return sp, nil
 }
+func (sp *ShaderProgram) Reload(vertSrc, fragSrc string) error {
+	newVS := compileShader(vertSrc, gl.VERTEX_SHADER)
+	newFS := compileShader(fragSrc, gl.FRAGMENT_SHADER)
+	newProg, err := buildProgram(newVS, newFS)
+	if err != nil {
+		return err
+	}
+
+	gl.DeleteShader(newVS)
+	gl.DeleteShader(newFS)
+
+	// Delete old program
+	gl.DeleteProgram(sp.ID)
+
+	sp.ID = newProg
+	sp.Uniforms = map[string]int32{}
+
+	// Re-detect UBO block
+	blockIndex := gl.GetUniformBlockIndex(sp.ID, gl.Str("MaterialBlock\x00"))
+	sp.HasMaterialBlock = blockIndex != gl.INVALID_INDEX
+
+	return nil
+}
 
 // global registry of compiled shader programs
 var shaderPrograms = map[string]*ShaderProgram{}

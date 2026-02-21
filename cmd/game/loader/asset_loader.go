@@ -71,6 +71,7 @@ func LoadTextures() {
 		}
 
 		log.Printf("Loaded Texture asset %d from %s", id, full)
+
 	}
 }
 
@@ -103,8 +104,25 @@ func LoadShaders() {
 			log.Printf("Failed to load shader %s: %v", full, err)
 			continue
 		}
+		// After: id, err := assets.LoadShader(full)
+
+		a := assets.Get(id) // <-- FIX: fetch the asset struct
+
+		src := a.Data.(shaderlang.ShaderSource)
+
+		// Register metadata
+		ShaderMetaMap[src.Name] = ShaderMeta{
+			Name:     src.Name,
+			Vertex:   src.VertexPath,
+			Fragment: src.FragmentPath,
+		}
+
+		// Map GLSL filenames → shader name
+		FileToShader[filepath.Base(src.VertexPath)] = src.Name
+		FileToShader[filepath.Base(src.FragmentPath)] = src.Name
 
 		log.Printf("Loaded shader asset %d from %s", id, full)
+
 	}
 
 }

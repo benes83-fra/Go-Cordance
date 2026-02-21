@@ -702,6 +702,15 @@ func (rs *RenderSystem) selectShaderForPass(entities []*Entity) {
 	rs.Renderer.InitUniforms()
 }
 
+func (rs *RenderSystem) BindMaterialUBO(sp *engine.ShaderProgram) {
+	if !sp.HasMaterialBlock {
+		return
+	}
+	blockIndex := gl.GetUniformBlockIndex(sp.ID, gl.Str("MaterialBlock\x00"))
+	gl.UniformBlockBinding(sp.ID, blockIndex, rs.materialBinding)
+	gl.BindBufferBase(gl.UNIFORM_BUFFER, rs.materialBinding, rs.materialUBO)
+}
+
 func (rs *RenderSystem) SetGlobalShader(p *engine.ShaderProgram) {
 	rs.ActiveShader = p
 	rs.Renderer.SwitchProgram(p)

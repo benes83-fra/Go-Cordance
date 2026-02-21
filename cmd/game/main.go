@@ -36,6 +36,8 @@ func main() {
 	if err := loader.LoadAllShaders(); err != nil {
 		log.Fatalf("Shader compile error: %v", err)
 	}
+	loader.StartShaderWatcher()
+
 	// Compile shaders and create renderer (runtime)
 	/*vertexSrc, err := engine.LoadShaderSource("assets/shaders/vertex.glsl")
 	if err != nil {
@@ -397,6 +399,18 @@ func main() {
 			renderSys.SetGlobalShader(p)
 			editorlink.RequestedShader = ""
 		}
+		select {
+		case changed := <-loader.ReloadQueue:
+			sp := engine.MustGetShaderProgram(changed)
+			if renderSys.ActiveShader == sp {
+				renderSys.SetGlobalShader(sp)
+			}
+			renderer.Program = sp.ID
+			renderer.InitUniforms()
+			renderSys.BindMaterialUBO(sp)
+		default:
+		}
+
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		// determine selected entity pointer as you already do for other editor features
 
