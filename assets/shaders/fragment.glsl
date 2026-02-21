@@ -15,7 +15,13 @@ layout(std140) uniform MaterialBlock {
     float matDiffuse;
     float matSpecular;
     float matShininess;
+
+    float metallic;
+    float roughness;
+    int   materialType;   // NEW — shading model selector
+    float _pad0;          // padding to 16‑byte boundary
 };
+
 /*
 uniform vec4 BaseColor;
 uniform float matAmbient;

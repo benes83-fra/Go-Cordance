@@ -1,10 +1,16 @@
 #version 410 core
+
 layout(std140) uniform MaterialBlock {
-    vec4  uBaseColor;
-    float uAmbient;
-    float uDiffuse;
-    float uSpecular;
-    float uShininess;
+    vec4 BaseColor;
+    float matAmbient;
+    float matDiffuse;
+    float matSpecular;
+    float matShininess;
+
+    float metallic;
+    float roughness;
+    int   materialType;
+    float _pad0;
 };
 
 uniform vec3 viewPos;
@@ -25,5 +31,5 @@ void main() {
     float shade = floor(NdotL * levels) / levels;
     shade = max(shade, 0.0);
 
-    FragColor = vec4(uBaseColor.rgb * shade, uBaseColor.a);
+    FragColor = vec4(BaseColor.rgb * shade, BaseColor.a);
 }

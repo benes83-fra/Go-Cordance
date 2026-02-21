@@ -12,6 +12,10 @@ type Material struct {
 	Diffuse   float32
 	Specular  float32
 	Shininess float32
+	Metallic  float32
+	Roughness float32
+
+	Type int
 
 	// --- Existing inspector workflow (kept intact) ---
 	UseTexture bool
@@ -49,6 +53,9 @@ func (m *Material) EditorFields() map[string]any {
 		"Diffuse":   m.Diffuse,
 		"Specular":  m.Specular,
 		"Shininess": m.Shininess,
+		"Metallic":  m.Metallic,
+		"Roughness": m.Roughness,
+		"Type":      m.Type,
 
 		// Inspector-visible fields (unchanged)
 		"UseTexture":   m.UseTexture,
@@ -79,7 +86,12 @@ func (m *Material) SetEditorField(name string, value any) {
 		m.Specular = toFloat32(value)
 	case "Shininess":
 		m.Shininess = toFloat32(value)
-
+	case "Metallic":
+		m.Metallic = toFloat32(value)
+	case "Roughness":
+		m.Roughness = toFloat32(value)
+	case "Type":
+		m.Type = toInt(value)
 	// --- Inspector workflow (kept intact) ---
 	case "UseTexture":
 		m.UseTexture = toBool(value)

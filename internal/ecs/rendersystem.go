@@ -36,12 +36,15 @@ type RenderSystem struct {
 
 // std140-compatible layout for the MaterialBlock
 type gpuMaterial struct {
-	BaseColor [4]float32
-	Ambient   float32
-	Diffuse   float32
-	Specular  float32
-	Shininess float32
-	// std140 will pad this out to a multiple of vec4; we don't need explicit padding fields.
+	BaseColor    [4]float32
+	Ambient      float32
+	Diffuse      float32
+	Specular     float32
+	Shininess    float32
+	Metallic     float32
+	Roughness    float32
+	MaterialType int32   // must be int32 for std140
+	_Pad0        float32 // padding to 16‑byte alignment
 }
 
 func NewRenderSystem(r *engine.Renderer, mm *engine.MeshManager, cs *CameraSystem) *RenderSystem {
@@ -367,12 +370,16 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		engine.SetMat4(rs.Renderer.LocProj, &proj[0])
 		if rs.materialUBO != 0 {
 			m := gpuMaterial{
-				BaseColor: mat.BaseColor,
-				Ambient:   mat.Ambient,
-				Diffuse:   mat.Diffuse,
-				Specular:  mat.Specular,
-				Shininess: mat.Shininess,
+				BaseColor:    mat.BaseColor,
+				Ambient:      mat.Ambient,
+				Diffuse:      mat.Diffuse,
+				Specular:     mat.Specular,
+				Shininess:    mat.Shininess,
+				Metallic:     mat.Metallic,
+				Roughness:    mat.Roughness,
+				MaterialType: int32(mat.Type), // new enum
 			}
+
 			// Selection highlight: override base color if needed
 			if uint64(e.ID) == rs.SelectedEntity {
 				m.BaseColor = [4]float32{1, 1, 0, 1}
