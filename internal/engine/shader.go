@@ -2,7 +2,7 @@ package engine
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -109,7 +109,7 @@ func buildProgram(vs, fs uint32) (uint32, error) {
 // LoadShaderSource reads a shader file, strips a UTF-8 BOM if present,
 // normalizes CRLF to LF, and returns a null-terminated string suitable for gl.Strs.
 func LoadShaderSource(path string) (string, error) {
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
 	}

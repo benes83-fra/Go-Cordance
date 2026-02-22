@@ -4,6 +4,7 @@ package engine
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
@@ -272,6 +273,10 @@ func (r *Renderer) SetProgram(program uint32) {
 	r.InitUniforms()
 }
 func compileShader(src string, t uint32) uint32 {
+	if len(strings.TrimSpace(src)) == 0 {
+		panic("compileShader: shader source is empty or whitespace")
+	}
+
 	shader := gl.CreateShader(t)
 	csrc, free := gl.Strs(src + "\x00")
 	gl.ShaderSource(shader, 1, csrc, nil)
@@ -283,10 +288,15 @@ func compileShader(src string, t uint32) uint32 {
 	if status == gl.FALSE {
 		var logLen int32
 		gl.GetShaderiv(shader, gl.INFO_LOG_LENGTH, &logLen)
-		log := make([]byte, logLen)
-		gl.GetShaderInfoLog(shader, logLen, nil, &log[0])
-		panic(fmt.Sprintf("shader compile error: %s", log))
+
+		if logLen > 1 {
+			logBuf := make([]byte, logLen)
+			gl.GetShaderInfoLog(shader, logLen, nil, &logBuf[0])
+			panic(fmt.Sprintf("shader compile error: %s", logBuf))
+		}
+		panic("shader compile error: no long info log (driver returned empty log)")
 	}
+
 	return shader
 }
 

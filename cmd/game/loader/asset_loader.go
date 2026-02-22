@@ -115,6 +115,7 @@ func LoadShaders() {
 			Name:     src.Name,
 			Vertex:   src.VertexPath,
 			Fragment: src.FragmentPath,
+			Defines:  src.Defines, // <-- REQUIRED
 		}
 
 		// Map GLSL filenames → shader name

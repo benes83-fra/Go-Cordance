@@ -28,7 +28,7 @@ void main() {
     }
 
     vec3 N = normalize(Normal);
-    vec3 L = normalize(vec3(0.4, -1.0, 0.2));
+    vec3 L = normalize(vec3(0.4, -1.0, 0.3));
 
     float NdotL = dot(N, L);
 

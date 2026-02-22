@@ -4,24 +4,27 @@ import (
 	"log"
 	"path/filepath"
 
-	"go-engine/Go-Cordance/internal/engine"
-
 	"github.com/fsnotify/fsnotify"
 )
 
 var ReloadQueue = make(chan string, 8)
 
 type ShaderMeta struct {
-	Name     string `json:"name"`
-	Vertex   string `json:"vertex"`
-	Fragment string `json:"fragment"`
+	Name     string                 `json:"name"`
+	Vertex   string                 `json:"vertex"`
+	Fragment string                 `json:"fragment"`
+	Defines  map[string]interface{} `json:"defines"`
 }
 
 var ShaderMetaMap = map[string]ShaderMeta{} // key = shaderName
 var FileToShader = map[string]string{}      // key = filename.glsl → shaderName
 
 func StartShaderWatcher() {
-	watcher, _ := fsnotify.NewWatcher()
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Println("shader watcher create error:", err)
+		return
+	}
 
 	go func() {
 		for {
@@ -36,7 +39,9 @@ func StartShaderWatcher() {
 		}
 	}()
 
-	watcher.Add("assets/shaders")
+	if err := watcher.Add("assets/shaders"); err != nil {
+		log.Println("shader watcher add error:", err)
+	}
 }
 
 func onShaderFileChanged(path string) {
@@ -47,28 +52,11 @@ func onShaderFileChanged(path string) {
 		return // not a shader we track
 	}
 
-	meta := ShaderMetaMap[shaderName]
+	log.Printf("[ShaderWatcher] Queuing reload for %s due to change in %s", shaderName, file)
 
-	log.Printf("[ShaderWatcher] Reloading %s due to change in %s", shaderName, file)
-
-	vert, err := engine.LoadShaderSource(meta.Vertex)
-	if err != nil {
-		log.Printf("[ShaderWatcher] Failed to load vertex shader: %v", err)
-		return
+	select {
+	case ReloadQueue <- shaderName:
+	default:
+		log.Printf("[ShaderWatcher] ReloadQueue full, dropping %s", shaderName)
 	}
-
-	frag, err := engine.LoadShaderSource(meta.Fragment)
-	if err != nil {
-		log.Printf("[ShaderWatcher] Failed to load fragment shader: %v", err)
-		return
-	}
-
-	sp := engine.MustGetShaderProgram(shaderName)
-	if err := sp.Reload(vert, frag); err != nil {
-		log.Printf("[ShaderWatcher] Reload failed: %v", err)
-		return
-	}
-
-	ReloadQueue <- shaderName
-	log.Printf("[ShaderWatcher] Reloaded %s successfully", shaderName)
 }

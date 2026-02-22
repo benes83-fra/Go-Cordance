@@ -401,13 +401,27 @@ func main() {
 		}
 		select {
 		case changed := <-loader.ReloadQueue:
+			log.Printf("[Main] Hot-reload requested for %s", changed)
+
+			if err := loader.ReloadShader(changed); err != nil {
+				log.Printf("[Main] ReloadShader failed: %v", err)
+				break
+			}
+
 			sp := engine.MustGetShaderProgram(changed)
+
+			// If the global shader is this one, rebind it
 			if renderSys.ActiveShader == sp {
 				renderSys.SetGlobalShader(sp)
 			}
+
+			// Re-init renderer uniforms for this program
 			renderer.Program = sp.ID
 			renderer.InitUniforms()
+
+			// Rebind material UBO if needed
 			renderSys.BindMaterialUBO(sp)
+
 		default:
 		}
 
