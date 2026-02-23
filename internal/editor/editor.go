@@ -10,6 +10,7 @@ import (
 	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editor/ui"
+	"go-engine/Go-Cordance/internal/editor/undo"
 	"go-engine/Go-Cordance/internal/editorlink"
 	"net"
 	"os"
@@ -40,6 +41,10 @@ func Run(world *ecs.World) {
 	st.UpdateLocalMaterial = func(entityID int64, fields map[string]any) {
 		updateLocalMaterial(world, entityID, fields)
 	}
+	st.UpdateLocalMesh = func(entityID int64, meshID string) {
+		updateLocalMesh(world, entityID, meshID)
+	}
+
 	var hierarchyWidget fyne.CanvasObject
 	var hierarchyList *widget.List
 
@@ -524,11 +529,17 @@ func handleMeshSubThumbnail(assetID uint64, meshID, format string, data []byte, 
 }
 
 func updateLocalMaterial(world *ecs.World, entityID int64, fields map[string]any) {
+	var ent *ecs.Entity
 	for _, e := range world.Entities {
 		if e.ID != entityID {
+			ent = e
 			continue
 		}
 
+		if ent == nil {
+			return
+		}
+		before := undo.SnapshotComponent(ent, "Material")
 		comp := e.GetComponent(&ecs.Material{})
 		var mat *ecs.Material
 		if comp == nil {
@@ -576,8 +587,8 @@ func updateLocalMaterial(world *ecs.World, entityID int64, fields map[string]any
 		if !useTextureSet {
 			mat.UseTexture = (mat.TextureID != 0 || mat.TextureAsset != 0)
 		}
-		if v, ok := fields["ShaderName"].(string); ok{
-			mat.ShaderName= v
+		if v, ok := fields["ShaderName"].(string); ok {
+			mat.ShaderName = v
 		}
 		// Normal flags + IDs/assets
 		useNormalSet := false
@@ -596,8 +607,40 @@ func updateLocalMaterial(world *ecs.World, entityID int64, fields map[string]any
 		}
 
 		mat.Dirty = true
+		after := undo.SnapshotComponent(ent, "Material")
+		undo.Global.PushComponent(undo.UndoComponentChange{
+			EntityID:      entityID,
+			ComponentName: "Material",
+			Before:        before,
+			After:         after,
+		})
 		return
 	}
+}
+
+func updateLocalMesh(world *ecs.World, entityID int64, meshID string) {
+	ent := world.FindByID(entityID)
+	if ent == nil {
+		return
+	}
+
+	before := undo.SnapshotComponent(ent, "Mesh")
+
+	comp := ent.GetComponent(&ecs.Mesh{})
+	if comp == nil {
+		ent.AddComponent(ecs.NewMesh(meshID))
+	} else {
+		comp.(*ecs.Mesh).ID = meshID
+	}
+
+	after := undo.SnapshotComponent(ent, "Mesh")
+
+	undo.Global.PushComponent(undo.UndoComponentChange{
+		EntityID:      entityID,
+		ComponentName: "Mesh",
+		Before:        before,
+		After:         after,
+	})
 }
 
 func safeName(s string) string {

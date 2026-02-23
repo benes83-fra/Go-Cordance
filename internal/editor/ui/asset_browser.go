@@ -315,7 +315,9 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 		if editorlink.EditorConn != nil {
 			go editorlink.WriteSetComponent(editorlink.EditorConn, msg)
 		}
-
+		if st.UpdateLocalMesh != nil {
+			st.UpdateLocalMesh(ent.ID, meshID)
+		}
 		if state.Global.RefreshUI != nil {
 			state.Global.RefreshUI()
 		}

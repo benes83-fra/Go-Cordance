@@ -29,6 +29,7 @@ type EditorState struct {
 	IsRebuilding        bool
 	LastComponents      map[int64][]string
 	Shaders             []AssetView
+	UpdateLocalMesh     func(entityID int64, meshID string)
 	// in EditorState
 
 	Assets struct {
