@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"go-engine/Go-Cordance/internal/ecs"
+
 	"go-engine/Go-Cordance/internal/scene"
 )
 
@@ -145,12 +146,14 @@ type ActionType int
 const (
 	ActionTransform ActionType = iota
 	ActionStructural
+	ActionComponent
 )
 
 type GlobalAction struct {
 	Type       ActionType
 	Transform  *TransformCommand
 	Structural StructuralCommand
+	Component  *UndoComponentChange
 }
 
 type GlobalUndoStack struct {
@@ -159,6 +162,7 @@ type GlobalUndoStack struct {
 
 	TransformUndo  *UndoStack
 	StructuralUndo *StructuralUndoStack
+	ComponentUndo  *ComponentUndoStack
 }
 
 func NewGlobalUndoStack() *GlobalUndoStack {
@@ -167,6 +171,7 @@ func NewGlobalUndoStack() *GlobalUndoStack {
 		idx:            -1,
 		TransformUndo:  NewUndoStack(),
 		StructuralUndo: NewStructuralUndoStack(),
+		ComponentUndo:  NewComponentUndoStack(), // <-- NEW
 	}
 }
 
@@ -178,6 +183,11 @@ func (g *GlobalUndoStack) PushTransform(cmd *TransformCommand) {
 func (g *GlobalUndoStack) PushStructural(cmd StructuralCommand) {
 	g.StructuralUndo.Push(cmd)
 	g.push(GlobalAction{Type: ActionStructural, Structural: cmd})
+}
+
+func (g *GlobalUndoStack) PushComponent(cmd UndoComponentChange) {
+	g.ComponentUndo.Push(cmd)
+	g.push(GlobalAction{Type: ActionComponent, Component: &cmd})
 }
 
 func (g *GlobalUndoStack) push(a GlobalAction) {
@@ -204,6 +214,8 @@ func (g *GlobalUndoStack) Undo(sc *scene.Scene) {
 		g.TransformUndo.Undo(sc.World())
 	case ActionStructural:
 		g.StructuralUndo.Undo(sc)
+	case ActionComponent:
+		g.ComponentUndo.Undo(sc)
 	}
 
 	g.idx--
@@ -222,7 +234,71 @@ func (g *GlobalUndoStack) Redo(sc *scene.Scene) {
 		g.TransformUndo.Redo(sc.World())
 	case ActionStructural:
 		g.StructuralUndo.Redo(sc)
+	case ActionComponent:
+		g.ComponentUndo.Redo(sc)
 	}
+}
+
+type UndoComponentChange struct {
+	EntityID      int64
+	ComponentName string
+	Before        map[string]any
+	After         map[string]any
+}
+
+func (c UndoComponentChange) Undo(sc *scene.Scene) {
+	ent := sc.World().FindByID(c.EntityID)
+	if ent == nil {
+		return
+	}
+	ApplyComponentFields(ent, c.ComponentName, c.Before)
+}
+
+func (c UndoComponentChange) Redo(sc *scene.Scene) {
+	ent := sc.World().FindByID(c.EntityID)
+	if ent == nil {
+		return
+	}
+	ApplyComponentFields(ent, c.ComponentName, c.After)
+}
+
+type ComponentUndoStack struct {
+	stack []UndoComponentChange
+	idx   int
+}
+
+func NewComponentUndoStack() *ComponentUndoStack {
+	return &ComponentUndoStack{
+		stack: []UndoComponentChange{},
+		idx:   -1,
+	}
+}
+
+func (u *ComponentUndoStack) Push(cmd UndoComponentChange) {
+	if u.idx < len(u.stack)-1 {
+		u.stack = u.stack[:u.idx+1]
+	}
+	u.stack = append(u.stack, cmd)
+	u.idx = len(u.stack) - 1
+}
+
+func (u *ComponentUndoStack) CanUndo() bool { return u.idx >= 0 }
+func (u *ComponentUndoStack) CanRedo() bool { return u.idx < len(u.stack)-1 }
+
+func (u *ComponentUndoStack) Undo(sc *scene.Scene) {
+	if !u.CanUndo() {
+		return
+	}
+	u.stack[u.idx].Undo(sc)
+	u.idx--
+}
+
+func (u *ComponentUndoStack) Redo(sc *scene.Scene) {
+	if !u.CanRedo() {
+		return
+	}
+	u.idx++
+	u.stack[u.idx].Redo(sc)
 }
 
 var Global = NewGlobalUndoStack()
