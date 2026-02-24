@@ -25,6 +25,24 @@ const (
 	height = 600
 )
 
+func initUndo(scene *scene.Scene) {
+	undo.Global.SyncComponentChange = func(entityID int64, name string, fields map[string]any) {
+		// 1) send to editor
+		if editorlink.EditorConn != nil { // whatever your server-side conn is called
+			msg := editorlink.MsgSetComponent{
+				EntityID: uint64(entityID),
+				Name:     name,
+				Fields:   fields,
+			}
+			go editorlink.WriteSetComponent(editorlink.EditorConn, msg)
+		}
+
+		// 2) (optional) log for sanity
+		log.Printf("undo: SyncComponentChange fired for entity %d, component %s, fields=%v",
+			entityID, name, fields)
+	}
+}
+
 func main() {
 	// Initialize window / GL context (game runtime only)
 	window, err := engine.InitGLFW(width, height, "Go Cordance")
@@ -38,31 +56,10 @@ func main() {
 	}
 	loader.StartShaderWatcher()
 
-	// Compile shaders and create renderer (runtime)
-	/*vertexSrc, err := engine.LoadShaderSource("assets/shaders/vertex.glsl")
-	if err != nil {
-		log.Fatal(err)
-	}
-	fragmentSrc, err := engine.LoadShaderSource("assets/shaders/fragment.glsl")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	renderer := engine.NewRenderer(vertexSrc, fragmentSrc, width, height)*/
 	prog := engine.MustGetShaderProgram("default_shader")
 	renderer := engine.NewRendererWithProgram(prog.ID, width, height)
 	renderer.InitUniforms()
 
-	// load shadow shader sources
-	/*shadowVertSrc, err := engine.LoadShaderSource("assets/shaders/shadow_vertex.glsl")
-	if err != nil {
-		log.Fatal(err)
-	}
-	shadowFragSrc, err := engine.LoadShaderSource("assets/shaders/shadow_fragment.glsl")
-	if err != nil {
-		log.Fatal(err)
-	}
-	*/
 	shadow_prog := engine.MustGetShaderProgram("shadow_shader")
 	// initialize shadow resources (choose resolution)
 	shadowW, shadowH := 2048, 2048
@@ -113,16 +110,6 @@ func main() {
 	_ = sofaMeshIDs
 	_ = teapotMeshAsset
 
-	// Load shader sources for debug renderer
-	/*debugVertexSrc, err := engine.LoadShaderSource("assets/shaders/debug_vertex.glsl")
-	if err != nil {
-		log.Fatal(err)
-	}
-	debugFragmentSrc, err := engine.LoadShaderSource("assets/shaders/debug_fragment.glsl")
-	if err != nil {
-		log.Fatal(err)
-	}
-	*/
 	debug_prog := engine.MustGetShaderProgram("debug_shader")
 
 	// Load textures (runtime GPU resources)
@@ -172,6 +159,7 @@ func main() {
 	// BootstrapScene returns the Scene and a map of named entities so we can
 	// bind runtime-only resources (textures, set LightEntity, etc).
 	sc, named := scene.BootstrapScene()
+	initUndo(sc)
 	gizmoSys.SetWorld(sc.World())
 	gizmo.RegisterGlobalGizmo(gizmoSys)
 	// Create runtime systems that need the window/renderer/meshMgr

@@ -10,7 +10,7 @@ import (
 	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editor/ui"
-	"go-engine/Go-Cordance/internal/editor/undo"
+
 	"go-engine/Go-Cordance/internal/editorlink"
 	"net"
 	"os"
@@ -40,9 +40,6 @@ func Run(world *ecs.World) {
 	st.ShowLightGizmos = true
 	st.UpdateLocalMaterial = func(entityID int64, fields map[string]any) {
 		updateLocalMaterial(world, entityID, fields)
-	}
-	st.UpdateLocalMesh = func(entityID int64, meshID string) {
-		updateLocalMesh(world, entityID, meshID)
 	}
 
 	var hierarchyWidget fyne.CanvasObject
@@ -531,116 +528,83 @@ func handleMeshSubThumbnail(assetID uint64, meshID, format string, data []byte, 
 func updateLocalMaterial(world *ecs.World, entityID int64, fields map[string]any) {
 	var ent *ecs.Entity
 	for _, e := range world.Entities {
-		if e.ID != entityID {
+		if e.ID == entityID {
 			ent = e
-			continue
+			break
 		}
-
-		if ent == nil {
-			return
-		}
-		before := undo.SnapshotComponent(ent, "Material")
-		comp := e.GetComponent(&ecs.Material{})
-		var mat *ecs.Material
-		if comp == nil {
-			mat = &ecs.Material{}
-			e.AddComponent(mat)
-		} else {
-			var ok bool
-			mat, ok = comp.(*ecs.Material)
-			if !ok {
-				return
-			}
-		}
-
-		// --- FULL SYNC OF ALL MATERIAL FIELDS ---
-
-		if v, ok := fields["BaseColor"].([4]float32); ok {
-			mat.BaseColor = v
-		}
-		if v, ok := fields["Ambient"].(float32); ok {
-			mat.Ambient = v
-		}
-		if v, ok := fields["Diffuse"].(float32); ok {
-			mat.Diffuse = v
-		}
-		if v, ok := fields["Specular"].(float32); ok {
-			mat.Specular = v
-		}
-		if v, ok := fields["Shininess"].(float32); ok {
-			mat.Shininess = v
-		}
-
-		// Texture flags + IDs/assets
-		useTextureSet := false
-		if v, ok := fields["UseTexture"].(bool); ok {
-			mat.UseTexture = v
-			useTextureSet = true
-		}
-		if v, ok := fields["TextureAsset"].(int); ok {
-			mat.TextureAsset = assets.AssetID(v)
-		}
-		if v, ok := fields["TextureID"].(int); ok {
-			mat.TextureID = uint32(v)
-		}
-		// If caller didn’t explicitly set UseTexture, derive it from IDs
-		if !useTextureSet {
-			mat.UseTexture = (mat.TextureID != 0 || mat.TextureAsset != 0)
-		}
-		if v, ok := fields["ShaderName"].(string); ok {
-			mat.ShaderName = v
-		}
-		// Normal flags + IDs/assets
-		useNormalSet := false
-		if v, ok := fields["UseNormal"].(bool); ok {
-			mat.UseNormal = v
-			useNormalSet = true
-		}
-		if v, ok := fields["NormalID"].(int); ok {
-			mat.NormalID = uint32(v)
-		}
-		if v, ok := fields["NormalAsset"].(int); ok {
-			mat.NormalAsset = assets.AssetID(v)
-		}
-		if !useNormalSet {
-			mat.UseNormal = (mat.NormalID != 0 || mat.NormalAsset != 0)
-		}
-
-		mat.Dirty = true
-		after := undo.SnapshotComponent(ent, "Material")
-		undo.Global.PushComponent(undo.UndoComponentChange{
-			EntityID:      entityID,
-			ComponentName: "Material",
-			Before:        before,
-			After:         after,
-		})
-		return
 	}
-}
-
-func updateLocalMesh(world *ecs.World, entityID int64, meshID string) {
-	ent := world.FindByID(entityID)
 	if ent == nil {
 		return
 	}
 
-	before := undo.SnapshotComponent(ent, "Mesh")
-
-	comp := ent.GetComponent(&ecs.Mesh{})
+	comp := ent.GetComponent(&ecs.Material{})
+	var mat *ecs.Material
 	if comp == nil {
-		ent.AddComponent(ecs.NewMesh(meshID))
+		mat = &ecs.Material{}
+		ent.AddComponent(mat)
 	} else {
-		comp.(*ecs.Mesh).ID = meshID
+		var ok bool
+		mat, ok = comp.(*ecs.Material)
+		if !ok {
+			return
+		}
 	}
 
-	after := undo.SnapshotComponent(ent, "Mesh")
+	// --- FULL SYNC OF ALL MATERIAL FIELDS ---
 
-	undo.Global.PushComponent(undo.UndoComponentChange{
-		EntityID:      entityID,
-		ComponentName: "Mesh",
-		Before:        before,
-		After:         after,
-	})
+	if v, ok := fields["BaseColor"].([4]float32); ok {
+		mat.BaseColor = v
+	}
+	if v, ok := fields["Ambient"].(float32); ok {
+		mat.Ambient = v
+	}
+	if v, ok := fields["Diffuse"].(float32); ok {
+		mat.Diffuse = v
+	}
+	if v, ok := fields["Specular"].(float32); ok {
+		mat.Specular = v
+	}
+	if v, ok := fields["Shininess"].(float32); ok {
+		mat.Shininess = v
+	}
+
+	// Texture flags + IDs/assets
+	useTextureSet := false
+	if v, ok := fields["UseTexture"].(bool); ok {
+		mat.UseTexture = v
+		useTextureSet = true
+	}
+	if v, ok := fields["TextureAsset"].(int); ok {
+		mat.TextureAsset = assets.AssetID(v)
+	}
+	if v, ok := fields["TextureID"].(int); ok {
+		mat.TextureID = uint32(v)
+	}
+	// If caller didn’t explicitly set UseTexture, derive it from IDs
+	if !useTextureSet {
+		mat.UseTexture = (mat.TextureID != 0 || mat.TextureAsset != 0)
+	}
+	if v, ok := fields["ShaderName"].(string); ok {
+		mat.ShaderName = v
+	}
+	// Normal flags + IDs/assets
+	useNormalSet := false
+	if v, ok := fields["UseNormal"].(bool); ok {
+		mat.UseNormal = v
+		useNormalSet = true
+	}
+	if v, ok := fields["NormalID"].(int); ok {
+		mat.NormalID = uint32(v)
+	}
+	if v, ok := fields["NormalAsset"].(int); ok {
+		mat.NormalAsset = assets.AssetID(v)
+	}
+	if !useNormalSet {
+		mat.UseNormal = (mat.NormalID != 0 || mat.NormalAsset != 0)
+	}
+
+	mat.Dirty = true
+
 }
 
 func safeName(s string) string {

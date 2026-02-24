@@ -364,6 +364,9 @@ func applySetComponent(sc *scene.Scene, m MsgSetComponent) {
 		log.Printf("game: SetComponent: unknown component %s", m.Name)
 		return
 	}
+	before := undo.SnapshotComponent(ent, m.Name)
+
+	// Apply fields to the real game ECS
 
 	// Ensure the entity has the component
 	comp := ent.GetComponent(constructor())
@@ -373,7 +376,15 @@ func applySetComponent(sc *scene.Scene, m MsgSetComponent) {
 		ent.AddComponent(comp)
 	}
 	// Push updated snapshot back to editor
+	undo.ApplyComponentFields(ent, m.Name, m.Fields)
+	after := undo.SnapshotComponent(ent, m.Name)
 
+	undo.Global.PushComponent(undo.UndoComponentChange{
+		EntityID:      int64(m.EntityID),
+		ComponentName: m.Name,
+		Before:        before,
+		After:         after,
+	})
 	// Apply fields
 	if insp, ok := comp.(ecs.EditorInspectable); ok {
 		for key, val := range m.Fields {

@@ -8,11 +8,13 @@ import (
 	"go-engine/Go-Cordance/internal/scene"
 )
 
-//
-// ──────────────────────────────────────────────────────────────
-//   STRUCTURAL COMMAND INTERFACE  (UPDATED TO USE SCENE)
 // ──────────────────────────────────────────────────────────────
 //
+//	STRUCTURAL COMMAND INTERFACE  (UPDATED TO USE SCENE)
+//
+// ──────────────────────────────────────────────────────────────
+//
+// Called after any undo/redo that changes components
 
 type StructuralCommand interface {
 	Undo(sc *scene.Scene)
@@ -160,9 +162,10 @@ type GlobalUndoStack struct {
 	actions []GlobalAction
 	idx     int
 
-	TransformUndo  *UndoStack
-	StructuralUndo *StructuralUndoStack
-	ComponentUndo  *ComponentUndoStack
+	TransformUndo       *UndoStack
+	StructuralUndo      *StructuralUndoStack
+	ComponentUndo       *ComponentUndoStack
+	SyncComponentChange func(entityID int64, name string, fields map[string]any)
 }
 
 func NewGlobalUndoStack() *GlobalUndoStack {
@@ -216,6 +219,7 @@ func (g *GlobalUndoStack) Undo(sc *scene.Scene) {
 		g.StructuralUndo.Undo(sc)
 	case ActionComponent:
 		g.ComponentUndo.Undo(sc)
+
 	}
 
 	g.idx--
@@ -234,8 +238,10 @@ func (g *GlobalUndoStack) Redo(sc *scene.Scene) {
 		g.TransformUndo.Redo(sc.World())
 	case ActionStructural:
 		g.StructuralUndo.Redo(sc)
+
 	case ActionComponent:
 		g.ComponentUndo.Redo(sc)
+
 	}
 }
 
