@@ -1,6 +1,10 @@
 package assets
 
-import "go-engine/Go-Cordance/internal/engine"
+import (
+	"go-engine/Go-Cordance/internal/engine"
+	"path/filepath"
+	"strings"
+)
 
 // ImportGLTFMesh loads a single-mesh GLTF and registers it as an asset.
 // Data = meshID string used by MeshManager.
@@ -21,4 +25,16 @@ func ImportGLTFMulti(path string, mm *engine.MeshManager) (AssetID, []string, er
 	}
 	id := Register(AssetMesh, path, meshIDs)
 	return id, meshIDs, nil
+}
+
+func ImportOBJ(path string, mm *engine.MeshManager) (AssetID, string, error) {
+	base := filepath.Base(path)
+	meshID := strings.TrimSuffix(base, filepath.Ext(base))
+
+	if err := mm.RegisterOBJ(meshID, path); err != nil {
+		return 0, "", err
+	}
+
+	id := Register(AssetMesh, path, meshID)
+	return id, meshID, nil
 }

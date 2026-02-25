@@ -161,3 +161,56 @@ func LoadAllShaders() error {
 
 	return nil
 }
+func LoadMeshes(meshMgr *engine.MeshManager) {
+	meshDir := "assets/models"
+	entries, err := os.ReadDir(meshDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+
+		ext := filepath.Ext(e.Name())
+		if ext != ".gltf" && ext != ".glb" && ext != ".obj" {
+			log.Printf("Skipping non-mesh file: %s", e.Name())
+			continue
+		}
+
+		full := filepath.Join(meshDir, e.Name())
+
+		// --- Skip if already loaded ---
+		if assets.FindAssetByPath(full) != nil {
+			log.Printf("Skipping already-loaded mesh: %s", full)
+			continue
+		}
+
+		// --- Load mesh asset ---
+		var assetID assets.AssetID
+		var meshIDs []string
+
+		switch ext {
+		case ".gltf", ".glb":
+			id, ids, err := assets.ImportGLTFMulti(full, meshMgr)
+			if err != nil {
+				log.Printf("Failed to load GLTF mesh %s: %v", full, err)
+				continue
+			}
+			assetID = id
+			meshIDs = ids
+
+		case ".obj":
+			id, meshID, err := assets.ImportOBJ(full, meshMgr)
+			if err != nil {
+				log.Printf("Failed to load OBJ mesh %s: %v", full, err)
+				continue
+			}
+			assetID = id
+			meshIDs = []string{meshID}
+		}
+
+		log.Printf("Loaded mesh asset %d from %s (submeshes: %v)", assetID, full, meshIDs)
+	}
+}

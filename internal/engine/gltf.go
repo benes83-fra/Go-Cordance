@@ -1,12 +1,14 @@
 package engine
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
@@ -253,6 +255,52 @@ func uploadMeshToGL(mm *MeshManager, id string, vertices []float32, indices []ui
 
 }
 
+func loadGLTFOrGLB(path string) (*gltfRoot, [][]byte, error) {
+	ext := strings.ToLower(filepath.Ext(path))
+
+	switch ext {
+	case ".glb":
+		// Use your existing GLB loader
+		g, buffers, err := loadGLB(path)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		// GLB always has exactly one BIN buffer
+		return g, buffers, nil
+
+	case ".gltf":
+		// Standard JSON glTF
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		var g gltfRoot
+		if err := json.Unmarshal(raw, &g); err != nil {
+			return nil, nil, err
+		}
+
+		// Load external buffers
+		baseDir := filepath.Dir(path)
+		buffers := make([][]byte, len(g.Buffers))
+
+		for i, b := range g.Buffers {
+			bufPath := filepath.Join(baseDir, b.URI)
+			data, err := os.ReadFile(bufPath)
+			if err != nil {
+				return nil, nil, err
+			}
+			buffers[i] = data
+		}
+
+		return &g, buffers, nil
+
+	default:
+		return nil, nil, fmt.Errorf("unsupported mesh format: %s", ext)
+	}
+}
+
 // ---------------------------
 // Single-mesh loader (default)
 // ---------------------------
@@ -274,26 +322,24 @@ func (mm *MeshManager) RegisterGLTFMulti(path string) ([]string, error) {
 // ---------------------------
 
 func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, error) {
-	baseDir := filepath.Dir(path)
+
 	var meshIDs []string
-	raw, err := ioutil.ReadFile(path)
+	g, buffers, err := loadGLTFOrGLB(path)
 	if err != nil {
 		return nil, err
 	}
 
-	var g gltfRoot
-	if err := json.Unmarshal(raw, &g); err != nil {
-		return nil, err
-	}
-
-	// Load buffers
-	buffers := make([][]byte, len(g.Buffers))
-	for i, b := range g.Buffers {
-		data, err := ioutil.ReadFile(filepath.Join(baseDir, b.URI))
-		if err != nil {
-			return nil, err
+	if strings.ToLower(filepath.Ext(path)) == ".gltf" {
+		// load external buffers
+		baseDir := filepath.Dir(path)
+		buffers = make([][]byte, len(g.Buffers))
+		for i, b := range g.Buffers {
+			data, err := os.ReadFile(filepath.Join(baseDir, b.URI))
+			if err != nil {
+				return nil, err
+			}
+			buffers[i] = data
 		}
-		buffers[i] = data
 	}
 
 	// Loop meshes
@@ -319,14 +365,14 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 			meshIDs = append(meshIDs, meshID)
 
 			// POSITION
-			posA, err := getAccessor(&g, buffers, prim.Attributes["POSITION"])
+			posA, err := getAccessor(g, buffers, prim.Attributes["POSITION"])
 			if err != nil {
 				return nil, err
 			}
 			count := posA.acc.Count
 
 			// NORMAL
-			norA, err := getAccessor(&g, buffers, prim.Attributes["NORMAL"])
+			norA, err := getAccessor(g, buffers, prim.Attributes["NORMAL"])
 			if err != nil {
 				return nil, err
 			}
@@ -335,7 +381,7 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 			var uvA accessorData
 			hasUV := false
 			if uvIdx, ok := prim.Attributes["TEXCOORD_0"]; ok {
-				uvA, err = getAccessor(&g, buffers, uvIdx)
+				uvA, err = getAccessor(g, buffers, uvIdx)
 				if err != nil {
 					return nil, err
 				}
@@ -346,7 +392,7 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 			var tanA accessorData
 			hasTan := false
 			if tanIdx, ok := prim.Attributes["TANGENT"]; ok {
-				tanA, err = getAccessor(&g, buffers, tanIdx)
+				tanA, err = getAccessor(g, buffers, tanIdx)
 				if err != nil {
 					return nil, err
 				}
@@ -354,7 +400,7 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 			}
 
 			// INDICES
-			idxA, err := getAccessor(&g, buffers, prim.Indices)
+			idxA, err := getAccessor(g, buffers, prim.Indices)
 			if err != nil {
 				return nil, err
 			}
@@ -459,7 +505,7 @@ func LoadGLTFMaterialsMulti(path string) ([]LoadedMeshMaterial, error) {
 func loadGLTFMaterialsInternal(id, path string, multi bool) ([]LoadedMeshMaterial, error) {
 	baseDir := filepath.Dir(path)
 
-	raw, err := ioutil.ReadFile(path)
+	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -599,7 +645,7 @@ func ComposeNodeTransform(n gltfNode) [16]float32 {
 }
 
 func LoadGLTFRoot(path string) (*gltfRoot, error) {
-	raw, err := ioutil.ReadFile(path)
+	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -608,4 +654,61 @@ func LoadGLTFRoot(path string) (*gltfRoot, error) {
 		return nil, err
 	}
 	return &g, nil
+}
+
+func loadGLB(path string) (*gltfRoot, [][]byte, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if len(raw) < 20 || string(raw[0:4]) != "glTF" {
+		return nil, nil, fmt.Errorf("not a valid GLB file")
+	}
+
+	version := binary.LittleEndian.Uint32(raw[4:8])
+	if version != 2 {
+		return nil, nil, fmt.Errorf("unsupported GLB version %d", version)
+	}
+
+	length := binary.LittleEndian.Uint32(raw[8:12])
+	if int(length) != len(raw) {
+		return nil, nil, fmt.Errorf("GLB length mismatch")
+	}
+
+	offset := 12
+
+	// --- JSON chunk ---
+	jsonChunkLen := int(binary.LittleEndian.Uint32(raw[offset : offset+4]))
+	jsonChunkType := string(raw[offset+4 : offset+8])
+	offset += 8
+
+	if jsonChunkType != "JSON" {
+		return nil, nil, fmt.Errorf("first GLB chunk is not JSON")
+	}
+
+	jsonBytes := raw[offset : offset+jsonChunkLen]
+	offset += jsonChunkLen
+
+	var g gltfRoot
+	if err := json.Unmarshal(jsonBytes, &g); err != nil {
+		return nil, nil, err
+	}
+
+	// --- BIN chunk (optional) ---
+	var buffers [][]byte
+	if offset < len(raw) {
+		binChunkLen := int(binary.LittleEndian.Uint32(raw[offset : offset+4]))
+		binChunkType := string(raw[offset+4 : offset+8])
+		offset += 8
+
+		if binChunkType != "BIN\x00" {
+			return nil, nil, fmt.Errorf("second GLB chunk is not BIN")
+		}
+
+		binBytes := raw[offset : offset+binChunkLen]
+		buffers = append(buffers, binBytes)
+	}
+
+	return &g, buffers, nil
 }

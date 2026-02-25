@@ -109,7 +109,7 @@ func main() {
 	_ = sofaMeshAsset
 	_ = sofaMeshIDs
 	_ = teapotMeshAsset
-
+	loader.LoadMeshes(meshMgr)
 	debug_prog := engine.MustGetShaderProgram("debug_shader")
 
 	// Load textures (runtime GPU resources)
