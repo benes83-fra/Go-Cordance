@@ -121,6 +121,14 @@ type MsgAssetMeshThumbnail struct {
 	Hash    string `json:"hash"`
 }
 
+const (
+	MsgTypeRequestAssetReload = "RequestAssetReload"
+)
+
+type MsgRequestAssetReload struct {
+	Type string `json:"type"`
+}
+
 // MsgAssetThumbnail carries a generated thumbnail from game -> editor.
 // Data is base64-encoded PNG/JPEG bytes to keep the message JSON-friendly.
 type MsgAssetThumbnail struct {
@@ -356,4 +364,9 @@ func SendAssetMeshThumbnail(conn net.Conn, assetID uint64, meshID string, format
 func SendSetGlobalShader(conn net.Conn, name string) error {
 	msg := MsgSetGlobalShader{Name: name}
 	return writeMsg(conn, "SetGlobalShader", msg)
+}
+
+func WriteRequestAssetReload(conn net.Conn) error {
+	msg := MsgRequestAssetReload{Type: MsgTypeRequestAssetReload}
+	return writeMsg(conn, MsgTypeRequestAssetReload, msg)
 }

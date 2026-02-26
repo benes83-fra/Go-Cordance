@@ -47,7 +47,7 @@ func Run(world *ecs.World) {
 
 	// Create inspector first so we have the rebuild function available.
 	inspectorContainer, inspectorRebuild := ui.NewInspectorPanel()
-	assetBrowser, assetList := ui.NewAssetBrowserPanel(st)
+	assetBrowser, assetList := ui.NewAssetBrowserPanel(st, win)
 
 	state.Global.RefreshUI = func() {
 		if hierarchyList != nil {

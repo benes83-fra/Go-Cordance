@@ -4,6 +4,7 @@ import (
 	"go-engine/Go-Cordance/internal/assets"
 	"strings"
 
+	"go-engine/Go-Cordance/internal/editor/importer"
 	"go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editorlink"
 	"log"
@@ -12,6 +13,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -93,9 +95,7 @@ func buildMeshListEntries(st *state.EditorState) []MeshListEntry {
 	return out
 }
 
-func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.List) {
-
-	// --- TEXTURES LIST (image + label cells, lazy thumbnail requests) ---
+func NewAssetBrowserPanel(st *state.EditorState, win fyne.Window) (fyne.CanvasObject, *widget.List) {
 
 	texList := widget.NewList(
 		func() int {
@@ -449,8 +449,24 @@ func NewAssetBrowserPanel(st *state.EditorState) (fyne.CanvasObject, *widget.Lis
 
 	tabs.SetTabLocation(container.TabLocationTop)
 	// Hook into global RefreshUI
+	// --- UPLOAD BUTTONS ---
+	uploadTexturesBtn := widget.NewButton("Upload Texture", func() {
+		openFileDialog(win, importer.Texture)
+	})
+	uploadMeshesBtn := widget.NewButton("Upload Mesh", func() {
+		openFileDialog(win, importer.Mesh)
+	})
+	uploadMaterialsBtn := widget.NewButton("Upload Material", func() {
+		openFileDialog(win, importer.Material)
+	})
 
-	return tabs, texList
+	toolbar := container.NewHBox(uploadTexturesBtn, uploadMeshesBtn, uploadMaterialsBtn)
+
+	// --- FINAL ROOT ---
+	root := container.NewBorder(toolbar, nil, nil, nil, tabs)
+
+	return root, texList
+
 }
 
 func makeTextureItem() fyne.CanvasObject {
@@ -618,4 +634,27 @@ func (s *shaderItem) SetIconForShader(name string) {
 	}
 
 	s.img.Refresh()
+}
+
+func openFileDialog(win fyne.Window, t importer.AssetType) {
+	dialog := dialog.NewFileOpen(func(r fyne.URIReadCloser, err error) {
+		if r == nil || err != nil {
+			return
+		}
+
+		src := r.URI().Path()
+
+		dst, err := importer.CopyToAssetFolder(src, t)
+		if err != nil {
+			log.Printf("Import failed: %v", err)
+			return
+		}
+		_ = dst
+		// notify game to reload assets
+		if editorlink.EditorConn != nil {
+			editorlink.WriteRequestAssetList(editorlink.EditorConn)
+		}
+	}, win)
+
+	dialog.Show()
 }

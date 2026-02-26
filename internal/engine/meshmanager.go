@@ -8,6 +8,8 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
+var GlobalMeshManager *MeshManager
+
 // internal/engine/meshmanager.go (add fields)
 type MeshManager struct {
 	vaos   map[string]uint32

@@ -4,13 +4,17 @@ import (
 	"encoding/json"
 	"log"
 	"net"
+	"os"
+	"path/filepath"
 
+	"go-engine/Go-Cordance/cmd/game/loader"
 	"go-engine/Go-Cordance/internal/assets"
 	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/ecs/gizmo"
 	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editor/undo"
+	"go-engine/Go-Cordance/internal/engine"
 	"go-engine/Go-Cordance/internal/shaderlang"
 	"go-engine/Go-Cordance/internal/thumbnails"
 
@@ -218,10 +222,20 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 				writeMsg(EditorConn, "SceneSnapshot", MsgSceneSnapshot{Snapshot: snap})
 			}
 		case "RequestAssetList":
+			// Reload all asset types
+			loader.LoadTextures()
+			loader.LoadMaterials()
+			loader.LoadShaders()
+
+			// NEW: reload meshes
+			ReloadMeshAssets()
+
+			// Now send updated list
 			resp := buildAssetList()
 			if err := writeMsg(conn, "AssetList", resp); err != nil {
 				log.Printf("editorlink: failed to send AssetList: %v", err)
 			}
+
 		case "RequestThumbnail":
 			thumbnails.HandleRequestThumbnail(msg.Data, EditorConn, Mgr)
 		case "RequestMeshThumbnail":
@@ -518,4 +532,54 @@ func assetTypeToString(t assets.AssetType) string {
 		return "Shader"
 	}
 	return "Unknown"
+}
+
+func ReloadMeshAssets() {
+	meshDir := "assets/models"
+
+	entries, err := os.ReadDir(meshDir)
+	if err != nil {
+		log.Printf("ReloadMeshAssets: cannot read %s: %v", meshDir, err)
+		return
+	}
+
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+
+		ext := filepath.Ext(e.Name())
+		full := filepath.Join(meshDir, e.Name())
+
+		// Skip if already loaded
+		if assets.FindAssetByPath(full) != nil {
+			continue
+		}
+
+		switch ext {
+		case ".gltf":
+			id, _, err := assets.ImportGLTFMulti(full, engine.GlobalMeshManager)
+			if err != nil {
+				log.Printf("ReloadMeshAssets: failed to load glTF %s: %v", full, err)
+			} else {
+				log.Printf("ReloadMeshAssets: loaded glTF asset %d from %s", id, full)
+			}
+
+		case ".glb":
+			id, _, err := assets.ImportGLTFMulti(full, engine.GlobalMeshManager)
+			if err != nil {
+				log.Printf("ReloadMeshAssets: failed to load GLB %s: %v", full, err)
+			} else {
+				log.Printf("ReloadMeshAssets: loaded GLB asset %d from %s", id, full)
+			}
+
+		case ".obj":
+			id, _, err := assets.ImportOBJ(full, engine.GlobalMeshManager)
+			if err != nil {
+				log.Printf("ReloadMeshAssets: failed to load OBJ %s: %v", full, err)
+			} else {
+				log.Printf("ReloadMeshAssets: loaded OBJ asset %d from %s", id, full)
+			}
+		}
+	}
 }
