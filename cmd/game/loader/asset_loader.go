@@ -27,6 +27,10 @@ func LoadMaterials() {
 		}
 
 		full := filepath.Join(materialDir, e.Name())
+		if assets.FindAssetByPath(full) != nil {
+			log.Printf("Skipping already-loaded Material: %s", full)
+			continue
+		}
 		id, err := assets.LoadMaterial(full)
 		if err != nil {
 			log.Printf("Failed to load material %s: %v", full, err)
