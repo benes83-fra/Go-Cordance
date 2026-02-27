@@ -235,7 +235,11 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 			if err := writeMsg(conn, "AssetList", resp); err != nil {
 				log.Printf("editorlink: failed to send AssetList: %v", err)
 			}
-
+		case "RequestAssetReload":
+			loader.LoadMaterials()
+			loader.LoadShaders()
+			ReloadMeshAssets()
+			SendAssetList(conn)
 		case "RequestThumbnail":
 			thumbnails.HandleRequestThumbnail(msg.Data, EditorConn, Mgr)
 		case "RequestMeshThumbnail":
@@ -581,5 +585,15 @@ func ReloadMeshAssets() {
 				log.Printf("ReloadMeshAssets: loaded OBJ asset %d from %s", id, full)
 			}
 		}
+	}
+}
+
+func SendAssetList(conn net.Conn) {
+	if conn == nil {
+		return
+	}
+	resp := buildAssetList()
+	if err := writeMsg(conn, "AssetList", resp); err != nil {
+		log.Printf("editorlink: failed to send AssetList: %v", err)
 	}
 }

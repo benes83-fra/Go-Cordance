@@ -652,7 +652,8 @@ func openFileDialog(win fyne.Window, t importer.AssetType) {
 		_ = dst
 		// notify game to reload assets
 		if editorlink.EditorConn != nil {
-			editorlink.WriteRequestAssetList(editorlink.EditorConn)
+			editorlink.WriteRequestAssetReload(editorlink.EditorConn)
+
 		}
 	}, win)
 
