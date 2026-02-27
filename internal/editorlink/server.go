@@ -223,12 +223,12 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 			}
 		case "RequestAssetList":
 			// Reload all asset types
-			loader.LoadTextures()
+			ReloadTextureAssets()
+			ReloadMeshAssets()
 			loader.LoadMaterials()
 			loader.LoadShaders()
 
 			// NEW: reload meshes
-			ReloadMeshAssets()
 
 			// Now send updated list
 			resp := buildAssetList()
@@ -236,9 +236,11 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 				log.Printf("editorlink: failed to send AssetList: %v", err)
 			}
 		case "RequestAssetReload":
+			ReloadTextureAssets()
+			ReloadMeshAssets()
 			loader.LoadMaterials()
 			loader.LoadShaders()
-			ReloadMeshAssets()
+
 			SendAssetList(conn)
 		case "RequestThumbnail":
 			thumbnails.HandleRequestThumbnail(msg.Data, EditorConn, Mgr)
@@ -595,5 +597,34 @@ func SendAssetList(conn net.Conn) {
 	resp := buildAssetList()
 	if err := writeMsg(conn, "AssetList", resp); err != nil {
 		log.Printf("editorlink: failed to send AssetList: %v", err)
+	}
+}
+func ReloadTextureAssets() {
+	texDir := "assets/textures"
+
+	entries, err := os.ReadDir(texDir)
+	if err != nil {
+		log.Printf("ReloadTextureAssets: cannot read %s: %v", texDir, err)
+		return
+	}
+
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+
+		full := filepath.Join(texDir, e.Name())
+
+		// Skip if already loaded
+		if assets.FindAssetByPath(full) != nil {
+			continue
+		}
+
+		id, _, err := assets.ImportTexture(full)
+		if err != nil {
+			log.Printf("ReloadTextureAssets: failed to load texture %s: %v", full, err)
+		} else {
+			log.Printf("ReloadTextureAssets: loaded texture asset %d from %s", id, full)
+		}
 	}
 }
