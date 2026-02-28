@@ -397,6 +397,263 @@
           ]
         }
       }
+    },
+    {
+      "id": 14,
+      "components": {
+        "Transform": {
+          "position": [
+            0,
+            0,
+            -6
+          ],
+          "rotation": [
+            1,
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      }
+    },
+    {
+      "id": 15,
+      "parent": 14,
+      "components": {
+        "Material": {
+          "ambient": 0.35,
+          "baseColor": [
+            0.7,
+            0.7,
+            0.7,
+            1
+          ],
+          "diffuse": 0.85,
+          "shininess": 32,
+          "specular": 0.15
+        },
+        "Mesh": {
+          "id": "Fringe/0"
+        },
+        "Transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            1,
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "id": 16,
+      "parent": 14,
+      "components": {
+        "Material": {
+          "ambient": 0.35,
+          "baseColor": [
+            0.7,
+            0.7,
+            0.7,
+            1
+          ],
+          "diffuse": 0.85,
+          "shininess": 32,
+          "specular": 0.15
+        },
+        "Mesh": {
+          "id": "Frame/0"
+        },
+        "Transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            1,
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "id": 17,
+      "parent": 14,
+      "components": {
+        "Material": {
+          "ambient": 0.35,
+          "baseColor": [
+            0.7,
+            0.7,
+            0.7,
+            1
+          ],
+          "diffuse": 0.85,
+          "shininess": 32,
+          "specular": 0.15
+        },
+        "Mesh": {
+          "id": "Frame_Fabric/0"
+        },
+        "Transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            1,
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "id": 18,
+      "parent": 14,
+      "components": {
+        "Material": {
+          "ambient": 0.35,
+          "baseColor": [
+            0.7,
+            0.7,
+            0.7,
+            1
+          ],
+          "diffuse": 0.85,
+          "shininess": 32,
+          "specular": 0.15
+        },
+        "Mesh": {
+          "id": "Paisley/0"
+        },
+        "Transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            1,
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "id": 19,
+      "parent": 14,
+      "components": {
+        "Material": {
+          "ambient": 0.35,
+          "baseColor": [
+            0.7,
+            0.7,
+            0.7,
+            1
+          ],
+          "diffuse": 0.85,
+          "shininess": 32,
+          "specular": 0.15
+        },
+        "Mesh": {
+          "id": "Stripes/0"
+        },
+        "Transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            1,
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "id": 20,
+      "parent": 14,
+      "components": {
+        "Material": {
+          "ambient": 0.35,
+          "baseColor": [
+            0.7,
+            0.7,
+            0.7,
+            1
+          ],
+          "diffuse": 0.85,
+          "shininess": 32,
+          "specular": 0.15
+        },
+        "Mesh": {
+          "id": "Brown/0"
+        },
+        "Transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            1,
+            0,
+            0,
+            0
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      }
     }
   ]
 }

@@ -115,12 +115,12 @@ func BootstrapScene() (*Scene, map[string]*ecs.Entity) {
 	ent.AddComponent(ecs.NewMesh("Frame/0"))
 	ent.AddComponent(ecs.NewTransform([3]float32{1, 1, 1}))
 	ent.AddComponent(ecs.NewMaterial([4]float32{1, 1, 1, 1}))
-	ent.AddComponent(ecs.NewName("Sofa Entity"))
+	ent.AddComponent(ecs.NewName("Sofa"))
 	ent.AddComponent(&ecs.Mesh{
 		ID:       "Frame/0",
 		MeshName: "Frame/0",
 	})
-	named["ent"] = ent
+	named["Sofa_Entity"] = ent
 
 	// Light gizmo and arrow (for debug / gizmos)
 	lightGizmo := sc.AddEntity()

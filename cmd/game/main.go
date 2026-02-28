@@ -103,13 +103,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("sofa mesh IDs: %+v", sofaMeshIDs)
 
 	// silence unused for now
 	_ = sofaMeshAsset
-	_ = sofaMeshIDs
+
 	_ = teapotMeshAsset
 	loader.LoadMeshes(meshMgr)
+
 	debug_prog := engine.MustGetShaderProgram("debug_shader")
 
 	// Load textures (runtime GPU resources)
@@ -187,6 +187,7 @@ func main() {
 	sc.Systems().AddSystem(debugSys)
 	sc.Systems().AddSystem(lightDebug)
 	cursorDisabled := false
+	spawn_sofa(sofaMeshIDs, sc, named)
 
 	window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if action == glfw.Press {
@@ -286,6 +287,7 @@ func main() {
 
 		}
 	})
+
 	// Bind runtime-only resources to entities created by the bootstrap.
 	// We look up entities by name in the map returned by BootstrapScene.
 	if e, ok := named["cube1"]; ok {
@@ -448,4 +450,29 @@ func main() {
 	// Cleanup
 	meshMgr.Delete()
 	engine.TerminateGLFW()
+}
+
+func spawn_sofa(sofaMeshIDs []string, sc *scene.Scene, named map[string]*ecs.Entity) {
+	sofaMaterials := make(map[string]*ecs.Material, len(sofaMeshIDs))
+	for _, id := range sofaMeshIDs {
+		m := ecs.NewMaterial([4]float32{0.7, 0.7, 0.7, 1})
+		// Force non-black lighting response
+		m.Ambient = 0.35
+		m.Diffuse = 0.85
+		m.Specular = 0.15
+		m.Shininess = 32
+		sofaMaterials[id] = m
+	}
+
+	sofa := scene.SpawnMultiMesh(sc, sofaMeshIDs, sofaMaterials)
+
+	// Force it into camera view and sane scale
+	if t, ok := sofa.GetComponent((*ecs.Transform)(nil)).(*ecs.Transform); ok {
+		t.Position = [3]float32{0, 0, -6}
+		t.Scale = [3]float32{0.1, 0.1, 0.1} // try 0.01 if still huge
+		t.Rotation = [4]float32{1, 0, 0, 0}
+	}
+
+	sofa.AddComponent(ecs.NewName("Sofa"))
+	named["Sofa"] = sofa
 }

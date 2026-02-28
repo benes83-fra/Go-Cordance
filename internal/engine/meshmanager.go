@@ -672,6 +672,13 @@ func (mm *MeshManager) RegisterSphere(id string, slices, stacks int) {
 
 func (mm *MeshManager) GetVAO(id string) uint32 { return mm.vaos[id] }
 
+func DumpVAOs(mm *MeshManager, ids []string, tag string) {
+	log.Printf("---- VAO dump: %s ----", tag)
+	for _, id := range ids {
+		log.Printf("mesh=%s vao=%d count=%d", id, mm.GetVAO(id), mm.GetCount(id))
+	}
+}
+
 func (mm *MeshManager) Delete() {
 	// delete VAOs
 	for _, vao := range mm.vaos {
