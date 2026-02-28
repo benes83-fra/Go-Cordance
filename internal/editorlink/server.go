@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net"
-	"os"
-	"path/filepath"
 
 	"go-engine/Go-Cordance/cmd/game/loader"
 	"go-engine/Go-Cordance/internal/assets"
@@ -14,7 +12,6 @@ import (
 	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editor/undo"
-	"go-engine/Go-Cordance/internal/engine"
 	"go-engine/Go-Cordance/internal/shaderlang"
 	"go-engine/Go-Cordance/internal/thumbnails"
 
@@ -222,22 +219,17 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 				writeMsg(EditorConn, "SceneSnapshot", MsgSceneSnapshot{Snapshot: snap})
 			}
 		case "RequestAssetList":
-			// Reload all asset types
-			ReloadTextureAssets()
-			ReloadMeshAssets()
-			loader.LoadMaterials()
-			loader.LoadShaders()
 
-			// NEW: reload meshes
-
-			// Now send updated list
 			resp := buildAssetList()
 			if err := writeMsg(conn, "AssetList", resp); err != nil {
 				log.Printf("editorlink: failed to send AssetList: %v", err)
 			}
 		case "RequestAssetReload":
-			ReloadTextureAssets()
-			ReloadMeshAssets()
+			loader.AssetReloadChan <- loader.AssetReloadRequest{
+				Textures: true,
+				Meshes:   true,
+			}
+
 			loader.LoadMaterials()
 			loader.LoadShaders()
 
@@ -454,8 +446,6 @@ func applyRemoveComponent(sc *scene.Scene, m MsgRemoveComponent) {
 	}
 }
 
-// editorlink/server.go
-
 func SendFullSnapshot(sc *scene.Scene) {
 	if EditorConn == nil {
 		return
@@ -540,6 +530,47 @@ func assetTypeToString(t assets.AssetType) string {
 	return "Unknown"
 }
 
+func SendAssetList(conn net.Conn) {
+	if conn == nil {
+		return
+	}
+	resp := buildAssetList()
+	if err := writeMsg(conn, "AssetList", resp); err != nil {
+		log.Printf("editorlink: failed to send AssetList: %v", err)
+	}
+}
+
+/*
+func ReloadTextureAssets() {
+	texDir := "assets/textures"
+
+	entries, err := os.ReadDir(texDir)
+	if err != nil {
+		log.Printf("ReloadTextureAssets: cannot read %s: %v", texDir, err)
+		return
+	}
+
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+
+		full := filepath.Join(texDir, e.Name())
+
+		// Skip if already loaded
+		if assets.FindAssetByPath(full) != nil {
+			continue
+		}
+
+		id, _, err := assets.ImportTexture(full)
+		if err != nil {
+			log.Printf("ReloadTextureAssets: failed to load texture %s: %v", full, err)
+		} else {
+			log.Printf("ReloadTextureAssets: loaded texture asset %d from %s", id, full)
+		}
+	}
+}
+
 func ReloadMeshAssets() {
 	meshDir := "assets/models"
 
@@ -588,43 +619,4 @@ func ReloadMeshAssets() {
 			}
 		}
 	}
-}
-
-func SendAssetList(conn net.Conn) {
-	if conn == nil {
-		return
-	}
-	resp := buildAssetList()
-	if err := writeMsg(conn, "AssetList", resp); err != nil {
-		log.Printf("editorlink: failed to send AssetList: %v", err)
-	}
-}
-func ReloadTextureAssets() {
-	texDir := "assets/textures"
-
-	entries, err := os.ReadDir(texDir)
-	if err != nil {
-		log.Printf("ReloadTextureAssets: cannot read %s: %v", texDir, err)
-		return
-	}
-
-	for _, e := range entries {
-		if e.IsDir() {
-			continue
-		}
-
-		full := filepath.Join(texDir, e.Name())
-
-		// Skip if already loaded
-		if assets.FindAssetByPath(full) != nil {
-			continue
-		}
-
-		id, _, err := assets.ImportTexture(full)
-		if err != nil {
-			log.Printf("ReloadTextureAssets: failed to load texture %s: %v", full, err)
-		} else {
-			log.Printf("ReloadTextureAssets: loaded texture asset %d from %s", id, full)
-		}
-	}
-}
+}*/

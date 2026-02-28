@@ -25,7 +25,7 @@ const (
 	height = 600
 )
 
-func initUndo(scene *scene.Scene) {
+func initUndo() {
 	undo.Global.SyncComponentChange = func(entityID int64, name string, fields map[string]any) {
 		// 1) send to editor
 		if editorlink.EditorConn != nil { // whatever your server-side conn is called
@@ -159,7 +159,7 @@ func main() {
 	// BootstrapScene returns the Scene and a map of named entities so we can
 	// bind runtime-only resources (textures, set LightEntity, etc).
 	sc, named := scene.BootstrapScene()
-	initUndo(sc)
+	initUndo()
 	gizmoSys.SetWorld(sc.World())
 	gizmo.RegisterGlobalGizmo(gizmoSys)
 	// Create runtime systems that need the window/renderer/meshMgr
@@ -409,7 +409,17 @@ func main() {
 
 			// Rebind material UBO if needed
 			renderSys.BindMaterialUBO(sp)
+		case req := <-loader.AssetReloadChan:
+			if req.Textures {
+				loader.LoadTextures() // now safe
+			}
+			if req.Meshes {
+				loader.LoadMeshes(meshMgr)
+			}
 
+			if editorlink.EditorConn != nil {
+				editorlink.SendAssetList(editorlink.EditorConn)
+			}
 		default:
 		}
 

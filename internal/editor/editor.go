@@ -29,7 +29,7 @@ import (
 
 // Run starts the editor UI for the provided world.
 func Run(world *ecs.World) {
-	a := app.New()
+	a := app.NewWithID("Go-Cordance Editor")
 	a.Settings().SetTheme(theme.DarkTheme())
 	win := a.NewWindow("Go-Cordance Editor")
 	win.Resize(fyne.NewSize(1000, 600))
