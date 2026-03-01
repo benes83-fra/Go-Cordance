@@ -467,63 +467,6 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		for _, item := range drawItems {
 			rs.drawMesh(item.MeshID, item.Material, normalMapComp)
 		}
-		// Draw
-		vao := rs.MeshManager.GetVAO(mesh.ID)
-		indexCount := rs.MeshManager.GetCount(mesh.ID)
-		indexType := rs.MeshManager.GetIndexType(mesh.ID)
-		vertexCount := rs.MeshManager.GetVertexCount(mesh.ID)
-		ebo := rs.MeshManager.GetEBO(mesh.ID)
-
-		// Basic sanity: VAO must be valid
-		if vao == 0 {
-			log.Printf("SKIP draw: mesh=%s has VAO=0", mesh.ID)
-			return
-		}
-
-		gl.BindVertexArray(vao)
-
-		if indexCount > 0 {
-			if ebo == 0 {
-				log.Printf("SKIP indexed draw: mesh=%s has indexCount=%d but no EBO", mesh.ID, indexCount)
-				gl.BindVertexArray(0)
-				continue
-			}
-
-			bytesPerIndex := int32(4)
-			if indexType == gl.UNSIGNED_SHORT {
-				bytesPerIndex = 2
-			}
-
-			var eboSize int32
-			gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
-			gl.GetBufferParameteriv(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE, &eboSize)
-
-			required := int32(indexCount) * bytesPerIndex
-			if eboSize < required {
-				log.Printf("SKIP draw: mesh=%s indexCount=%d (%d bytes) but EBO size=%d bytes",
-					mesh.ID, indexCount, required, eboSize)
-				gl.BindVertexArray(0)
-				continue
-			}
-
-			if mesh.ID == "line" {
-				gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
-				gl.DrawElements(gl.LINES, indexCount, indexType, gl.PtrOffset(0))
-				gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
-			} else {
-				gl.DrawElements(gl.TRIANGLES, indexCount, indexType, gl.PtrOffset(0))
-			}
-		} else {
-			if mesh.ID == "line" {
-				gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
-				gl.DrawArrays(gl.LINES, 0, vertexCount)
-				gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
-			} else {
-				gl.DrawArrays(gl.TRIANGLES, 0, vertexCount)
-			}
-		}
-
-		gl.BindVertexArray(0)
 	}
 }
 
@@ -798,12 +741,53 @@ func (rs *RenderSystem) drawMesh(
 
 	gl.BindVertexArray(vao)
 
-	if indexCount > 0 && ebo != 0 {
+	if indexCount > 0 {
+		if ebo == 0 {
+			log.Printf("SKIP indexed draw: mesh=%s has indexCount=%d but no EBO", meshID, indexCount)
+			gl.BindVertexArray(0)
+			return
+		}
+
+		bytesPerIndex := int32(4)
+		if indexType == gl.UNSIGNED_SHORT {
+			bytesPerIndex = 2
+		}
+
+		var eboSize int32
 		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
-		gl.DrawElements(gl.TRIANGLES, indexCount, indexType, gl.PtrOffset(0))
+		gl.GetBufferParameteriv(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE, &eboSize)
+
+		required := int32(indexCount) * bytesPerIndex
+		if eboSize < required {
+			log.Printf("SKIP draw: mesh=%s indexCount=%d (%d bytes) but EBO size=%d bytes",
+				meshID, indexCount, required, eboSize)
+			gl.BindVertexArray(0)
+			return
+		}
+
+		if meshID == "line" {
+			gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
+			gl.DrawElements(gl.LINES, indexCount, indexType, gl.PtrOffset(0))
+			gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
+		} else {
+			gl.DrawElements(gl.TRIANGLES, indexCount, indexType, gl.PtrOffset(0))
+		}
 	} else {
-		gl.DrawArrays(gl.TRIANGLES, 0, vertexCount)
+		if meshID == "line" {
+			gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
+			gl.DrawArrays(gl.LINES, 0, vertexCount)
+			gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
+		} else {
+			gl.DrawArrays(gl.TRIANGLES, 0, vertexCount)
+		}
 	}
+	/*
+		if indexCount > 0 && ebo != 0 {
+			gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+			gl.DrawElements(gl.TRIANGLES, indexCount, indexType, gl.PtrOffset(0))
+		} else {
+			gl.DrawArrays(gl.TRIANGLES, 0, vertexCount)
+		}*/
 
 	gl.BindVertexArray(0)
 }
