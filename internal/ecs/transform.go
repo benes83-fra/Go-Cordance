@@ -250,4 +250,5 @@ func (t *Transform) SetEditorField(name string, value any) {
 	case "Scale":
 		t.Scale = value.([3]float32)
 	}
+	t.Dirty = true
 }

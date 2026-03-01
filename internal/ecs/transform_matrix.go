@@ -74,8 +74,21 @@ func (t *Transform) SetFromMatrix(m [16]float32) {
 	t.Dirty = false
 }
 
+func sanitizeScale(s *[3]float32) {
+	if s[0] == 0 {
+		s[0] = 1
+	}
+	if s[1] == 0 {
+		s[1] = 1
+	}
+	if s[2] == 0 {
+		s[2] = 1
+	}
+}
+
 // RecalculateLocal rebuilds LocalMatrix from Position/Rotation/Scale.
 func (t *Transform) RecalculateLocal() {
+	sanitizeScale(&t.Scale)
 	// Build rotation matrix from quaternion
 	qx, qy, qz, qw := t.Rotation[0], t.Rotation[1], t.Rotation[2], t.Rotation[3]
 	sx, sy, sz := t.Scale[0], t.Scale[1], t.Scale[2]
@@ -128,6 +141,22 @@ func IdentityMatrix() [16]float32 {
 }
 
 func MulMat4(a, b [16]float32) [16]float32 {
+	// Column-major: r = a * b
+	var r [16]float32
+	for col := 0; col < 4; col++ {
+		for row := 0; row < 4; row++ {
+			r[col*4+row] =
+				a[0*4+row]*b[col*4+0] +
+					a[1*4+row]*b[col*4+1] +
+					a[2*4+row]*b[col*4+2] +
+					a[3*4+row]*b[col*4+3]
+		}
+	}
+	return r
+}
+
+/*
+func MulMat4(a, b [16]float32) [16]float32 {
 	var r [16]float32
 	for row := 0; row < 4; row++ {
 		for col := 0; col < 4; col++ {
@@ -140,3 +169,4 @@ func MulMat4(a, b [16]float32) [16]float32 {
 	}
 	return r
 }
+*/

@@ -111,7 +111,7 @@ func BootstrapScene() (*Scene, map[string]*ecs.Entity) {
 	named["teapot"] = teapot
 
 	// Generic entity with material (example)
-	ent := sc.AddEntity()
+	/*ent := sc.AddEntity()
 	ent.AddComponent(ecs.NewMesh("Frame/0"))
 	ent.AddComponent(ecs.NewTransform([3]float32{1, 1, 1}))
 	ent.AddComponent(ecs.NewMaterial([4]float32{1, 1, 1, 1}))
@@ -120,7 +120,7 @@ func BootstrapScene() (*Scene, map[string]*ecs.Entity) {
 		ID:       "Frame/0",
 		MeshName: "Frame/0",
 	})
-	named["Sofa_Entity"] = ent
+	named["Sofa_Entity"] = ent*/
 
 	// Light gizmo and arrow (for debug / gizmos)
 	lightGizmo := sc.AddEntity()

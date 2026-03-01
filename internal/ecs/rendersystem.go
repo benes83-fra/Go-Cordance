@@ -47,6 +47,12 @@ type gpuMaterial struct {
 	_Pad0        float32 // padding to 16‑byte alignment
 }
 
+type MeshDrawItem struct {
+	MeshID    string
+	Material  *Material
+	NormalMap *NormalMap
+}
+
 func NewRenderSystem(r *engine.Renderer, mm *engine.MeshManager, cs *CameraSystem) *RenderSystem {
 	rs := &RenderSystem{
 		Renderer:       r,
@@ -98,11 +104,11 @@ func (rs *RenderSystem) computeShadowLightSpace(entities []*Entity) (mgl32.Mat4,
 	case LightDirectional:
 		// derive direction from the shadow light's transform, not rs.LightDir
 		q := mgl32.Quat{
-			W: shadowTransform.Rotation[0],
+			W: shadowTransform.Rotation[3],
 			V: mgl32.Vec3{
+				shadowTransform.Rotation[0],
 				shadowTransform.Rotation[1],
 				shadowTransform.Rotation[2],
-				shadowTransform.Rotation[3],
 			},
 		}
 		fwd := q.Rotate(mgl32.Vec3{0, 0, -1})
@@ -126,11 +132,11 @@ func (rs *RenderSystem) computeShadowLightSpace(entities []*Entity) (mgl32.Mat4,
 			shadowTransform.Position[2],
 		}
 		q := mgl32.Quat{
-			W: shadowTransform.Rotation[0],
+			W: shadowTransform.Rotation[3],
 			V: mgl32.Vec3{
+				shadowTransform.Rotation[0],
 				shadowTransform.Rotation[1],
 				shadowTransform.Rotation[2],
-				shadowTransform.Rotation[3],
 			},
 		}
 		dir := q.Rotate(mgl32.Vec3{0, 0, -1})
@@ -200,11 +206,12 @@ func (rs *RenderSystem) RenderShadowPass(entities []*Entity) {
 		}
 
 		// Build model matrix
+
 		model := mgl32.Translate3D(t.Position[0], t.Position[1], t.Position[2])
-		if t.Rotation != [4]float32{0, 0, 0, 0} {
+		if t.Rotation != [4]float32{0, 0, 0, 1} {
 			q := mgl32.Quat{
-				W: t.Rotation[0],
-				V: mgl32.Vec3{t.Rotation[1], t.Rotation[2], t.Rotation[3]},
+				W: t.Rotation[3],
+				V: mgl32.Vec3{t.Rotation[0], t.Rotation[1], t.Rotation[2]},
 			}
 			model = model.Mul4(q.Mat4())
 		}
@@ -219,9 +226,13 @@ func (rs *RenderSystem) RenderShadowPass(entities []*Entity) {
 			sz = 1
 		}
 		model = model.Mul4(mgl32.Scale3D(sx, sy, sz))
-
 		locModel := gl.GetUniformLocation(rs.Renderer.ShadowProgram, gl.Str("model\x00"))
 		gl.UniformMatrix4fv(locModel, 1, false, &model[0])
+
+		//engine.SetMat4(rs.Renderer.LocModel, &t.WorldMatrix[0])
+
+		//locModel := gl.GetUniformLocation(rs.Renderer.ShadowProgram, gl.Str("model\x00"))
+		//gl.UniformMatrix4fv(locModel, 1, false, &t.WorldMatrix[0])
 
 		// Draw
 		vao := rs.MeshManager.GetVAO(mesh.ID)
@@ -286,6 +297,8 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 	// 1) Bind baseline shader for the frame.
 	//    If you later want a global override, you can use rs.ActiveShader here.
 	// 1) Determine baseline shader for this frame
+	var drawItems []MeshDrawItem
+	drawItems = drawItems[:0]
 	base := rs.DefaultShader
 	if rs.ActiveShader != nil {
 		base = rs.ActiveShader
@@ -312,6 +325,8 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		var mesh *Mesh
 		var mat *Material
 		var normalMapComp *NormalMap
+		var multi *MultiMesh
+		var multiMat *MultiMaterial
 
 		for _, c := range e.Components {
 			switch v := c.(type) {
@@ -323,9 +338,13 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 				mat = v
 			case *NormalMap:
 				normalMapComp = v
+			case *MultiMesh:
+				multi = v
+			case *MultiMaterial:
+				multiMat = v
 			}
 		}
-		if t == nil || mesh == nil || mat == nil {
+		if t == nil || mat == nil {
 			continue
 		}
 
@@ -348,10 +367,10 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 
 		// Build model matrix
 		model := mgl32.Translate3D(t.Position[0], t.Position[1], t.Position[2])
-		if t.Rotation != [4]float32{0, 0, 0, 0} {
+		if t.Rotation != [4]float32{0, 0, 0, 1} {
 			q := mgl32.Quat{
-				W: t.Rotation[0],
-				V: mgl32.Vec3{t.Rotation[1], t.Rotation[2], t.Rotation[3]},
+				W: t.Rotation[3],
+				V: mgl32.Vec3{t.Rotation[0], t.Rotation[1], t.Rotation[2]},
 			}
 			model = model.Mul4(q.Mat4())
 		}
@@ -367,8 +386,12 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		}
 		model = model.Mul4(mgl32.Scale3D(sx, sy, sz))
 		engine.SetMat4(rs.Renderer.LocModel, &model[0])
+		// New Logic useing the World Matrix
+		//engine.SetMat4(rs.Renderer.LocModel, &t.WorldMatrix[0])
 		engine.SetMat4(rs.Renderer.LocView, &view[0])
 		engine.SetMat4(rs.Renderer.LocProj, &proj[0])
+		// --- draw each mesh ---
+
 		if rs.materialUBO != 0 {
 
 			matType := mat.Type
@@ -438,7 +461,12 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		} else {
 			engine.SetInt(rs.Renderer.LocUseNormalMap, 0)
 		}
+		drawItems = drawItems[:0]
+		drawItems = rs.collectMeshes(mesh, multi, mat, multiMat, normalMapComp, drawItems)
 
+		for _, item := range drawItems {
+			rs.drawMesh(item.MeshID, item.Material, normalMapComp)
+		}
 		// Draw
 		vao := rs.MeshManager.GetVAO(mesh.ID)
 		indexCount := rs.MeshManager.GetCount(mesh.ID)
@@ -560,8 +588,8 @@ func (rs *RenderSystem) uploadGlobals(entities []*Entity, shader *engine.ShaderP
 				pos = tr.Position
 
 				q := mgl32.Quat{
-					W: tr.Rotation[0],
-					V: mgl32.Vec3{tr.Rotation[1], tr.Rotation[2], tr.Rotation[3]},
+					W: tr.Rotation[3],
+					V: mgl32.Vec3{tr.Rotation[0], tr.Rotation[1], tr.Rotation[2]},
 				}
 				fwd := q.Rotate(mgl32.Vec3{0, 0, -1})
 				dir = [3]float32{fwd.X(), fwd.Y(), fwd.Z()}
@@ -714,4 +742,68 @@ func (rs *RenderSystem) BindMaterialUBO(sp *engine.ShaderProgram) {
 func (rs *RenderSystem) SetGlobalShader(p *engine.ShaderProgram) {
 	rs.ActiveShader = p
 	rs.Renderer.SwitchProgram(p)
+}
+
+func (rs *RenderSystem) collectMeshes(
+	mesh *Mesh,
+	multi *MultiMesh,
+	mat *Material,
+	multiMat *MultiMaterial,
+	normalMap *NormalMap,
+	out []MeshDrawItem,
+) []MeshDrawItem {
+
+	if multi != nil {
+		for _, meshID := range multi.Meshes {
+			m := mat
+			if multiMat != nil {
+				if mm, ok := multiMat.Materials[meshID]; ok {
+					m = mm
+				}
+			}
+			out = append(out, MeshDrawItem{
+				MeshID:    meshID,
+				Material:  m,
+				NormalMap: normalMap,
+			})
+		}
+		return out
+	}
+
+	if mesh != nil {
+		out = append(out, MeshDrawItem{
+			MeshID:    mesh.ID,
+			Material:  mat,
+			NormalMap: normalMap,
+		})
+	}
+
+	return out
+}
+
+func (rs *RenderSystem) drawMesh(
+	meshID string,
+	mat *Material,
+	normalMap *NormalMap,
+) {
+	vao := rs.MeshManager.GetVAO(meshID)
+	if vao == 0 {
+		return
+	}
+
+	indexCount := rs.MeshManager.GetCount(meshID)
+	indexType := rs.MeshManager.GetIndexType(meshID)
+	vertexCount := rs.MeshManager.GetVertexCount(meshID)
+	ebo := rs.MeshManager.GetEBO(meshID)
+
+	gl.BindVertexArray(vao)
+
+	if indexCount > 0 && ebo != 0 {
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+		gl.DrawElements(gl.TRIANGLES, indexCount, indexType, gl.PtrOffset(0))
+	} else {
+		gl.DrawArrays(gl.TRIANGLES, 0, vertexCount)
+	}
+
+	gl.BindVertexArray(0)
 }

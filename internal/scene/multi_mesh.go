@@ -12,7 +12,7 @@ func SpawnMultiMesh(
 
 	root := sc.AddEntity()
 	root.AddComponent(&ecs.Transform{
-		Position: [3]float32{0, 0, 0},
+		Position: [3]float32{1, 0, -3},
 		Rotation: [4]float32{1, 0, 0, 0}, // identity quat
 		Scale:    [3]float32{1, 1, 1},
 	})
@@ -31,7 +31,7 @@ func SpawnMultiMesh(
 	for _, meshID := range meshIDs {
 		child := sc.AddEntity()
 		child.AddComponent(&ecs.Transform{
-			Position: [3]float32{0, 0, 0},
+			Position: [3]float32{1, 0, -3},
 			Rotation: [4]float32{1, 0, 0, 0},
 			Scale:    [3]float32{1, 1, 1},
 		})

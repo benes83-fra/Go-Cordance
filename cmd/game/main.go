@@ -468,8 +468,8 @@ func spawn_sofa(sofaMeshIDs []string, sc *scene.Scene, named map[string]*ecs.Ent
 
 	// Force it into camera view and sane scale
 	if t, ok := sofa.GetComponent((*ecs.Transform)(nil)).(*ecs.Transform); ok {
-		t.Position = [3]float32{0, 0, -6}
-		t.Scale = [3]float32{0.1, 0.1, 0.1} // try 0.01 if still huge
+		t.Position = [3]float32{10, 1, -6}
+		t.Scale = [3]float32{0.05, 0.1, 0.05} // try 0.01 if still huge
 		t.Rotation = [4]float32{1, 0, 0, 0}
 	}
 
