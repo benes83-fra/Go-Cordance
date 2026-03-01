@@ -153,6 +153,8 @@ func (rs *RenderSystem) computeShadowLightSpace(entities []*Entity) (mgl32.Mat4,
 
 func (rs *RenderSystem) RenderShadowPass(entities []*Entity) {
 	glutil.ClearGLErrors()
+	var meshIDs []string
+	meshIDs = meshIDs[:0]
 
 	if rs.Renderer.ShadowFBO == 0 || rs.Renderer.ShadowProgram == 0 {
 		return
@@ -192,6 +194,7 @@ func (rs *RenderSystem) RenderShadowPass(entities []*Entity) {
 	for _, e := range entities {
 		var t *Transform
 		var mesh *Mesh
+		var multi *MultiMesh
 
 		for _, c := range e.Components {
 			switch v := c.(type) {
@@ -199,9 +202,11 @@ func (rs *RenderSystem) RenderShadowPass(entities []*Entity) {
 				t = v
 			case *Mesh:
 				mesh = v
+			case *MultiMesh:
+				multi = v
 			}
 		}
-		if t == nil || mesh == nil {
+		if t == nil || (mesh == nil && multi == nil) {
 			continue
 		}
 
@@ -233,48 +238,51 @@ func (rs *RenderSystem) RenderShadowPass(entities []*Entity) {
 
 		//locModel := gl.GetUniformLocation(rs.Renderer.ShadowProgram, gl.Str("model\x00"))
 		//gl.UniformMatrix4fv(locModel, 1, false, &t.WorldMatrix[0])
-
+		meshIDs = meshIDs[:0]
+		meshIDs = rs.collectShadowMeshes(mesh, multi, meshIDs)
 		// Draw
-		vao := rs.MeshManager.GetVAO(mesh.ID)
-		indexCount := rs.MeshManager.GetCount(mesh.ID)
-		indexType := rs.MeshManager.GetIndexType(mesh.ID)
-		vertexCount := rs.MeshManager.GetVertexCount(mesh.ID)
-		ebo := rs.MeshManager.GetEBO(mesh.ID)
+		for _, meshID := range meshIDs {
+			vao := rs.MeshManager.GetVAO(meshID)
+			indexCount := rs.MeshManager.GetCount(meshID)
+			indexType := rs.MeshManager.GetIndexType(meshID)
+			vertexCount := rs.MeshManager.GetVertexCount(meshID)
+			ebo := rs.MeshManager.GetEBO(meshID)
 
-		bytesPerIndex := int32(4)
-		if indexType == gl.UNSIGNED_SHORT {
-			bytesPerIndex = 2
-		}
+			bytesPerIndex := int32(4)
+			if indexType == gl.UNSIGNED_SHORT {
+				bytesPerIndex = 2
+			}
 
-		var eboSize int32
-		if ebo != 0 {
-			gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
-			gl.GetBufferParameteriv(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE, &eboSize)
-		}
-
-		glutil.RunGLChecked("ShadowPass: draw "+mesh.ID, func() {
-			gl.BindVertexArray(vao)
-
+			var eboSize int32
 			if ebo != 0 {
 				gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+				gl.GetBufferParameteriv(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE, &eboSize)
 			}
 
-			if indexCount > 0 && ebo != 0 && eboSize >= int32(indexCount)*bytesPerIndex {
-				if mesh.ID == "line" {
-					gl.DrawElements(gl.LINES, indexCount, indexType, gl.PtrOffset(0))
-				} else {
-					gl.DrawElements(gl.TRIANGLES, indexCount, indexType, gl.PtrOffset(0))
-				}
-			} else {
-				if mesh.ID == "line" {
-					gl.DrawArrays(gl.LINES, 0, vertexCount)
-				} else {
-					gl.DrawArrays(gl.TRIANGLES, 0, vertexCount)
-				}
-			}
+			glutil.RunGLChecked("ShadowPass: draw "+meshID, func() {
+				gl.BindVertexArray(vao)
 
-			gl.BindVertexArray(0)
-		})
+				if ebo != 0 {
+					gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
+				}
+
+				if indexCount > 0 && ebo != 0 && eboSize >= int32(indexCount)*bytesPerIndex {
+					if meshID == "line" {
+						gl.DrawElements(gl.LINES, indexCount, indexType, gl.PtrOffset(0))
+					} else {
+						gl.DrawElements(gl.TRIANGLES, indexCount, indexType, gl.PtrOffset(0))
+					}
+				} else {
+					if meshID == "line" {
+						gl.DrawArrays(gl.LINES, 0, vertexCount)
+					} else {
+						gl.DrawArrays(gl.TRIANGLES, 0, vertexCount)
+					}
+				}
+
+				gl.BindVertexArray(0)
+			})
+		}
 	}
 
 	// Restore default framebuffer + viewport
@@ -790,4 +798,15 @@ func (rs *RenderSystem) drawMesh(
 		}*/
 
 	gl.BindVertexArray(0)
+}
+
+func (rs *RenderSystem) collectShadowMeshes(mesh *Mesh, multi *MultiMesh, out []string) []string {
+	if multi != nil {
+		out = append(out, multi.Meshes...)
+		return out
+	}
+	if mesh != nil {
+		out = append(out, mesh.ID)
+	}
+	return out
 }
