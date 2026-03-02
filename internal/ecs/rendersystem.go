@@ -212,7 +212,7 @@ func (rs *RenderSystem) RenderShadowPass(entities []*Entity) {
 
 		// Build model matrix
 
-		model := mgl32.Translate3D(t.Position[0], t.Position[1], t.Position[2])
+		/*model := mgl32.Translate3D(t.Position[0], t.Position[1], t.Position[2])
 		if t.Rotation != [4]float32{0, 0, 0, 1} {
 			q := mgl32.Quat{
 				W: t.Rotation[3],
@@ -232,12 +232,12 @@ func (rs *RenderSystem) RenderShadowPass(entities []*Entity) {
 		}
 		model = model.Mul4(mgl32.Scale3D(sx, sy, sz))
 		locModel := gl.GetUniformLocation(rs.Renderer.ShadowProgram, gl.Str("model\x00"))
-		gl.UniformMatrix4fv(locModel, 1, false, &model[0])
+		gl.UniformMatrix4fv(locModel, 1, false, &model[0])*/
 
 		//engine.SetMat4(rs.Renderer.LocModel, &t.WorldMatrix[0])
 
-		//locModel := gl.GetUniformLocation(rs.Renderer.ShadowProgram, gl.Str("model\x00"))
-		//gl.UniformMatrix4fv(locModel, 1, false, &t.WorldMatrix[0])
+		locModel := gl.GetUniformLocation(rs.Renderer.ShadowProgram, gl.Str("model\x00"))
+		gl.UniformMatrix4fv(locModel, 1, false, &t.WorldMatrix[0])
 		meshIDs = meshIDs[:0]
 		meshIDs = rs.collectShadowMeshes(mesh, multi, meshIDs)
 		// Draw
@@ -374,7 +374,7 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		}
 
 		// Build model matrix
-		model := mgl32.Translate3D(t.Position[0], t.Position[1], t.Position[2])
+		/*model := mgl32.Translate3D(t.Position[0], t.Position[1], t.Position[2])
 		if t.Rotation != [4]float32{0, 0, 0, 1} {
 			q := mgl32.Quat{
 				W: t.Rotation[3],
@@ -393,9 +393,9 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 			sz = 1
 		}
 		model = model.Mul4(mgl32.Scale3D(sx, sy, sz))
-		engine.SetMat4(rs.Renderer.LocModel, &model[0])
+		engine.SetMat4(rs.Renderer.LocModel, &model[0])*/
 		// New Logic useing the World Matrix
-		//engine.SetMat4(rs.Renderer.LocModel, &t.WorldMatrix[0])
+		engine.SetMat4(rs.Renderer.LocModel, &t.WorldMatrix[0])
 		engine.SetMat4(rs.Renderer.LocView, &view[0])
 		engine.SetMat4(rs.Renderer.LocProj, &proj[0])
 		// --- draw each mesh ---

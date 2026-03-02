@@ -86,6 +86,61 @@ func sanitizeScale(s *[3]float32) {
 	}
 }
 
+// func (t *Transform) RecalculateLocal() {
+// 	sanitizeScale(&t.Scale)
+
+// 	// Convert Euler (XYZ) to quaternion
+// 	ex, ey, ez := t.Rotation[0], t.Rotation[1], t.Rotation[2]
+// 	cx, sx := float32(math.Cos(float64(ex)*0.5)), float32(math.Sin(float64(ex)*0.5))
+// 	cy, sy := float32(math.Cos(float64(ey)*0.5)), float32(math.Sin(float64(ey)*0.5))
+// 	cz, sz := float32(math.Cos(float64(ez)*0.5)), float32(math.Sin(float64(ez)*0.5))
+
+// 	qw := cx*cy*cz + sx*sy*sz
+// 	qx := sx*cy*cz - cx*sy*sz
+// 	qy := cx*sy*cz + sx*cy*sz
+// 	qz := cx*cy*sz - sx*sy*cz
+
+// 	// Build rotation matrix from quaternion
+// 	xx := qx * qx
+// 	yy := qy * qy
+// 	zz := qz * qz
+// 	xy := qx * qy
+// 	xz := qx * qz
+// 	yz := qy * qz
+// 	wx := qw * qx
+// 	wy := qw * qy
+// 	wz := qw * qz
+
+// 	sx, sy, sz = t.Scale[0], t.Scale[1], t.Scale[2]
+// 	tx, ty, tz := t.Position[0], t.Position[1], t.Position[2]
+
+// 	m := [16]float32{
+// 		1 - 2*(yy+zz), 2 * (xy - wz), 2 * (xz + wy), 0,
+// 		2 * (xy + wz), 1 - 2*(xx+zz), 2 * (yz - wx), 0,
+// 		2 * (xz - wy), 2 * (yz + wx), 1 - 2*(xx+yy), 0,
+// 		0, 0, 0, 1,
+// 	}
+
+// 	// Apply scale
+// 	m[0] *= sx
+// 	m[1] *= sx
+// 	m[2] *= sx
+// 	m[4] *= sy
+// 	m[5] *= sy
+// 	m[6] *= sy
+// 	m[8] *= sz
+// 	m[9] *= sz
+// 	m[10] *= sz
+
+// 	// Apply translation
+// 	m[12] = tx
+// 	m[13] = ty
+// 	m[14] = tz
+
+// 	t.LocalMatrix = m
+// 	t.Dirty = false
+// }
+
 // RecalculateLocal rebuilds LocalMatrix from Position/Rotation/Scale.
 func (t *Transform) RecalculateLocal() {
 	sanitizeScale(&t.Scale)
@@ -131,6 +186,15 @@ func (t *Transform) RecalculateLocal() {
 	t.Dirty = false
 }
 
+func (t *Transform) RecalculateWorld(parent *Transform) {
+	if parent != nil {
+		t.WorldMatrix = MulMat4(parent.WorldMatrix, t.LocalMatrix)
+
+	} else {
+		t.WorldMatrix = t.LocalMatrix
+	}
+}
+
 func IdentityMatrix() [16]float32 {
 	return [16]float32{
 		1, 0, 0, 0,
@@ -154,19 +218,3 @@ func MulMat4(a, b [16]float32) [16]float32 {
 	}
 	return r
 }
-
-/*
-func MulMat4(a, b [16]float32) [16]float32 {
-	var r [16]float32
-	for row := 0; row < 4; row++ {
-		for col := 0; col < 4; col++ {
-			r[row*4+col] =
-				a[row*4+0]*b[0*4+col] +
-					a[row*4+1]*b[1*4+col] +
-					a[row*4+2]*b[2*4+col] +
-					a[row*4+3]*b[3*4+col]
-		}
-	}
-	return r
-}
-*/

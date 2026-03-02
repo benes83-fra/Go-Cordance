@@ -36,15 +36,14 @@ func (ts *TransformSystem) Update(dt float32, entities []*Entity) {
 		}
 		ts.updateRecursive(e, &identity)
 	}
+
 }
 
 func (ts *TransformSystem) updateRecursive(e *Entity, parentWorld *[16]float32) {
 	tr := e.GetTransform()
 	if tr != nil {
-		// Always rebuild local if dirty
-		if tr.Dirty {
-			tr.RecalculateLocal()
-		}
+		// Always rebuild for now
+		tr.RecalculateLocal()
 		tr.WorldMatrix = MulMat4(*parentWorld, tr.LocalMatrix)
 	}
 

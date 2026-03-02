@@ -38,6 +38,7 @@ func (t *Transform) Translate(x, y, z float32) {
 	t.Position[0] += x
 	t.Position[1] += y
 	t.Position[2] += z
+	t.Dirty = true
 }
 
 // Rotate adds Euler rotation (radians).
@@ -45,6 +46,21 @@ func (t *Transform) Rotate(rx, ry, rz float32) {
 	t.Rotation[0] += rx
 	t.Rotation[1] += ry
 	t.Rotation[2] += rz
+	t.Dirty = true
+}
+
+func (t *Transform) SetEulerXYZ(ex, ey, ez float32) {
+	cx, sx := float32(math.Cos(float64(ex)*0.5)), float32(math.Sin(float64(ex)*0.5))
+	cy, sy := float32(math.Cos(float64(ey)*0.5)), float32(math.Sin(float64(ey)*0.5))
+	cz, sz := float32(math.Cos(float64(ez)*0.5)), float32(math.Sin(float64(ez)*0.5))
+
+	qw := cx*cy*cz + sx*sy*sz
+	qx := sx*cy*cz - cx*sy*sz
+	qy := cx*sy*cz + sx*cy*sz
+	qz := cx*cy*sz - sx*sy*cz
+
+	t.Rotation = [4]float32{qx, qy, qz, qw}
+	t.Dirty = true
 }
 
 // UniformScale multiplies the scale uniformly.
@@ -52,6 +68,7 @@ func (t *Transform) UniformScale(s float32) {
 	t.Scale[0] *= s
 	t.Scale[1] *= s
 	t.Scale[2] *= s
+	t.Dirty = true
 }
 
 // SetRotationDegrees sets rotation from degrees (convenience).
@@ -60,6 +77,7 @@ func (t *Transform) SetRotationDegrees(dx, dy, dz float32) {
 	t.Rotation[0] = dx * degToRad
 	t.Rotation[1] = dy * degToRad
 	t.Rotation[2] = dz * degToRad
+	t.Dirty = true
 }
 func GetTransform(e *Entity) *Transform {
 	for _, c := range e.Components {
