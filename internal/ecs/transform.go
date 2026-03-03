@@ -1,6 +1,10 @@
 package ecs
 
-import "math"
+import (
+	"math"
+
+	"github.com/go-gl/mathgl/mgl32"
+)
 
 // Transform is a simple component that holds position/rotation/scale.
 // It implements Component so it can be updated if needed (e.g., animations).
@@ -41,11 +45,14 @@ func (t *Transform) Translate(x, y, z float32) {
 	t.Dirty = true
 }
 
-// Rotate adds Euler rotation (radians).
-func (t *Transform) Rotate(rx, ry, rz float32) {
-	t.Rotation[0] += rx
-	t.Rotation[1] += ry
-	t.Rotation[2] += rz
+func (t *Transform) RotateEuler(rx, ry, rz float32) {
+	q := mgl32.AnglesToQuat(rx, ry, rz, mgl32.ZYX)
+	cur := mgl32.Quat{
+		W: t.Rotation[3],
+		V: mgl32.Vec3{t.Rotation[0], t.Rotation[1], t.Rotation[2]},
+	}
+	out := q.Mul(cur).Normalize()
+	t.Rotation = [4]float32{out.V[0], out.V[1], out.V[2], out.W}
 	t.Dirty = true
 }
 
@@ -74,11 +81,9 @@ func (t *Transform) UniformScale(s float32) {
 // SetRotationDegrees sets rotation from degrees (convenience).
 func (t *Transform) SetRotationDegrees(dx, dy, dz float32) {
 	const degToRad = math.Pi / 180.0
-	t.Rotation[0] = dx * degToRad
-	t.Rotation[1] = dy * degToRad
-	t.Rotation[2] = dz * degToRad
-	t.Dirty = true
+	t.SetEulerXYZ(dx*degToRad, dy*degToRad, dz*degToRad)
 }
+
 func GetTransform(e *Entity) *Transform {
 	for _, c := range e.Components {
 		if tr, ok := c.(*Transform); ok {

@@ -175,8 +175,8 @@ func computeLocalAxes(localMode bool, t *ecs.Transform) (mgl32.Vec3, mgl32.Vec3,
 
 	if localMode {
 		q := mgl32.Quat{
-			W: t.Rotation[0],
-			V: mgl32.Vec3{t.Rotation[1], t.Rotation[2], t.Rotation[3]},
+			W: t.Rotation[3],
+			V: mgl32.Vec3{t.Rotation[0], t.Rotation[1], t.Rotation[2]},
 		}
 		x = q.Rotate(x)
 		y = q.Rotate(y)

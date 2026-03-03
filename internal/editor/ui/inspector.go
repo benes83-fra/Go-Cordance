@@ -116,7 +116,12 @@ func NewInspectorPanel() (
 	rebuild = func(world interface{}, st *state.EditorState, hierarchy *widget.List) {
 		root.Objects = nil
 		st.IsRebuilding = true
+
 		defer func() { st.IsRebuilding = false }()
+		// Ensure caches/maps exist
+		if st.EulerCache == nil {
+			st.EulerCache = make(map[uint64][3]float32)
+		}
 		if st.Foldout == nil {
 			st.Foldout = map[string]bool{
 				"Position": true,
@@ -238,15 +243,22 @@ func NewInspectorPanel() (
 
 		// Convert quaternion → Euler degrees for UI
 		// Convert quaternion → Euler degrees
-		q := mgl32.Quat{
-			W: ent.Rotation[0],
-			V: mgl32.Vec3{ent.Rotation[1], ent.Rotation[2], ent.Rotation[3]},
-		}
-		pitch, yaw, roll := quatToEuler(q)
+		id := uint64(ent.ID)
 
-		rotX.SetText(strconv.FormatFloat(float64(pitch*180/math.Pi), 'f', 3, 32))
-		rotY.SetText(strconv.FormatFloat(float64(yaw*180/math.Pi), 'f', 3, 32))
-		rotZ.SetText(strconv.FormatFloat(float64(roll*180/math.Pi), 'f', 3, 32))
+		euler, ok := st.EulerCache[id]
+		if !ok {
+			q := mgl32.Quat{
+				W: ent.Rotation[3],
+				V: mgl32.Vec3{ent.Rotation[0], ent.Rotation[1], ent.Rotation[2]},
+			}
+			ex, ey, ez := quatToEuler(q)
+			euler = [3]float32{ex, ey, ez}
+			st.EulerCache[id] = euler
+		}
+
+		rotX.SetText(strconv.FormatFloat(float64(euler[0]*180/math.Pi), 'f', 3, 32))
+		rotY.SetText(strconv.FormatFloat(float64(euler[1]*180/math.Pi), 'f', 3, 32))
+		rotZ.SetText(strconv.FormatFloat(float64(euler[2]*180/math.Pi), 'f', 3, 32))
 
 		scaleX.SetText(strconv.FormatFloat(float64(ent.Scale[0]), 'f', 4, 32))
 		scaleY.SetText(strconv.FormatFloat(float64(ent.Scale[1]), 'f', 4, 32))
@@ -284,15 +296,15 @@ func NewInspectorPanel() (
 			ex := parse32(rotX.Text) * (math.Pi / 180)
 			ey := parse32(rotY.Text) * (math.Pi / 180)
 			ez := parse32(rotZ.Text) * (math.Pi / 180)
-
+			st.EulerCache[uint64(st.Entities[st.SelectedIndex].ID)] = [3]float32{ex, ey, ez}
 			// Convert Euler → quaternion
 			q := mgl32.AnglesToQuat(ex, ey, ez, mgl32.ZYX)
 
-			st.Entities[st.SelectedIndex].Rotation[0] = q.W
-			st.Entities[st.SelectedIndex].Rotation[1] = q.V[0]
-			st.Entities[st.SelectedIndex].Rotation[2] = q.V[1]
-			st.Entities[st.SelectedIndex].Rotation[3] = q.V[2]
-
+			st.Entities[st.SelectedIndex].Rotation[0] = q.V[0]
+			st.Entities[st.SelectedIndex].Rotation[1] = q.V[1]
+			st.Entities[st.SelectedIndex].Rotation[2] = q.V[2]
+			st.Entities[st.SelectedIndex].Rotation[3] = q.W
+			//st.EulerCache[st.Entities[st.SelectedID]] = [3]float32{ex, ey, ez}
 			sendTransformIfConnected(st, st.SelectedIndex)
 		}
 

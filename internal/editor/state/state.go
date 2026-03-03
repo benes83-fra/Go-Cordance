@@ -30,6 +30,7 @@ type EditorState struct {
 	LastComponents      map[int64][]string
 	Shaders             []AssetView
 	UpdateLocalMesh     func(entityID int64, meshID string)
+	EulerCache          map[uint64][3]float32
 	// in EditorState
 
 	Assets struct {
@@ -46,6 +47,7 @@ func NewEditorState() *EditorState {
 		SelectedIndex: -1,
 
 		LastComponents: make(map[int64][]string),
+		EulerCache:     make(map[uint64][3]float32),
 	}
 }
 
@@ -55,6 +57,7 @@ func New() *EditorState {
 		SelectedIndex:  -1,
 		SplitOffset:    0.35,
 		LastComponents: make(map[int64][]string),
+		EulerCache:     make(map[uint64][3]float32),
 	}
 
 }

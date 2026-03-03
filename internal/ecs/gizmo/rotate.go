@@ -104,12 +104,13 @@ func (gs *GizmoRenderSystem) rotationDrag(
 						tr.Position[0], tr.Position[1], tr.Position[2] = newPos.X(), newPos.Y(), newPos.Z()
 
 						// rotate orientation
-						curQ := mgl32.Quat{W: tr.Rotation[0], V: mgl32.Vec3{tr.Rotation[1], tr.Rotation[2], tr.Rotation[3]}}
-						newQ := q.Mul(curQ).Normalize()
-						tr.Rotation[0] = newQ.W
-						tr.Rotation[1] = newQ.V[0]
-						tr.Rotation[2] = newQ.V[1]
-						tr.Rotation[3] = newQ.V[2]
+						curQ := mgl32.Quat{W: tr.Rotation[3], V: mgl32.Vec3{tr.Rotation[0], tr.Rotation[1], tr.Rotation[2]}}
+						outQ := q.Mul(curQ).Normalize()
+						tr.Rotation[0] = outQ.V[0]
+						tr.Rotation[1] = outQ.V[1]
+						tr.Rotation[2] = outQ.V[2]
+						tr.Rotation[3] = outQ.W
+
 						bridge.NotifyEditorOfTransform(
 							id,
 							tr.Position,
@@ -121,12 +122,13 @@ func (gs *GizmoRenderSystem) rotationDrag(
 			}
 		} else {
 			// single entity: existing behavior (rotate t)
-			current := mgl32.Quat{W: t.Rotation[0], V: mgl32.Vec3{t.Rotation[1], t.Rotation[2], t.Rotation[3]}}
+			current := mgl32.Quat{W: t.Rotation[3], V: mgl32.Vec3{t.Rotation[0], t.Rotation[1], t.Rotation[2]}}
 			newQ := q.Mul(current).Normalize()
-			t.Rotation[0] = newQ.W
-			t.Rotation[1] = newQ.V[0]
-			t.Rotation[2] = newQ.V[1]
-			t.Rotation[3] = newQ.V[2]
+			t.Rotation[0] = newQ.V[0]
+			t.Rotation[1] = newQ.V[1]
+			t.Rotation[2] = newQ.V[2]
+			t.Rotation[3] = newQ.W
+
 			bridge.NotifyEditorOfTransform(globalId.ID, t.Position, t.Rotation, t.Scale)
 		}
 		return
@@ -189,12 +191,13 @@ func (gs *GizmoRenderSystem) rotationDrag(
 					tr.Position[0], tr.Position[1], tr.Position[2] = newPos.X(), newPos.Y(), newPos.Z()
 
 					// rotate orientation
-					curQ := mgl32.Quat{W: tr.Rotation[0], V: mgl32.Vec3{tr.Rotation[1], tr.Rotation[2], tr.Rotation[3]}}
+					curQ := mgl32.Quat{W: tr.Rotation[3], V: mgl32.Vec3{tr.Rotation[0], tr.Rotation[1], tr.Rotation[2]}}
 					outQ := q.Mul(curQ).Normalize()
-					tr.Rotation[0] = outQ.W
-					tr.Rotation[1] = outQ.V[0]
-					tr.Rotation[2] = outQ.V[1]
-					tr.Rotation[3] = outQ.V[2]
+					tr.Rotation[0] = outQ.V[0]
+					tr.Rotation[1] = outQ.V[1]
+					tr.Rotation[2] = outQ.V[2]
+					tr.Rotation[3] = outQ.W
+
 					bridge.NotifyEditorOfTransform(
 						id,
 						tr.Position,
@@ -208,12 +211,13 @@ func (gs *GizmoRenderSystem) rotationDrag(
 	}
 
 	// single entity fallback (existing)
-	current := mgl32.Quat{W: t.Rotation[0], V: mgl32.Vec3{t.Rotation[1], t.Rotation[2], t.Rotation[3]}}
+	current := mgl32.Quat{W: t.Rotation[3], V: mgl32.Vec3{t.Rotation[0], t.Rotation[1], t.Rotation[2]}}
 	newQ := q.Mul(current).Normalize()
-	t.Rotation[0] = newQ.W
-	t.Rotation[1] = newQ.V[0]
-	t.Rotation[2] = newQ.V[1]
-	t.Rotation[3] = newQ.V[2]
+	t.Rotation[0] = newQ.V[0]
+	t.Rotation[1] = newQ.V[1]
+	t.Rotation[2] = newQ.V[2]
+	t.Rotation[3] = newQ.W
+
 	bridge.NotifyEditorOfTransform(globalId.ID, t.Position, t.Rotation, t.Scale)
 
 }
