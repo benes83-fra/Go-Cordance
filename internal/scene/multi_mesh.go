@@ -30,6 +30,7 @@ func SpawnMultiMesh(
 
 	for _, meshID := range meshIDs {
 		child := sc.AddEntity()
+
 		child.AddComponent(&ecs.Transform{
 			Position: [3]float32{1, 0, -3},
 			Rotation: [4]float32{1, 0, 0, 0},
@@ -40,6 +41,9 @@ func SpawnMultiMesh(
 			ID:       meshID,
 			MeshName: meshID,
 		})
+
+		// 🔥 THIS FIXES THE EDITOR NAMES
+		child.AddComponent(ecs.NewName(meshID))
 
 		if mat, ok := materials[meshID]; ok {
 			child.AddComponent(mat)
