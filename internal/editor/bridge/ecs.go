@@ -10,6 +10,8 @@ type EntityInfo struct {
 	Rotation   Vec4     `json:"rotation"`
 	Scale      Vec3     `json:"scale"`
 	Components []string `json:"components"`
+	Parent     uint64   `json:parent`
+	Children   []uint64 `json:children`
 }
 
 type ECSProvider interface {

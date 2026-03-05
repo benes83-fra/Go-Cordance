@@ -356,6 +356,26 @@ func buildSceneSnapshot(sc *scene.Scene) SceneSnapshot {
 		if ent.GetComponent((*ecs.LightComponent)(nil)) != nil {
 			view.Components = append(view.Components, "Light")
 		}
+		if ent.GetComponent((*ecs.MultiMesh)(nil)) != nil {
+			view.Components = append(view.Components, "MultiMesh")
+		}
+		// Parent
+		if c := ent.GetComponent((*ecs.Parent)(nil)); c != nil {
+			p := c.(*ecs.Parent)
+			if p.Entity != nil {
+				view.Parent = uint64(p.Entity.ID)
+			}
+			view.Components = append(view.Components, "Parent")
+		}
+
+		// Children
+		if c := ent.GetComponent((*ecs.Children)(nil)); c != nil {
+			ch := c.(*ecs.Children)
+			for _, child := range ch.Entities {
+				view.Children = append(view.Children, uint64(child.ID))
+			}
+			view.Components = append(view.Components, "Children")
+		}
 
 		snap.Entities = append(snap.Entities, view)
 	}

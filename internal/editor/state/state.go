@@ -31,6 +31,9 @@ type EditorState struct {
 	Shaders             []AssetView
 	UpdateLocalMesh     func(entityID int64, meshID string)
 	EulerCache          map[uint64][3]float32
+	ParentMap           map[int64]int64
+	ChildrenMap         map[int64][]int64
+
 	// in EditorState
 
 	Assets struct {

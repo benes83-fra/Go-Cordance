@@ -23,6 +23,8 @@ type EntityView struct {
 	BaseColor Vec4 `json:"baseColor"`
 
 	Components []string `json:"components"`
+	Parent     uint64   `json:"parent,omitempty`
+	Children   []uint64 `json:children,omitempty`
 }
 
 type SceneSnapshot struct {

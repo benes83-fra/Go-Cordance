@@ -150,6 +150,41 @@ func UpdateEntities(world *ecs.World, ents []bridge.EntityInfo) {
 	if structuralChange {
 		SyncEditorWorld(world, ents)
 	}
+	// Build parent → children map
+	childrenMap := map[int64][]int64{}
+	parentMap := map[int64]int64{}
+
+	for _, e := range ents {
+		if e.Parent != 0 {
+			parentMap[e.ID] = int64(e.Parent)
+			childrenMap[int64(e.Parent)] = append(childrenMap[int64(e.Parent)], e.ID)
+		}
+	}
+	// Inject virtual MultiMesh children
+	for _, e := range ents {
+		hasMulti := false
+		for _, c := range e.Components {
+			if c == "MultiMesh" {
+				hasMulti = true
+				break
+			}
+		}
+		if !hasMulti {
+			continue
+		}
+
+		// All entities whose Parent == this entity
+		for _, child := range ents {
+			if child.Parent == uint64(e.ID) {
+				childrenMap[e.ID] = append(childrenMap[e.ID], child.ID)
+				parentMap[child.ID] = e.ID
+			}
+		}
+	}
+
+	state.Global.ParentMap = parentMap
+	state.Global.ChildrenMap = childrenMap
+
 	// If there is a selected index, forward it to the gizmo; otherwise clear selection.
 	// Forward current multi-selection to gizmo if present; otherwise fall back to single SelectedIndex.
 	if len(state.Global.Selection.IDs) > 0 {

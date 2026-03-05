@@ -17,6 +17,14 @@ import (
 var lastClickTime time.Time
 var lastClickIndex = -1
 
+type HierarchyRow struct {
+	ID        int64
+	Name      string
+	IsVirtual bool
+	ParentID  int64
+	Depth     int
+}
+
 // NewHierarchyPanel returns BOTH:
 // 1) The UI container (button + list)
 // 2) The underlying *widget.List for inspector rebuild
@@ -53,9 +61,13 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 	makeItem := func() fyne.CanvasObject {
 		return newHierarchyDropItem()
 	}
-
+	var rows []HierarchyRow
 	list := widget.NewList(
-		func() int { return len(st.Entities) },
+		func() int {
+			rows = BuildHierarchyRows(st)
+			return len(rows)
+
+		},
 		makeItem,
 		func(i int, o fyne.CanvasObject) {
 
@@ -66,18 +78,18 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 				return
 			}
 
-			ent := st.Entities[i]
+			row := rows[i]
 			item := o.(*hierarchyDropItem)
 			check := item.check
 			btn := item.btn
-			item.entityID = ent.ID
+			item.entityID = row.ID
 
-			btn.SetText(ent.Name)
-
+			btn.SetText(row.Name)
+			item.btn.Move(fyne.NewPos(float32(row.Depth*20), item.btn.Position().Y))
 			// checkbox state
 			checked := false
 			for _, id := range st.Selection.IDs {
-				if id == ent.ID {
+				if id == row.ID {
 					checked = true
 					break
 				}
@@ -90,18 +102,18 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 				if checked {
 					found := false
 					for _, id := range st.Selection.IDs {
-						if id == ent.ID {
+						if id == row.ID {
 							found = true
 							break
 						}
 					}
 					if !found {
-						st.Selection.IDs = append(st.Selection.IDs, ent.ID)
+						st.Selection.IDs = append(st.Selection.IDs, row.ID)
 					}
 				} else {
 					newIDs := make([]int64, 0, len(st.Selection.IDs))
 					for _, id := range st.Selection.IDs {
-						if id != ent.ID {
+						if id != row.ID {
 							newIDs = append(newIDs, id)
 						}
 					}
@@ -120,7 +132,7 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 
 				if lastClickIndex == i && now.Sub(lastClickTime) < 300*time.Millisecond {
 					if editorlink.EditorConn != nil {
-						go editorlink.WriteFocusEntity(editorlink.EditorConn, ent.ID)
+						go editorlink.WriteFocusEntity(editorlink.EditorConn, row.ID)
 					}
 					return
 				}
@@ -129,11 +141,11 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 				lastClickIndex = i
 
 				st.SelectedIndex = i
-				st.Selection.ActiveID = ent.ID
-				st.Selection.IDs = []int64{ent.ID}
+				st.Selection.ActiveID = row.ID
+				st.Selection.IDs = []int64{row.ID}
 
 				if editorlink.EditorConn != nil {
-					go editorlink.WriteSelectEntity(editorlink.EditorConn, ent.ID)
+					go editorlink.WriteSelectEntity(editorlink.EditorConn, row.ID)
 					go editorlink.WriteSelectEntities(editorlink.EditorConn, st.Selection.IDs)
 				}
 
@@ -146,6 +158,98 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 	panel := container.NewBorder(topBar, nil, nil, nil, list)
 
 	return panel, list
+}
+
+func BuildHierarchyRows(st *state.EditorState) []HierarchyRow {
+	ents := st.Entities
+	/*parentMap*/ _ = st.ParentMap
+	childrenMap := st.ChildrenMap
+
+	// Build lookup by ID
+	byID := map[int64]bridge.EntityInfo{}
+	for _, e := range ents {
+		byID[e.ID] = e
+	}
+
+	var rows []HierarchyRow
+
+	var walk func(id int64, depth int)
+	walk = func(id int64, depth int) {
+		e := byID[id]
+
+		// Add the real entity row
+		rows = append(rows, HierarchyRow{
+			ID:        id,
+			Name:      e.Name,
+			IsVirtual: false,
+			ParentID:  int64(e.Parent),
+			Depth:     depth,
+		})
+
+		// If this entity has a MultiMesh component, add virtual children
+		hasMulti := false
+		for _, c := range e.Components {
+			if c == "MultiMesh" {
+				hasMulti = true
+				break
+			}
+		}
+
+		if hasMulti {
+			// Find the real children (submesh entities)
+			for _, childID := range childrenMap[id] {
+				child := byID[childID]
+				rows = append(rows, HierarchyRow{
+					ID:        childID,
+					Name:      child.Name,
+					IsVirtual: true,
+					ParentID:  id,
+					Depth:     depth + 1,
+				})
+			}
+		}
+
+		// Continue walking real children
+		for _, childID := range childrenMap[id] {
+			walk(childID, depth+1)
+		}
+	}
+
+	// Find roots
+	for _, e := range ents {
+		if e.Parent == 0 {
+			walk(e.ID, 0)
+		}
+	}
+
+	return rows
+}
+
+func buildHierarchyOrder(ents []bridge.EntityInfo, childrenMap map[int64][]int64) []int64 {
+	var out []int64
+
+	// 1. find all roots
+	roots := []int64{}
+	for _, e := range ents {
+		if e.Parent == 0 {
+			roots = append(roots, e.ID)
+		}
+	}
+
+	// 2. DFS to preserve order
+	var walk func(id int64)
+	walk = func(id int64) {
+		out = append(out, id)
+		for _, child := range childrenMap[id] {
+			walk(child)
+		}
+	}
+
+	for _, r := range roots {
+		walk(r)
+	}
+
+	return out
 }
 
 type hierarchyDropItem struct {
