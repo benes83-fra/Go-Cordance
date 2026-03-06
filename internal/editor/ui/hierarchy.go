@@ -7,6 +7,7 @@ import (
 	"go-engine/Go-Cordance/internal/editorlink"
 	"log"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -62,19 +63,18 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 		return newHierarchyDropItem()
 	}
 	var rows []HierarchyRow
+
 	list := widget.NewList(
 		func() int {
 			rows = BuildHierarchyRows(st)
 			return len(rows)
-
 		},
 		makeItem,
 		func(i int, o fyne.CanvasObject) {
-
-			if i < 0 || i >= len(st.Entities) {
-				row := o.(*fyne.Container)
-				row.Objects[0].(*widget.Check).SetChecked(false)
-				row.Objects[1].(*widget.Button).SetText("")
+			if i < 0 || i >= len(rows) {
+				item := o.(*hierarchyDropItem)
+				item.check.SetChecked(false)
+				item.btn.SetText("")
 				return
 			}
 
@@ -84,8 +84,9 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 			btn := item.btn
 			item.entityID = row.ID
 
-			btn.SetText(row.Name)
-			item.btn.Move(fyne.NewPos(float32(row.Depth*20), item.btn.Position().Y))
+			indent := strings.Repeat("  ", row.Depth)
+			btn.SetText(indent + row.Name)
+
 			// checkbox state
 			checked := false
 			for _, id := range st.Selection.IDs {
@@ -140,16 +141,27 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 				lastClickTime = now
 				lastClickIndex = i
 
-				st.SelectedIndex = i
+				// Map row.ID back to index in st.Entities for inspector
+				entIndex := -1
+				for idx, e := range st.Entities {
+					if e.ID == row.ID {
+						entIndex = idx
+						break
+					}
+				}
+
 				st.Selection.ActiveID = row.ID
 				st.Selection.IDs = []int64{row.ID}
+				st.SelectedIndex = entIndex
 
 				if editorlink.EditorConn != nil {
 					go editorlink.WriteSelectEntity(editorlink.EditorConn, row.ID)
 					go editorlink.WriteSelectEntities(editorlink.EditorConn, st.Selection.IDs)
 				}
 
-				onSelect(i)
+				if entIndex >= 0 {
+					onSelect(entIndex)
+				}
 			}
 		},
 	)
@@ -159,65 +171,56 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 
 	return panel, list
 }
-
 func BuildHierarchyRows(st *state.EditorState) []HierarchyRow {
 	ents := st.Entities
-	/*parentMap*/ _ = st.ParentMap
+	parentMap := st.ParentMap
 	childrenMap := st.ChildrenMap
 
-	// Build lookup by ID
+	// Lookup by ID
 	byID := map[int64]bridge.EntityInfo{}
 	for _, e := range ents {
 		byID[e.ID] = e
 	}
 
 	var rows []HierarchyRow
+	seen := map[int64]bool{}
 
 	var walk func(id int64, depth int)
 	walk = func(id int64, depth int) {
-		e := byID[id]
+		if seen[id] {
+			return
+		}
+		seen[id] = true
 
-		// Add the real entity row
+		e, ok := byID[id]
+		if !ok {
+			return
+		}
+
 		rows = append(rows, HierarchyRow{
 			ID:        id,
 			Name:      e.Name,
 			IsVirtual: false,
-			ParentID:  int64(e.Parent),
+			ParentID:  parentMap[id],
 			Depth:     depth,
 		})
 
-		// If this entity has a MultiMesh component, add virtual children
-		hasMulti := false
-		for _, c := range e.Components {
-			if c == "MultiMesh" {
-				hasMulti = true
-				break
-			}
-		}
-
-		if hasMulti {
-			// Find the real children (submesh entities)
-			for _, childID := range childrenMap[id] {
-				child := byID[childID]
-				rows = append(rows, HierarchyRow{
-					ID:        childID,
-					Name:      child.Name,
-					IsVirtual: true,
-					ParentID:  id,
-					Depth:     depth + 1,
-				})
-			}
-		}
-
-		// Continue walking real children
+		// deterministic children order
 		for _, childID := range childrenMap[id] {
 			walk(childID, depth+1)
 		}
 	}
 
-	// Find roots
+	// Roots: Parent == 0 in snapshot
 	for _, e := range ents {
 		if e.Parent == 0 {
+			walk(e.ID, 0)
+		}
+	}
+
+	// Defensive: any entities not reached (broken parent data)
+	for _, e := range ents {
+		if !seen[e.ID] {
 			walk(e.ID, 0)
 		}
 	}

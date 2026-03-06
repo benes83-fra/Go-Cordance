@@ -151,34 +151,33 @@ func UpdateEntities(world *ecs.World, ents []bridge.EntityInfo) {
 		SyncEditorWorld(world, ents)
 	}
 	// Build parent → children map
-	childrenMap := map[int64][]int64{}
+	// Build parent → children map from snapshot
 	parentMap := map[int64]int64{}
+	childrenMap := map[int64][]int64{}
 
+	// 1) Use Children arrays as primary source
 	for _, e := range ents {
-		if e.Parent != 0 {
-			parentMap[e.ID] = int64(e.Parent)
-			childrenMap[int64(e.Parent)] = append(childrenMap[int64(e.Parent)], e.ID)
+		for _, cid := range e.Children {
+			cid64 := int64(cid)
+			childrenMap[e.ID] = append(childrenMap[e.ID], cid64)
+			// only set parent if not already set
+			if _, exists := parentMap[cid64]; !exists {
+				parentMap[cid64] = e.ID
+			}
 		}
 	}
-	// Inject virtual MultiMesh children
+
+	// 2) Use Parent field as fallback (without duplicating children)
 	for _, e := range ents {
-		hasMulti := false
-		for _, c := range e.Components {
-			if c == "MultiMesh" {
-				hasMulti = true
-				break
-			}
-		}
-		if !hasMulti {
+		if e.Parent == 0 {
 			continue
 		}
+		id := e.ID
+		pid := int64(e.Parent)
 
-		// All entities whose Parent == this entity
-		for _, child := range ents {
-			if child.Parent == uint64(e.ID) {
-				childrenMap[e.ID] = append(childrenMap[e.ID], child.ID)
-				parentMap[child.ID] = e.ID
-			}
+		if _, exists := parentMap[id]; !exists {
+			parentMap[id] = pid
+			childrenMap[pid] = append(childrenMap[pid], id)
 		}
 	}
 
@@ -276,6 +275,8 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 					Rotation:   bridge.Vec4(e.Rotation),
 					Scale:      bridge.Vec3(e.Scale),
 					Components: e.Components,
+					Parent:     e.Parent,
+					Children:   e.Children,
 				}
 			}
 			log.Printf("editor: incoming SceneSnapshot with %v entitites", ents)
