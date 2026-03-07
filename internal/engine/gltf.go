@@ -341,12 +341,54 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 			buffers[i] = data
 		}
 	}
+	// Build world transforms for all nodes
+	nodeWorld := make([][16]float32, len(g.Nodes))
+
+	var compute func(i int) [16]float32
+	compute = func(i int) [16]float32 {
+		if nodeWorld[i] != ([16]float32{}) {
+			return nodeWorld[i]
+		}
+		local := composeNodeTransform(g.Nodes[i])
+		if len(g.Nodes[i].Children) == 0 && g.Scene >= 0 {
+			// root node
+			nodeWorld[i] = local
+			return local
+		}
+		// parent multiply
+		for _, root := range g.Scenes[g.Scene].Nodes {
+			if root == i {
+				nodeWorld[i] = local
+				return local
+			}
+		}
+		// find parent
+		for p, n := range g.Nodes {
+			for _, c := range n.Children {
+				if c == i {
+					parent := compute(p)
+					nodeWorld[i] = MulMat4(parent, local)
+					return nodeWorld[i]
+				}
+			}
+		}
+		nodeWorld[i] = local
+		return local
+	}
 
 	// Loop meshes
 	for mi, mesh := range g.Meshes {
 		meshName := mesh.Name
 		if meshName == "" {
 			meshName = fmt.Sprintf("mesh_%d", mi)
+		}
+		nodes := findNodesForMesh(g, mi)
+
+		// Pick a world transform for this mesh.
+		// If multiple nodes reference the same mesh, we take the first one.
+		world := IdentityMatrix()
+		if len(nodes) > 0 {
+			world = compute(nodes[0])
 		}
 
 		// Loop primitives
@@ -460,18 +502,22 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 					tz = bytesToFloat32(tanA.buf[tOff+8:])
 					tw = bytesToFloat32(tanA.buf[tOff+12:])
 				}
+				p := TransformPoint(world, [3]float32{px, py, pz})
+				n := TransformNormal(world, [3]float32{nx, ny, nz})
 
 				vertices = append(vertices,
-					px, py, pz,
-					nx, ny, nz,
+					p[0], p[1], p[2],
+					n[0], n[1], n[2],
 					u, v,
 					tx, ty, tz, tw,
 				)
+
 			}
 
 			// Upload
 			uploadMeshToGL(mm, meshID, vertices, indices)
 		}
+
 	}
 
 	return meshIDs, nil
@@ -711,4 +757,51 @@ func loadGLB(path string) (*gltfRoot, [][]byte, error) {
 	}
 
 	return &g, buffers, nil
+}
+
+func MulMat4(a, b [16]float32) [16]float32 {
+	// Column-major: r = a * b
+	var r [16]float32
+	for col := 0; col < 4; col++ {
+		for row := 0; row < 4; row++ {
+			r[col*4+row] =
+				a[0*4+row]*b[col*4+0] +
+					a[1*4+row]*b[col*4+1] +
+					a[2*4+row]*b[col*4+2] +
+					a[3*4+row]*b[col*4+3]
+		}
+	}
+	return r
+}
+
+func TransformPoint(m [16]float32, v [3]float32) [3]float32 {
+	return [3]float32{
+		m[0]*v[0] + m[4]*v[1] + m[8]*v[2] + m[12],
+		m[1]*v[0] + m[5]*v[1] + m[9]*v[2] + m[13],
+		m[2]*v[0] + m[6]*v[1] + m[10]*v[2] + m[14],
+	}
+}
+func TransformNormal(m [16]float32, n [3]float32) [3]float32 {
+	return [3]float32{
+		m[0]*n[0] + m[4]*n[1] + m[8]*n[2],
+		m[1]*n[0] + m[5]*n[1] + m[9]*n[2],
+		m[2]*n[0] + m[6]*n[1] + m[10]*n[2],
+	}
+}
+func findNodesForMesh(g *gltfRoot, meshIndex int) []int {
+	out := []int{}
+	for i, n := range g.Nodes {
+		if n.Mesh == meshIndex {
+			out = append(out, i)
+		}
+	}
+	return out
+}
+func IdentityMatrix() [16]float32 {
+	return [16]float32{
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1,
+	}
 }

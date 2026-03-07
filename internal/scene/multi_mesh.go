@@ -10,10 +10,11 @@ func SpawnMultiMesh(
 	materials map[string]*ecs.Material,
 ) *ecs.Entity {
 
+	// Create root entity
 	root := sc.AddEntity()
 	root.AddComponent(&ecs.Transform{
-		Position: [3]float32{1, 0, -3},
-		Rotation: [4]float32{1, 0, 0, 0}, // identity quat
+		Position: [3]float32{0, 0, 0},
+		Rotation: [4]float32{1, 0, 0, 0},
 		Scale:    [3]float32{1, 1, 1},
 	})
 
@@ -31,8 +32,9 @@ func SpawnMultiMesh(
 	for _, meshID := range meshIDs {
 		child := sc.AddEntity()
 
+		// Child transform is RELATIVE to parent
 		child.AddComponent(&ecs.Transform{
-			Position: [3]float32{1, 0, -3},
+			Position: [3]float32{0, 0, 0},
 			Rotation: [4]float32{1, 0, 0, 0},
 			Scale:    [3]float32{1, 1, 1},
 		})
@@ -42,7 +44,6 @@ func SpawnMultiMesh(
 			MeshName: meshID,
 		})
 
-		// 🔥 THIS FIXES THE EDITOR NAMES
 		child.AddComponent(ecs.NewName(meshID))
 
 		if mat, ok := materials[meshID]; ok {
