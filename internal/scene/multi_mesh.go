@@ -2,15 +2,17 @@ package scene
 
 import (
 	"go-engine/Go-Cordance/internal/ecs"
+	"go-engine/Go-Cordance/internal/engine"
 )
 
 func SpawnMultiMesh(
 	sc *Scene,
 	meshIDs []string,
 	materials map[string]*ecs.Material,
+	trs map[string]engine.MeshTRS, // optional, may be nil
 ) *ecs.Entity {
 
-	// Create root entity
+	// Root entity
 	root := sc.AddEntity()
 	root.AddComponent(&ecs.Transform{
 		Position: [3]float32{0, 0, 0},
@@ -32,11 +34,24 @@ func SpawnMultiMesh(
 	for _, meshID := range meshIDs {
 		child := sc.AddEntity()
 
-		// Child transform is RELATIVE to parent
-		child.AddComponent(&ecs.Transform{
+		// Default TRS
+		t := engine.MeshTRS{
 			Position: [3]float32{0, 0, 0},
 			Rotation: [4]float32{1, 0, 0, 0},
 			Scale:    [3]float32{1, 1, 1},
+		}
+
+		// Override if provided
+		if trs != nil {
+			if v, ok := trs[meshID]; ok {
+				t = v
+			}
+		}
+
+		child.AddComponent(&ecs.Transform{
+			Position: t.Position,
+			Rotation: t.Rotation,
+			Scale:    t.Scale,
 		})
 
 		child.AddComponent(&ecs.Mesh{
@@ -55,4 +70,11 @@ func SpawnMultiMesh(
 	}
 
 	return root
+}
+func SpawnMultiMeshSimple(
+	sc *Scene,
+	meshIDs []string,
+	materials map[string]*ecs.Material,
+) *ecs.Entity {
+	return SpawnMultiMesh(sc, meshIDs, materials, nil)
 }

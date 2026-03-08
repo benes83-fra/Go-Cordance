@@ -350,11 +350,7 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 			return nodeWorld[i]
 		}
 		local := composeNodeTransform(g.Nodes[i])
-		if len(g.Nodes[i].Children) == 0 && g.Scene >= 0 {
-			// root node
-			nodeWorld[i] = local
-			return local
-		}
+
 		// parent multiply
 		for _, root := range g.Scenes[g.Scene].Nodes {
 			if root == i {
@@ -381,14 +377,6 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 		meshName := mesh.Name
 		if meshName == "" {
 			meshName = fmt.Sprintf("mesh_%d", mi)
-		}
-		nodes := findNodesForMesh(g, mi)
-
-		// Pick a world transform for this mesh.
-		// If multiple nodes reference the same mesh, we take the first one.
-		world := IdentityMatrix()
-		if len(nodes) > 0 {
-			world = compute(nodes[0])
 		}
 
 		// Loop primitives
@@ -502,12 +490,12 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 					tz = bytesToFloat32(tanA.buf[tOff+8:])
 					tw = bytesToFloat32(tanA.buf[tOff+12:])
 				}
-				p := TransformPoint(world, [3]float32{px, py, pz})
-				n := TransformNormal(world, [3]float32{nx, ny, nz})
+				// p := TransformPoint(world, [3]float32{px, py, pz})
+				// n := TransformNormal(world, [3]float32{nx, ny, nz})
 
 				vertices = append(vertices,
-					p[0], p[1], p[2],
-					n[0], n[1], n[2],
+					px, py, pz,
+					nx, ny, nz,
 					u, v,
 					tx, ty, tz, tw,
 				)
@@ -804,4 +792,143 @@ func IdentityMatrix() [16]float32 {
 		0, 0, 1, 0,
 		0, 0, 0, 1,
 	}
+}
+
+// DecomposeTRS extracts translation, rotation (quat), and scale from a 4x4 matrix.
+// Assumes column-major order (OpenGL style).
+func DecomposeTRS(m [16]float32) (pos [3]float32, rot [4]float32, scale [3]float32) {
+
+	// Translation
+	pos = [3]float32{m[12], m[13], m[14]}
+
+	// Extract basis vectors
+	x := [3]float32{m[0], m[1], m[2]}
+	y := [3]float32{m[4], m[5], m[6]}
+	z := [3]float32{m[8], m[9], m[10]}
+
+	// Scale = length of basis vectors
+	scale[0] = float32(math.Sqrt(float64(x[0]*x[0] + x[1]*x[1] + x[2]*x[2])))
+	scale[1] = float32(math.Sqrt(float64(y[0]*y[0] + y[1]*y[1] + y[2]*y[2])))
+	scale[2] = float32(math.Sqrt(float64(z[0]*z[0] + z[1]*z[1] + z[2]*z[2])))
+
+	// Normalize basis vectors
+	if scale[0] != 0 {
+		x[0] /= scale[0]
+		x[1] /= scale[0]
+		x[2] /= scale[0]
+	}
+	if scale[1] != 0 {
+		y[0] /= scale[1]
+		y[1] /= scale[1]
+		y[2] /= scale[1]
+	}
+	if scale[2] != 0 {
+		z[0] /= scale[2]
+		z[1] /= scale[2]
+		z[2] /= scale[2]
+	}
+
+	// Convert rotation matrix → quaternion
+	trace := x[0] + y[1] + z[2]
+
+	if trace > 0 {
+		s := float32(math.Sqrt(float64(trace+1.0)) * 2)
+		rot[3] = 0.25 * s
+		rot[0] = (y[2] - z[1]) / s
+		rot[1] = (z[0] - x[2]) / s
+		rot[2] = (x[1] - y[0]) / s
+	} else if x[0] > y[1] && x[0] > z[2] {
+		s := float32(math.Sqrt(float64(1.0+x[0]-y[1]-z[2])) * 2)
+		rot[3] = (y[2] - z[1]) / s
+		rot[0] = 0.25 * s
+		rot[1] = (y[0] + x[1]) / s
+		rot[2] = (z[0] + x[2]) / s
+	} else if y[1] > z[2] {
+		s := float32(math.Sqrt(float64(1.0+y[1]-x[0]-z[2])) * 2)
+		rot[3] = (z[0] - x[2]) / s
+		rot[0] = (y[0] + x[1]) / s
+		rot[1] = 0.25 * s
+		rot[2] = (z[1] + y[2]) / s
+	} else {
+		s := float32(math.Sqrt(float64(1.0+z[2]-x[0]-y[1])) * 2)
+		rot[3] = (x[1] - y[0]) / s
+		rot[0] = (z[0] + x[2]) / s
+		rot[1] = (z[1] + y[2]) / s
+		rot[2] = 0.25 * s
+	}
+
+	return
+}
+
+type MeshTRS struct {
+	Position [3]float32
+	Rotation [4]float32
+	Scale    [3]float32
+}
+
+func ExtractGLTFMeshTRS(path string) (map[string]MeshTRS, error) {
+	g, _, err := loadGLTFOrGLB(path)
+	if err != nil {
+		return nil, err
+	}
+
+	nodeWorld := make([][16]float32, len(g.Nodes))
+
+	var compute func(i int) [16]float32
+	compute = func(i int) [16]float32 {
+		if nodeWorld[i] != ([16]float32{}) {
+			return nodeWorld[i]
+		}
+		local := composeNodeTransform(g.Nodes[i])
+
+		// root nodes
+		for _, root := range g.Scenes[g.Scene].Nodes {
+			if root == i {
+				nodeWorld[i] = local
+				return local
+			}
+		}
+
+		// find parent
+		for p, n := range g.Nodes {
+			for _, c := range n.Children {
+				if c == i {
+					parent := compute(p)
+					nodeWorld[i] = MulMat4(parent, local)
+					return nodeWorld[i]
+				}
+			}
+		}
+
+		nodeWorld[i] = local
+		return local
+	}
+
+	result := make(map[string]MeshTRS)
+
+	for mi, mesh := range g.Meshes {
+		meshName := mesh.Name
+		if meshName == "" {
+			meshName = fmt.Sprintf("mesh_%d", mi)
+		}
+
+		nodes := findNodesForMesh(g, mi)
+		world := IdentityMatrix()
+		if len(nodes) > 0 {
+			world = compute(nodes[0])
+		}
+
+		pos, rot, scl := DecomposeTRS(world)
+
+		for pi := range mesh.Primitives {
+			meshID := fmt.Sprintf("%s/%d", meshName, pi)
+			result[meshID] = MeshTRS{
+				Position: pos,
+				Rotation: rot,
+				Scale:    scl,
+			}
+		}
+	}
+
+	return result, nil
 }

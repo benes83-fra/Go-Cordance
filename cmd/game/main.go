@@ -104,6 +104,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	sofaTRS, err := engine.ExtractGLTFMeshTRS("assets/models/sofa/sofa.gltf")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// silence unused for now
 	_ = sofaMeshAsset
 
@@ -187,7 +192,7 @@ func main() {
 	sc.Systems().AddSystem(debugSys)
 	sc.Systems().AddSystem(lightDebug)
 	cursorDisabled := false
-	spawn_sofa(sofaMeshIDs, sc, named)
+	spawn_sofa(sofaMeshIDs, sc, named, sofaTRS)
 
 	window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if action == glfw.Press {
@@ -451,12 +456,15 @@ func main() {
 	meshMgr.Delete()
 	engine.TerminateGLFW()
 }
-
-func spawn_sofa(sofaMeshIDs []string, sc *scene.Scene, named map[string]*ecs.Entity) {
+func spawn_sofa(
+	sofaMeshIDs []string,
+	sc *scene.Scene,
+	named map[string]*ecs.Entity,
+	trs map[string]engine.MeshTRS,
+) {
 	sofaMaterials := make(map[string]*ecs.Material, len(sofaMeshIDs))
 	for _, id := range sofaMeshIDs {
 		m := ecs.NewMaterial([4]float32{0.7, 0.7, 0.7, 1})
-		// Force non-black lighting response
 		m.Ambient = 0.35
 		m.Diffuse = 0.85
 		m.Specular = 0.15
@@ -464,12 +472,13 @@ func spawn_sofa(sofaMeshIDs []string, sc *scene.Scene, named map[string]*ecs.Ent
 		sofaMaterials[id] = m
 	}
 
-	sofa := scene.SpawnMultiMesh(sc, sofaMeshIDs, sofaMaterials)
+	// NEW: pass TRS into SpawnMultiMesh
+	sofa := scene.SpawnMultiMesh(sc, sofaMeshIDs, sofaMaterials, trs)
 
-	// Force it into camera view and sane scale
+	// Optional global offset
 	if t, ok := sofa.GetComponent((*ecs.Transform)(nil)).(*ecs.Transform); ok {
 		t.Position = [3]float32{0, 1, -6}
-		t.Scale = [3]float32{0.1, 0.1, 0.1} // try 0.01 if still huge
+		t.Scale = [3]float32{0.1, 0.1, 0.1}
 		t.Rotation = [4]float32{1, 0, 0, 0}
 	}
 
