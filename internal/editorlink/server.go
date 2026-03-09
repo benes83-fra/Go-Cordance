@@ -330,8 +330,12 @@ func buildSceneSnapshot(sc *scene.Scene) SceneSnapshot {
 		if c := ent.GetComponent((*ecs.Transform)(nil)); c != nil {
 			tr := c.(*ecs.Transform)
 			view.Position = Vec3(tr.Position)
+			view.Rotation = Vec4(tr.Rotation)
+			view.Scale = Vec3(tr.Scale)
 			view.Components = append(view.Components, "Transform")
+			log.Printf("snapshot: ent %d pos=%v rot=%v scale=%v", ent.ID, tr.Position, tr.Rotation, tr.Scale)
 		}
+
 		if c := ent.GetComponent((*ecs.Material)(nil)); c != nil {
 			mat := c.(*ecs.Material)
 
