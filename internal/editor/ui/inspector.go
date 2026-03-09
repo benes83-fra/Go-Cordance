@@ -266,6 +266,9 @@ func NewInspectorPanel() (
 
 		// Set OnChanged handlers to update state and send SetTransform
 		posX.OnChanged = func(val string) {
+			if st.IsRebuilding {
+				return
+			}
 			if st.SelectedIndex < 0 || st.SelectedIndex >= len(st.Entities) {
 				return
 			}
@@ -273,6 +276,9 @@ func NewInspectorPanel() (
 			sendTransformIfConnected(st, st.SelectedIndex)
 		}
 		posY.OnChanged = func(val string) {
+			if st.IsRebuilding {
+				return
+			}
 			if st.SelectedIndex < 0 || st.SelectedIndex >= len(st.Entities) {
 				return
 			}
@@ -280,6 +286,9 @@ func NewInspectorPanel() (
 			sendTransformIfConnected(st, st.SelectedIndex)
 		}
 		posZ.OnChanged = func(val string) {
+			if st.IsRebuilding {
+				return
+			}
 			if st.SelectedIndex < 0 || st.SelectedIndex >= len(st.Entities) {
 				return
 			}
@@ -289,6 +298,9 @@ func NewInspectorPanel() (
 
 		// Rotation handlers (same pattern)
 		applyEuler := func() {
+			if st.IsRebuilding {
+				return
+			}
 			if st.SelectedIndex < 0 || st.SelectedIndex >= len(st.Entities) {
 				return
 			}
@@ -314,6 +326,9 @@ func NewInspectorPanel() (
 
 		// Scale handlers
 		scaleX.OnChanged = func(val string) {
+			if st.IsRebuilding {
+				return
+			}
 			if st.SelectedIndex < 0 || st.SelectedIndex >= len(st.Entities) {
 				return
 			}
@@ -321,6 +336,9 @@ func NewInspectorPanel() (
 			sendTransformIfConnected(st, st.SelectedIndex)
 		}
 		scaleY.OnChanged = func(val string) {
+			if st.IsRebuilding {
+				return
+			}
 			if st.SelectedIndex < 0 || st.SelectedIndex >= len(st.Entities) {
 				return
 			}
@@ -328,6 +346,9 @@ func NewInspectorPanel() (
 			sendTransformIfConnected(st, st.SelectedIndex)
 		}
 		scaleZ.OnChanged = func(val string) {
+			if st.IsRebuilding {
+				return
+			}
 			if st.SelectedIndex < 0 || st.SelectedIndex >= len(st.Entities) {
 				return
 			}
