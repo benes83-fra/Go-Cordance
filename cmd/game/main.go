@@ -462,24 +462,71 @@ func spawn_sofa(
 	named map[string]*ecs.Entity,
 	trs map[string]engine.MeshTRS,
 ) {
-	sofaMaterials := make(map[string]*ecs.Material, len(sofaMeshIDs))
-	for _, id := range sofaMeshIDs {
-		m := ecs.NewMaterial([4]float32{0.7, 0.7, 0.7, 1})
-		m.Ambient = 0.35
-		m.Diffuse = 0.85
-		m.Specular = 0.15
-		m.Shininess = 32
-		sofaMaterials[id] = m
+	// Load glTF materials
+	gltfMats, err := engine.LoadGLTFMaterialsMulti("assets/models/sofa/sofa.gltf")
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	// NEW: pass TRS into SpawnMultiMesh
-	sofa := scene.SpawnMultiMesh(sc, sofaMeshIDs, sofaMaterials, trs)
+	// Build a lookup: meshID → material info
+	matByMesh := map[string]engine.LoadedMeshMaterial{}
+	for _, m := range gltfMats {
+		matByMesh[m.MeshID] = m
+	}
 
-	// Optional global offset
+	// Spawn the MultiMesh entity + children
+	sofa := scene.SpawnMultiMesh(sc, sofaMeshIDs, nil, trs)
+
+	// Apply TRS to root
 	if t, ok := sofa.GetComponent((*ecs.Transform)(nil)).(*ecs.Transform); ok {
 		t.Position = [3]float32{0, 1, -6}
 		t.Scale = [3]float32{0.1, 0.1, 0.1}
 		t.Rotation = [4]float32{1, 0, 0, 0}
+	}
+
+	// Apply glTF materials to each child
+	childrenComp := sofa.GetComponent((*ecs.Children)(nil)).(*ecs.Children)
+
+	for _, child := range childrenComp.Entities {
+
+		meshComp := child.GetComponent((*ecs.Mesh)(nil))
+		if meshComp == nil {
+			log.Printf("spawn_sofa: child %d has no Mesh component, skipping", child.ID)
+			continue
+		}
+		mesh := meshComp.(*ecs.Mesh)
+
+		matComp := child.GetComponent((*ecs.Material)(nil))
+		var mat *ecs.Material
+
+		if matComp == nil {
+			mat = ecs.NewMaterial([4]float32{1, 1, 1, 1})
+			child.AddComponent(mat)
+		} else {
+			mat = matComp.(*ecs.Material)
+		}
+
+		if info, ok := matByMesh[mesh.ID]; ok {
+			mat.BaseColor = info.BaseColor
+
+			if info.DiffuseTexturePath != "" {
+				assetID, glID, err := assets.ImportTexture(info.DiffuseTexturePath)
+				if err == nil {
+					mat.UseTexture = true
+					mat.TextureID = glID
+					mat.TextureAsset = assetID
+				}
+			}
+
+			if info.NormalTexturePath != "" {
+				assetID, glID, err := assets.ImportTexture(info.NormalTexturePath)
+				if err == nil {
+					mat.UseNormal = true
+					mat.NormalID = glID
+					mat.NormalAsset = assetID
+				}
+			}
+		}
 	}
 
 	sofa.AddComponent(ecs.NewName("Sofa"))

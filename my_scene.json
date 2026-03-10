@@ -388,16 +388,16 @@
       "parent": 13,
       "components": {
         "Material": {
-          "ambient": 0.35,
+          "ambient": 0.2,
           "baseColor": [
-            0.7,
-            0.7,
-            0.7,
+            1,
+            1,
+            1,
             1
           ],
-          "diffuse": 0.85,
+          "diffuse": 0.8,
           "shininess": 32,
-          "specular": 0.15
+          "specular": 0.5
         },
         "Mesh": {
           "id": "Fringe/0"
@@ -427,16 +427,16 @@
       "parent": 13,
       "components": {
         "Material": {
-          "ambient": 0.35,
+          "ambient": 0.2,
           "baseColor": [
-            0.7,
-            0.7,
-            0.7,
+            1,
+            1,
+            1,
             1
           ],
-          "diffuse": 0.85,
+          "diffuse": 0.8,
           "shininess": 32,
-          "specular": 0.15
+          "specular": 0.5
         },
         "Mesh": {
           "id": "Frame/0"
@@ -466,16 +466,16 @@
       "parent": 13,
       "components": {
         "Material": {
-          "ambient": 0.35,
+          "ambient": 0.2,
           "baseColor": [
-            0.7,
-            0.7,
-            0.7,
+            1,
+            1,
+            1,
             1
           ],
-          "diffuse": 0.85,
+          "diffuse": 0.8,
           "shininess": 32,
-          "specular": 0.15
+          "specular": 0.5
         },
         "Mesh": {
           "id": "Frame_Fabric/0"
@@ -505,16 +505,16 @@
       "parent": 13,
       "components": {
         "Material": {
-          "ambient": 0.35,
+          "ambient": 0.2,
           "baseColor": [
-            0.7,
-            0.7,
-            0.7,
+            1,
+            1,
+            1,
             1
           ],
-          "diffuse": 0.85,
+          "diffuse": 0.8,
           "shininess": 32,
-          "specular": 0.15
+          "specular": 0.5
         },
         "Mesh": {
           "id": "Paisley/0"
@@ -544,16 +544,16 @@
       "parent": 13,
       "components": {
         "Material": {
-          "ambient": 0.35,
+          "ambient": 0.2,
           "baseColor": [
-            0.7,
-            0.7,
-            0.7,
+            1,
+            1,
+            1,
             1
           ],
-          "diffuse": 0.85,
+          "diffuse": 0.8,
           "shininess": 32,
-          "specular": 0.15
+          "specular": 0.5
         },
         "Mesh": {
           "id": "Stripes/0"
@@ -583,16 +583,16 @@
       "parent": 13,
       "components": {
         "Material": {
-          "ambient": 0.35,
+          "ambient": 0.2,
           "baseColor": [
-            0.7,
-            0.7,
-            0.7,
+            1,
+            1,
+            1,
             1
           ],
-          "diffuse": 0.85,
+          "diffuse": 0.8,
           "shininess": 32,
-          "specular": 0.15
+          "specular": 0.5
         },
         "Mesh": {
           "id": "Brown/0"
