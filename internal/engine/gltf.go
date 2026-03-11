@@ -537,17 +537,12 @@ func LoadGLTFMaterialsMulti(path string) ([]LoadedMeshMaterial, error) {
 }
 
 func loadGLTFMaterialsInternal(id, path string, multi bool) ([]LoadedMeshMaterial, error) {
-	baseDir := filepath.Dir(path)
-
-	raw, err := os.ReadFile(path)
+	g, _, err := loadGLTFOrGLB(path)
 	if err != nil {
 		return nil, err
 	}
 
-	var g gltfRoot
-	if err := json.Unmarshal(raw, &g); err != nil {
-		return nil, err
-	}
+	baseDir := filepath.Dir(path)
 
 	var results []LoadedMeshMaterial
 

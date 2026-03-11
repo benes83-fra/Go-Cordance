@@ -203,16 +203,16 @@ func main() {
 	sofa.AddComponent(ecs.NewName("Sofa"))
 	named["Sofa"] = sofa
 
-	// house, err := sc.LoadGLTFMulti("assets/models/Bambo_House/Bambo_House.glb")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	house, err := sc.LoadGLTFMulti("assets/models/Bambo_House/Bambo_House.glb")
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// t2 := house.GetTransform()
-	// t2.Position = [3]float32{0, 1, -6}
-	// t2.Scale = [3]float32{0.1, 0.1, 0.1}
-	// house.AddComponent(ecs.NewName("House"))
-	// named["House"] = house
+	t2 := house.GetTransform()
+	t2.Position = [3]float32{0, 1, -6}
+	t2.Scale = [3]float32{0.1, 0.1, 0.1}
+	house.AddComponent(ecs.NewName("House"))
+	named["House"] = house
 
 	window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if action == glfw.Press {
