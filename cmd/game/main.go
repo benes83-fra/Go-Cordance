@@ -99,7 +99,7 @@ func main() {
 
 	// main.go
 
-	sofaMeshAsset, sofaMeshIDs, err := assets.ImportGLTFMulti("assets/models/sofa/sofa.gltf", meshMgr)
+	sofaMeshAsset, _, err := assets.ImportGLTFMulti("assets/models/sofa/sofa.gltf", meshMgr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -111,7 +111,7 @@ func main() {
 
 	// silence unused for now
 	_ = sofaMeshAsset
-
+	_ = sofaTRS
 	_ = teapotMeshAsset
 	loader.LoadMeshes(meshMgr)
 
@@ -192,7 +192,27 @@ func main() {
 	sc.Systems().AddSystem(debugSys)
 	sc.Systems().AddSystem(lightDebug)
 	cursorDisabled := false
-	spawn_sofa(sofaMeshIDs, sc, named, sofaTRS)
+	sofa, err := sc.LoadGLTFMulti("assets/models/sofa/sofa.gltf")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	t := sofa.GetTransform()
+	t.Position = [3]float32{0, 1, -6}
+	t.Scale = [3]float32{0.1, 0.1, 0.1}
+	sofa.AddComponent(ecs.NewName("Sofa"))
+	named["Sofa"] = sofa
+
+	// house, err := sc.LoadGLTFMulti("assets/models/Bambo_House/Bambo_House.glb")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// t2 := house.GetTransform()
+	// t2.Position = [3]float32{0, 1, -6}
+	// t2.Scale = [3]float32{0.1, 0.1, 0.1}
+	// house.AddComponent(ecs.NewName("House"))
+	// named["House"] = house
 
 	window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if action == glfw.Press {
@@ -455,80 +475,4 @@ func main() {
 	// Cleanup
 	meshMgr.Delete()
 	engine.TerminateGLFW()
-}
-func spawn_sofa(
-	sofaMeshIDs []string,
-	sc *scene.Scene,
-	named map[string]*ecs.Entity,
-	trs map[string]engine.MeshTRS,
-) {
-	// Load glTF materials
-	gltfMats, err := engine.LoadGLTFMaterialsMulti("assets/models/sofa/sofa.gltf")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Build a lookup: meshID → material info
-	matByMesh := map[string]engine.LoadedMeshMaterial{}
-	for _, m := range gltfMats {
-		matByMesh[m.MeshID] = m
-	}
-
-	// Spawn the MultiMesh entity + children
-	sofa := scene.SpawnMultiMesh(sc, sofaMeshIDs, nil, trs)
-
-	// Apply TRS to root
-	if t, ok := sofa.GetComponent((*ecs.Transform)(nil)).(*ecs.Transform); ok {
-		t.Position = [3]float32{0, 1, -6}
-		t.Scale = [3]float32{0.1, 0.1, 0.1}
-		t.Rotation = [4]float32{1, 0, 0, 0}
-	}
-
-	// Apply glTF materials to each child
-	childrenComp := sofa.GetComponent((*ecs.Children)(nil)).(*ecs.Children)
-
-	for _, child := range childrenComp.Entities {
-
-		meshComp := child.GetComponent((*ecs.Mesh)(nil))
-		if meshComp == nil {
-			log.Printf("spawn_sofa: child %d has no Mesh component, skipping", child.ID)
-			continue
-		}
-		mesh := meshComp.(*ecs.Mesh)
-
-		matComp := child.GetComponent((*ecs.Material)(nil))
-		var mat *ecs.Material
-
-		if matComp == nil {
-			mat = ecs.NewMaterial([4]float32{1, 1, 1, 1})
-			child.AddComponent(mat)
-		} else {
-			mat = matComp.(*ecs.Material)
-		}
-
-		if info, ok := matByMesh[mesh.ID]; ok {
-			mat.BaseColor = info.BaseColor
-
-			if info.DiffuseTexturePath != "" {
-				assetID, glID, err := assets.ImportTexture(info.DiffuseTexturePath)
-				if err == nil {
-					mat.UseTexture = true
-					mat.TextureID = glID
-					mat.TextureAsset = assetID
-				}
-			}
-
-			if info.NormalTexturePath != "" {
-				assetID, glID, err := assets.ImportTexture(info.NormalTexturePath)
-				if err == nil {
-					mat.UseNormal = true
-					mat.NormalID = glID
-					mat.NormalAsset = assetID
-				}
-			}
-		}
-	}
-
-	sofa.AddComponent(ecs.NewName("Sofa"))
-	named["Sofa"] = sofa
 }
