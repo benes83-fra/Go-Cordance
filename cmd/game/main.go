@@ -200,6 +200,7 @@ func main() {
 	t := sofa.GetTransform()
 	t.Position = [3]float32{0, 1, -6}
 	t.Scale = [3]float32{0.1, 0.1, 0.1}
+	t.SetRotationDegrees(90, 90, 0)
 	sofa.AddComponent(ecs.NewName("Sofa"))
 	named["Sofa"] = sofa
 
@@ -209,10 +210,9 @@ func main() {
 	}
 
 	t2 := house.GetTransform()
-	t2.Position = [3]float32{0, 1, -6}
+	t2.Position = [3]float32{0, 1, 6}
 	t2.Scale = [3]float32{0.1, 0.1, 0.1}
-	house.AddComponent(ecs.NewName("House"))
-	named["House"] = house
+	t2.SetRotationDegrees(90, 90, 90)
 
 	window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if action == glfw.Press {
