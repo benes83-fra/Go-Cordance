@@ -29,6 +29,27 @@ type Material struct {
 	ShaderName   string
 	Shader       *engine.ShaderProgram
 
+	DiffuseTexturePath           string
+	NormalTexturePath            string
+	OcclusionTexturePath         string
+	MetallicRoughnessTexturePath string
+
+	TexCoordMap map[string]int        // e.g. "baseColor":0, "occlusion":1
+	UVScale     map[string][2]float32 // per-texture uv scale
+	UVOffset    map[string][2]float32 // per-texture uv offset
+
+	NormalScale    float32
+	SheenColor     [3]float32
+	SheenRoughness float32
+	SpecularFactor float32
+	OcclusionAsset assets.AssetID
+	OcclusionID    uint32
+
+	MetallicRoughnessAsset assets.AssetID
+	MetallicRoughnessID    uint32
+
+	// (optional) OcclusionID/MetallicRoughnessID can be zero if not present
+
 	Dirty bool
 }
 

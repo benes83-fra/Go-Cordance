@@ -1,8 +1,9 @@
-package scene
+package gltf
 
 import (
 	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/engine"
+	"go-engine/Go-Cordance/internal/scene"
 )
 
 // MeshTRS is assumed to be:
@@ -13,7 +14,7 @@ import (
 // }
 
 func SpawnMultiMesh(
-	sc *Scene,
+	sc *scene.Scene,
 	meshIDs []string,
 	materials map[string]*ecs.Material, // per meshID, optional
 	trs map[string]engine.MeshTRS, // per meshID, optional, may be nil
@@ -92,7 +93,7 @@ func SpawnMultiMesh(
 }
 
 func SpawnMultiMeshSimple(
-	sc *Scene,
+	sc *scene.Scene,
 	meshIDs []string,
 	materials map[string]*ecs.Material,
 ) *ecs.Entity {

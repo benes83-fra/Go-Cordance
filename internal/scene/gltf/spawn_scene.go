@@ -1,15 +1,16 @@
-package scene
+package gltf
 
 import (
 	"fmt"
 
 	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/engine"
+	"go-engine/Go-Cordance/internal/scene"
 )
 
 // SpawnGLTFScene loads the full glTF scene graph (nodes, transforms, meshes)
 // and creates entities with Parent/Children + Transform + Mesh + Material.
-func (s *Scene) SpawnGLTFScene(mm *engine.MeshManager, path string) ([]*ecs.Entity, error) {
+func SpawnGLTFScene(s *scene.Scene, mm *engine.MeshManager, path string) ([]*ecs.Entity, error) {
 	// 1. Load geometry for all meshes/primitives
 	_, err := mm.RegisterGLTFMulti(path)
 	if err != nil {

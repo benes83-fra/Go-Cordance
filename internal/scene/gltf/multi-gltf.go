@@ -1,0 +1,154 @@
+package gltf
+
+import (
+	"go-engine/Go-Cordance/internal/assets"
+	"go-engine/Go-Cordance/internal/ecs"
+	"go-engine/Go-Cordance/internal/engine"
+	"go-engine/Go-Cordance/internal/scene"
+	"path/filepath"
+	"strings"
+)
+
+func LoadGLTFMulti(sc *scene.Scene, path string) (*ecs.Entity, error) {
+	_, meshIDs, err := assets.ImportGLTFMulti(path, engine.GlobalMeshManager)
+	if err != nil {
+		return nil, err
+	}
+
+	trs, err := engine.ExtractGLTFMeshTRS(path)
+	if err != nil {
+		return nil, err
+	}
+
+	mats, err := engine.LoadGLTFMaterialsMulti(path)
+	if err != nil {
+		return nil, err
+	}
+
+	matByMesh := map[string]engine.LoadedMeshMaterial{}
+	for _, m := range mats {
+		matByMesh[m.MeshID] = m
+	}
+
+	root := SpawnMultiMesh(sc, meshIDs, nil, trs)
+	name := filepath.Base(path)                         // "sofa.gltf"
+	name = strings.TrimSuffix(name, filepath.Ext(name)) // "sofa"
+	root.AddComponent(ecs.NewName(name))
+	children := root.GetComponent((*ecs.Children)(nil)).(*ecs.Children)
+
+	for _, child := range children.Entities {
+		mesh := child.GetComponent((*ecs.Mesh)(nil)).(*ecs.Mesh)
+
+		info, ok := matByMesh[mesh.ID]
+		if !ok {
+			continue
+		}
+
+		// Ensure entity has a Material component
+		matComp := child.GetComponent((*ecs.Material)(nil))
+		if matComp == nil {
+			m := ecs.NewMaterial(info.BaseColor)
+			child.AddComponent(m)
+			matComp = m
+		}
+		m := matComp.(*ecs.Material)
+
+		// Base color
+		m.BaseColor = info.BaseColor
+
+		// Store paths for debugging / editor
+		m.DiffuseTexturePath = info.DiffuseTexturePath
+		m.NormalTexturePath = info.NormalTexturePath
+		m.OcclusionTexturePath = info.OcclusionTexturePath
+		m.MetallicRoughnessTexturePath = info.MetallicRoughnessTexturePath
+
+		// Texcoord mapping and UV transforms
+		if info.TexCoordMap != nil {
+			if m.TexCoordMap == nil {
+				m.TexCoordMap = map[string]int{}
+			}
+			for k, v := range info.TexCoordMap {
+				m.TexCoordMap[k] = v
+			}
+		}
+		if info.UVScale != nil {
+			if m.UVScale == nil {
+				m.UVScale = map[string][2]float32{}
+			}
+			for k, v := range info.UVScale {
+				m.UVScale[k] = v
+			}
+		}
+		if info.UVOffset != nil {
+			if m.UVOffset == nil {
+				m.UVOffset = map[string][2]float32{}
+			}
+			for k, v := range info.UVOffset {
+				m.UVOffset[k] = v
+			}
+		}
+
+		// Normal scale
+		if info.NormalScale != 0 {
+			m.NormalScale = info.NormalScale
+		}
+
+		// Sheen / specular
+		if info.SheenRoughness != 0 {
+			m.SheenRoughness = info.SheenRoughness
+		}
+		if info.SheenColor != [3]float32{} {
+			m.SheenColor = info.SheenColor
+		}
+		if info.SpecularFactor != 0 {
+			m.SpecularFactor = info.SpecularFactor
+		}
+
+		// Import textures with correct color space
+		// Base color / albedo -> sRGB
+		// Base color (sRGB)
+		if info.DiffuseTexturePath != "" {
+			assetID, glID, err := assets.ImportTextureWithSRGB(info.DiffuseTexturePath, true)
+			if err == nil {
+				m.UseTexture = true
+				m.TextureID = glID
+				m.TextureAsset = assetID
+			}
+		}
+
+		// Normal map (linear)
+		if info.NormalTexturePath != "" {
+			assetID, glID, err := assets.ImportTextureWithSRGB(info.NormalTexturePath, false)
+			if err == nil {
+				m.UseNormal = true
+				m.NormalID = glID
+				m.NormalAsset = assetID
+			}
+		}
+
+		// Occlusion (linear)
+		if info.OcclusionTexturePath != "" {
+			assetID, glID, err := assets.ImportTextureWithSRGB(info.OcclusionTexturePath, false)
+			if err == nil {
+				m.OcclusionTexturePath = info.OcclusionTexturePath
+				m.OcclusionAsset = assetID
+				m.OcclusionID = glID
+			}
+		}
+
+		// MetallicRoughness (linear)
+		if info.MetallicRoughnessTexturePath != "" {
+			assetID, glID, err := assets.ImportTextureWithSRGB(info.MetallicRoughnessTexturePath, false)
+			if err == nil {
+				m.MetallicRoughnessTexturePath = info.MetallicRoughnessTexturePath
+				m.MetallicRoughnessAsset = assetID
+				m.MetallicRoughnessID = glID
+			}
+		}
+
+		// Mark material dirty so renderer/editor can pick up changes
+		m.Dirty = true
+	}
+
+	return root, nil
+}

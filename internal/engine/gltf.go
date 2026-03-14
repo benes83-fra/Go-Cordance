@@ -49,19 +49,27 @@ type gltfMesh struct {
 	Primitives []gltfPrimitive `json:"primitives"`
 }
 
+// in engine.go (gltf structs)
 type gltfTextureInfo struct {
-	Index int `json:"index"`
+	Index      int                        `json:"index"`
+	TexCoord   int                        `json:"texCoord,omitempty"`
+	Scale      float32                    `json:"scale,omitempty"` // normalTexture.scale
+	Extensions map[string]json.RawMessage `json:"extensions,omitempty"`
 }
-
 type gltfPBR struct {
-	BaseColorFactor  []float32        `json:"baseColorFactor"`
-	BaseColorTexture *gltfTextureInfo `json:"baseColorTexture"`
+	BaseColorFactor          []float32        `json:"baseColorFactor"`
+	BaseColorTexture         *gltfTextureInfo `json:"baseColorTexture"`
+	MetallicRoughnessTexture *gltfTextureInfo `json:"metallicRoughnessTexture"`
+	RoughnessFactor          float32          `json:"roughnessFactor,omitempty"`
 }
 
 type gltfMaterial struct {
-	Name          string           `json:"name"`
-	PBR           gltfPBR          `json:"pbrMetallicRoughness"`
-	NormalTexture *gltfTextureInfo `json:"normalTexture"`
+	Name             string                     `json:"name"`
+	PBR              gltfPBR                    `json:"pbrMetallicRoughness"`
+	NormalTexture    *gltfTextureInfo           `json:"normalTexture"`
+	OcclusionTexture *gltfTextureInfo           `json:"occlusionTexture"`
+	Extensions       map[string]json.RawMessage `json:"extensions,omitempty"`
+	AlphaMode        string                     `json:"alphaMode,omitempty"`
 }
 
 type gltfImage struct {
@@ -518,10 +526,21 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 // LoadedMeshMaterial holds material info per meshID,
 // to be mapped onto ecs.Material + texture components by the caller.
 type LoadedMeshMaterial struct {
-	MeshID             string
-	BaseColor          [4]float32
-	DiffuseTexturePath string
-	NormalTexturePath  string
+	MeshID                       string
+	BaseColor                    [4]float32
+	DiffuseTexturePath           string
+	NormalTexturePath            string
+	OcclusionTexturePath         string
+	MetallicRoughnessTexturePath string
+
+	TexCoordMap map[string]int
+	UVScale     map[string][2]float32
+	UVOffset    map[string][2]float32
+
+	NormalScale    float32
+	SheenColor     [3]float32
+	SheenRoughness float32
+	SpecularFactor float32
 }
 
 // LoadGLTFMaterials returns material info for the first mesh/primitive,
@@ -567,9 +586,11 @@ func loadGLTFMaterialsInternal(id, path string, multi bool) ([]LoadedMeshMateria
 				BaseColor: [4]float32{1, 1, 1, 1},
 			}
 
+			// inside loadGLTFMaterialsInternal, replace the existing "if prim.Material >= 0 ..." block
 			if prim.Material >= 0 && prim.Material < len(g.Materials) {
 				gm := g.Materials[prim.Material]
 
+				// BaseColorFactor
 				if len(gm.PBR.BaseColorFactor) == 4 {
 					m.BaseColor = [4]float32{
 						gm.PBR.BaseColorFactor[0],
@@ -579,24 +600,151 @@ func loadGLTFMaterialsInternal(id, path string, multi bool) ([]LoadedMeshMateria
 					}
 				}
 
-				if gm.PBR.BaseColorTexture != nil {
-					ti := gm.PBR.BaseColorTexture
+				// helper to resolve texture index -> image path
+				resolveTex := func(ti *gltfTextureInfo) string {
+					if ti == nil {
+						return ""
+					}
 					if ti.Index >= 0 && ti.Index < len(g.Textures) {
 						imgIndex := g.Textures[ti.Index].Source
 						if imgIndex >= 0 && imgIndex < len(g.Images) {
-							m.DiffuseTexturePath = filepath.Join(baseDir, g.Images[imgIndex].URI)
+							return filepath.Join(baseDir, g.Images[imgIndex].URI)
+						}
+					}
+					return ""
+				}
+
+				// Base color (diffuse)
+				if gm.PBR.BaseColorTexture != nil {
+					m.DiffuseTexturePath = resolveTex(gm.PBR.BaseColorTexture)
+					if m.TexCoordMap == nil {
+						m.TexCoordMap = map[string]int{}
+					}
+					m.TexCoordMap["baseColor"] = gm.PBR.BaseColorTexture.TexCoord
+					// parse KHR_texture_transform if present
+					if ext, ok := gm.PBR.BaseColorTexture.Extensions["KHR_texture_transform"]; ok {
+						off, scale, _, err := parseTextureTransform(ext)
+						if err == nil {
+							if m.UVScale == nil {
+								m.UVScale = map[string][2]float32{}
+							}
+							if m.UVOffset == nil {
+								m.UVOffset = map[string][2]float32{}
+							}
+							m.UVScale["baseColor"] = scale
+							m.UVOffset["baseColor"] = off
 						}
 					}
 				}
 
-				if gm.NormalTexture != nil {
-					ti := gm.NormalTexture
-					if ti.Index >= 0 && ti.Index < len(g.Textures) {
-						imgIndex := g.Textures[ti.Index].Source
-						if imgIndex >= 0 && imgIndex < len(g.Images) {
-							m.NormalTexturePath = filepath.Join(baseDir, g.Images[imgIndex].URI)
+				// MetallicRoughness texture
+				if gm.PBR.MetallicRoughnessTexture != nil {
+					m.MetallicRoughnessTexturePath = resolveTex(gm.PBR.MetallicRoughnessTexture)
+					if m.TexCoordMap == nil {
+						m.TexCoordMap = map[string]int{}
+					}
+					m.TexCoordMap["metallicRoughness"] = gm.PBR.MetallicRoughnessTexture.TexCoord
+					if ext, ok := gm.PBR.MetallicRoughnessTexture.Extensions["KHR_texture_transform"]; ok {
+						off, scale, _, err := parseTextureTransform(ext)
+						if err == nil {
+							if m.UVScale == nil {
+								m.UVScale = map[string][2]float32{}
+							}
+							if m.UVOffset == nil {
+								m.UVOffset = map[string][2]float32{}
+							}
+							m.UVScale["metallicRoughness"] = scale
+							m.UVOffset["metallicRoughness"] = off
 						}
 					}
+				}
+
+				// Normal texture + normal scale
+				if gm.NormalTexture != nil {
+					m.NormalTexturePath = resolveTex(gm.NormalTexture)
+					if m.TexCoordMap == nil {
+						m.TexCoordMap = map[string]int{}
+					}
+					m.TexCoordMap["normal"] = gm.NormalTexture.TexCoord
+					// normalTexture.scale (glTF allows a scale on normalTexture)
+					if gm.NormalTexture.Scale != 0 {
+						m.NormalScale = gm.NormalTexture.Scale
+					}
+					if ext, ok := gm.NormalTexture.Extensions["KHR_texture_transform"]; ok {
+						off, scale, _, err := parseTextureTransform(ext)
+						if err == nil {
+							if m.UVScale == nil {
+								m.UVScale = map[string][2]float32{}
+							}
+							if m.UVOffset == nil {
+								m.UVOffset = map[string][2]float32{}
+							}
+							m.UVScale["normal"] = scale
+							m.UVOffset["normal"] = off
+						}
+					}
+				}
+
+				// Occlusion (AO)
+				if gm.OcclusionTexture != nil {
+					m.OcclusionTexturePath = resolveTex(gm.OcclusionTexture)
+					if m.TexCoordMap == nil {
+						m.TexCoordMap = map[string]int{}
+					}
+					m.TexCoordMap["occlusion"] = gm.OcclusionTexture.TexCoord
+					if ext, ok := gm.OcclusionTexture.Extensions["KHR_texture_transform"]; ok {
+						off, scale, _, err := parseTextureTransform(ext)
+						if err == nil {
+							if m.UVScale == nil {
+								m.UVScale = map[string][2]float32{}
+							}
+							if m.UVOffset == nil {
+								m.UVOffset = map[string][2]float32{}
+							}
+							m.UVScale["occlusion"] = scale
+							m.UVOffset["occlusion"] = off
+						}
+					}
+				}
+
+				// Roughness factor (fallback if no metallicRoughness texture)
+				if gm.PBR.RoughnessFactor != 0 {
+					// you may want to expose this later; for now it's available in gm.PBR.RoughnessFactor
+				}
+
+				// KHR extensions: specular / sheen
+				if gm.Extensions != nil {
+					// KHR_materials_specular
+					if raw, ok := gm.Extensions["KHR_materials_specular"]; ok {
+						var spec struct {
+							SpecularFactor float32 `json:"specularFactor"`
+						}
+						if err := json.Unmarshal(raw, &spec); err == nil {
+							m.SpecularFactor = spec.SpecularFactor
+						}
+					}
+					// KHR_materials_sheen
+					if raw, ok := gm.Extensions["KHR_materials_sheen"]; ok {
+						var sheen struct {
+							SheenColorFactor     []float32 `json:"sheenColorFactor"`
+							SheenRoughnessFactor float32   `json:"sheenRoughnessFactor"`
+						}
+						if err := json.Unmarshal(raw, &sheen); err == nil {
+							if len(sheen.SheenColorFactor) >= 3 {
+								m.SheenColor = [3]float32{
+									sheen.SheenColorFactor[0],
+									sheen.SheenColorFactor[1],
+									sheen.SheenColorFactor[2],
+								}
+							}
+							m.SheenRoughness = sheen.SheenRoughnessFactor
+						}
+					}
+				}
+
+				// Alpha mode (optional)
+				if gm.AlphaMode != "" {
+					// store if you want to handle transparency later
 				}
 			}
 
@@ -926,4 +1074,20 @@ func ExtractGLTFMeshTRS(path string) (map[string]MeshTRS, error) {
 	}
 
 	return result, nil
+}
+
+// helper to read KHR_texture_transform
+func parseTextureTransform(ext json.RawMessage) (offset [2]float32, scale [2]float32, rotation float32, err error) {
+	var t struct {
+		Offset   [2]float32 `json:"offset"`
+		Scale    [2]float32 `json:"scale"`
+		Rotation float32    `json:"rotation"`
+	}
+	if err = json.Unmarshal(ext, &t); err != nil {
+		return
+	}
+	offset = t.Offset
+	scale = t.Scale
+	rotation = t.Rotation
+	return
 }

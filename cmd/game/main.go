@@ -18,6 +18,7 @@ import (
 	"go-engine/Go-Cordance/internal/editorlink"
 	"go-engine/Go-Cordance/internal/engine"
 	"go-engine/Go-Cordance/internal/scene"
+	gltf "go-engine/Go-Cordance/internal/scene/gltf"
 )
 
 const (
@@ -192,7 +193,7 @@ func main() {
 	sc.Systems().AddSystem(debugSys)
 	sc.Systems().AddSystem(lightDebug)
 	cursorDisabled := false
-	sofa, err := sc.LoadGLTFMulti("assets/models/sofa/sofa.gltf")
+	sofa, err := gltf.LoadGLTFMulti(sc, "assets/models/sofa/sofa.gltf")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -200,11 +201,11 @@ func main() {
 	t := sofa.GetTransform()
 	t.Position = [3]float32{0, 1, -6}
 	t.Scale = [3]float32{0.1, 0.1, 0.1}
-	t.SetRotationDegrees(90, 90, 0)
+	t.SetRotationDegrees(90, 90, 90)
 	sofa.AddComponent(ecs.NewName("Sofa"))
 	named["Sofa"] = sofa
 
-	house, err := sc.LoadGLTFMulti("assets/models/Bambo_House/Bambo_House.glb")
+	house, err := gltf.LoadGLTFMulti(sc, "assets/models/Bambo_House/Bambo_House.glb")
 	if err != nil {
 		log.Fatal(err)
 	}
