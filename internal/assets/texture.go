@@ -1,6 +1,8 @@
 package assets
 
-import "go-engine/Go-Cordance/internal/engine"
+import (
+	"go-engine/Go-Cordance/internal/engine"
+)
 
 // TextureData holds runtime GPU info for a texture.
 type TextureData struct {
@@ -18,6 +20,13 @@ func ImportTexture(path string) (AssetID, uint32, error) {
 // srgb == true -> use sRGB sampling (albedo)
 // srgb == false -> use linear sampling (normal, occlusion, metallic/roughness)
 func ImportTextureWithSRGB(path string, srgb bool) (AssetID, uint32, error) {
+	path = normalize(path)
+	if a := FindAssetByPath(path); a != nil {
+		// existing asset: extract GL id
+		if td, ok := a.Data.(TextureData); ok {
+			return a.ID, td.GLID, nil
+		}
+	}
 	texGL, err := engine.LoadTextureWithColorSpace(path, srgb) // see note below
 	if err != nil {
 		return 0, 0, err

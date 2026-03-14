@@ -76,8 +76,31 @@ type gltfImage struct {
 	URI string `json:"uri"`
 }
 
+// engine.go (gltf structs)
 type gltfTexture struct {
-	Source int `json:"source"`
+	Source     int                        `json:"source,omitempty"`
+	Extensions map[string]json.RawMessage `json:"extensions,omitempty"`
+}
+
+// helper: return the image source index for a texture, checking EXT_texture_webp
+func textureSourceIndex(t gltfTexture) int {
+	// prefer explicit Source if present
+	if t.Source != 0 {
+		return t.Source
+	}
+	// check EXT_texture_webp extension: {"EXT_texture_webp": {"source": <int>}}
+	if t.Extensions != nil {
+		if raw, ok := t.Extensions["EXT_texture_webp"]; ok {
+			var ext struct {
+				Source int `json:"source"`
+			}
+			if err := json.Unmarshal(raw, &ext); err == nil {
+				return ext.Source
+			}
+		}
+	}
+	// fallback: -1 (not found)
+	return -1
 }
 
 type gltfNode struct {
@@ -601,15 +624,18 @@ func loadGLTFMaterialsInternal(id, path string, multi bool) ([]LoadedMeshMateria
 				}
 
 				// helper to resolve texture index -> image path
+				// inside loadGLTFMaterialsInternal, replace resolveTex with:
 				resolveTex := func(ti *gltfTextureInfo) string {
 					if ti == nil {
 						return ""
 					}
-					if ti.Index >= 0 && ti.Index < len(g.Textures) {
-						imgIndex := g.Textures[ti.Index].Source
-						if imgIndex >= 0 && imgIndex < len(g.Images) {
-							return filepath.Join(baseDir, g.Images[imgIndex].URI)
-						}
+					if ti.Index < 0 || ti.Index >= len(g.Textures) {
+						return ""
+					}
+					tex := g.Textures[ti.Index]
+					imgIndex := textureSourceIndex(tex)
+					if imgIndex >= 0 && imgIndex < len(g.Images) {
+						return filepath.Join(baseDir, g.Images[imgIndex].URI)
 					}
 					return ""
 				}
