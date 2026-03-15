@@ -16,8 +16,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 0,
-          "specular": 0.2
+          "specular": 0.2,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "plane"
@@ -54,8 +71,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "cube24"
@@ -92,8 +126,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "cube24"
@@ -130,8 +181,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "sphere"
@@ -168,8 +236,25 @@
             1
           ],
           "diffuse": 0.5,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 128,
-          "specular": 1
+          "specular": 1,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "cube24"
@@ -206,8 +291,25 @@
             1
           ],
           "diffuse": 0.6,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 2,
-          "specular": 0.02
+          "specular": 0.02,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "cube24"
@@ -244,8 +346,25 @@
             1
           ],
           "diffuse": 0.6,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 2,
-          "specular": 0.02
+          "specular": 0.02,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "teapot"
@@ -334,8 +453,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "billboardQuad"
@@ -396,8 +532,29 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "assets\\models\\sofa\\Image_7.webp",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "assets\\models\\sofa\\Image_8.webp",
+          "occlusionTexturePath": "assets\\models\\sofa\\Image_9.webp",
+          "roughness": 0,
+          "sheenColor": [
+            0.3921569,
+            0.2901961,
+            0.20000002
+          ],
+          "sheenRoughness": 0.4,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0.3,
+          "texCoordMap": {
+            "baseColor": 0,
+            "normal": 0,
+            "occlusion": 1
+          },
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "Fringe/0"
@@ -435,8 +592,30 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "assets\\models\\sofa\\Image_10.webp",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "assets\\models\\sofa\\Image_12.webp",
+          "normalScale": 0,
+          "normalTexturePath": "assets\\models\\sofa\\Image_11.webp",
+          "occlusionTexturePath": "assets\\models\\sofa\\Image_12.webp",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": {
+            "baseColor": 0,
+            "metallicRoughness": 0,
+            "normal": 0,
+            "occlusion": 0
+          },
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "Frame/0"
@@ -474,8 +653,48 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "assets\\models\\sofa\\Image_0.webp",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "assets\\models\\sofa\\Image_12.webp",
+          "normalScale": 1.5,
+          "normalTexturePath": "assets\\models\\sofa\\Image_1.webp",
+          "occlusionTexturePath": "assets\\models\\sofa\\Image_12.webp",
+          "roughness": 0,
+          "sheenColor": [
+            0.3921569,
+            0.2901961,
+            0.20000002
+          ],
+          "sheenRoughness": 0.4,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0.3,
+          "texCoordMap": {
+            "baseColor": 0,
+            "metallicRoughness": 0,
+            "normal": 0,
+            "occlusion": 0
+          },
+          "uvOffset": {
+            "baseColor": [
+              0,
+              0
+            ],
+            "normal": [
+              0,
+              0
+            ]
+          },
+          "uvScale": {
+            "baseColor": [
+              10,
+              10
+            ],
+            "normal": [
+              10,
+              10
+            ]
+          }
         },
         "Mesh": {
           "id": "Frame_Fabric/0"
@@ -513,8 +732,48 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "assets\\models\\sofa\\Image_3.webp",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "assets\\models\\sofa\\Image_2.webp",
+          "normalScale": 1.5,
+          "normalTexturePath": "assets\\models\\sofa\\Image_4.webp",
+          "occlusionTexturePath": "assets\\models\\sofa\\Image_2.webp",
+          "roughness": 0,
+          "sheenColor": [
+            0.3921569,
+            0.2901961,
+            0.20000002
+          ],
+          "sheenRoughness": 0.4,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0.3,
+          "texCoordMap": {
+            "baseColor": 0,
+            "metallicRoughness": 0,
+            "normal": 0,
+            "occlusion": 0
+          },
+          "uvOffset": {
+            "baseColor": [
+              0,
+              0
+            ],
+            "normal": [
+              0,
+              0
+            ]
+          },
+          "uvScale": {
+            "baseColor": [
+              5,
+              6
+            ],
+            "normal": [
+              5,
+              6
+            ]
+          }
         },
         "Mesh": {
           "id": "Paisley/0"
@@ -552,8 +811,48 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "assets\\models\\sofa\\Image_5.webp",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "assets\\models\\sofa\\Image_2.webp",
+          "normalScale": 2,
+          "normalTexturePath": "assets\\models\\sofa\\Image_6.webp",
+          "occlusionTexturePath": "assets\\models\\sofa\\Image_2.webp",
+          "roughness": 0,
+          "sheenColor": [
+            0.3921569,
+            0.2901961,
+            0.20000002
+          ],
+          "sheenRoughness": 0.4,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0.3,
+          "texCoordMap": {
+            "baseColor": 0,
+            "metallicRoughness": 0,
+            "normal": 0,
+            "occlusion": 0
+          },
+          "uvOffset": {
+            "baseColor": [
+              0,
+              0
+            ],
+            "normal": [
+              0,
+              0
+            ]
+          },
+          "uvScale": {
+            "baseColor": [
+              30,
+              30
+            ],
+            "normal": [
+              30,
+              30
+            ]
+          }
         },
         "Mesh": {
           "id": "Stripes/0"
@@ -591,8 +890,48 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "assets\\models\\sofa\\Image_0.webp",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "assets\\models\\sofa\\Image_2.webp",
+          "normalScale": 1.5,
+          "normalTexturePath": "assets\\models\\sofa\\Image_1.webp",
+          "occlusionTexturePath": "assets\\models\\sofa\\Image_2.webp",
+          "roughness": 0,
+          "sheenColor": [
+            0.3921569,
+            0.2901961,
+            0.20000002
+          ],
+          "sheenRoughness": 0.4,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0.3,
+          "texCoordMap": {
+            "baseColor": 0,
+            "metallicRoughness": 0,
+            "normal": 0,
+            "occlusion": 0
+          },
+          "uvOffset": {
+            "baseColor": [
+              0,
+              0
+            ],
+            "normal": [
+              0,
+              0
+            ]
+          },
+          "uvScale": {
+            "baseColor": [
+              10,
+              10
+            ],
+            "normal": [
+              10,
+              10
+            ]
+          }
         },
         "Mesh": {
           "id": "Brown/0"
@@ -653,8 +992,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "window_roof/0"
@@ -692,8 +1048,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "window_roof/1"
@@ -731,8 +1104,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "ridge/0"
@@ -770,8 +1160,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "roof/0"
@@ -809,8 +1216,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "roof/1"
@@ -848,8 +1272,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "stairs/0"
@@ -887,8 +1328,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "lamp_exterior/0"
@@ -926,8 +1384,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "lamp_exterior/1"
@@ -965,8 +1440,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "parapet/0"
@@ -1004,8 +1496,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "garage/0"
@@ -1043,8 +1552,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "door/0"
@@ -1082,8 +1608,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "door/1"
@@ -1121,8 +1664,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "door/2"
@@ -1160,8 +1720,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "windows/0"
@@ -1199,8 +1776,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "windows/1"
@@ -1238,8 +1832,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "windows/2"
@@ -1277,8 +1888,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "gutters/0"
@@ -1316,8 +1944,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "chimneys/0"
@@ -1355,8 +2000,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "chimneys/1"
@@ -1394,8 +2056,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "chimneys/2"
@@ -1433,8 +2112,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "chimneys/3"
@@ -1472,8 +2168,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "barrels/0"
@@ -1511,8 +2224,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "boards/0"
@@ -1550,8 +2280,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "wall_barrels/0"
@@ -1589,8 +2336,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "wall_barrels/1"
@@ -1628,8 +2392,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "fundametnts/0"
@@ -1667,8 +2448,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "fundametnts/1"
@@ -1706,8 +2504,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "body_house/0"
@@ -1745,8 +2560,25 @@
             1
           ],
           "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "metallic": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionTexturePath": "",
+          "roughness": 0,
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
           "shininess": 32,
-          "specular": 0.5
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": null,
+          "uvOffset": null,
+          "uvScale": null
         },
         "Mesh": {
           "id": "body_house/1"

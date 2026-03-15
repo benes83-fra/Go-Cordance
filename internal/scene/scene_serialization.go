@@ -22,7 +22,31 @@ func serializeTransform(t *ecs.Transform) map[string]interface{} {
 func serializeMesh(m *ecs.Mesh) map[string]interface{} { return map[string]interface{}{"id": m.ID} }
 
 func serializeMaterial(m *ecs.Material) map[string]interface{} {
-	return map[string]interface{}{"baseColor": m.BaseColor, "ambient": m.Ambient, "diffuse": m.Diffuse, "specular": m.Specular, "shininess": m.Shininess}
+	out := map[string]interface{}{
+		"baseColor": m.BaseColor,
+		"ambient":   m.Ambient,
+		"diffuse":   m.Diffuse,
+		"specular":  m.Specular,
+		"shininess": m.Shininess,
+		"metallic":  m.Metallic,
+		"roughness": m.Roughness,
+	}
+	// optional fields
+	out["diffuseTexturePath"] = m.DiffuseTexturePath
+	out["normalTexturePath"] = m.NormalTexturePath
+	out["occlusionTexturePath"] = m.OcclusionTexturePath
+	out["metallicRoughnessTexturePath"] = m.MetallicRoughnessTexturePath
+
+	out["texCoordMap"] = m.TexCoordMap
+	out["uvScale"] = m.UVScale
+	out["uvOffset"] = m.UVOffset
+
+	out["normalScale"] = m.NormalScale
+	out["sheenColor"] = m.SheenColor
+	out["sheenRoughness"] = m.SheenRoughness
+	out["specularFactor"] = m.SpecularFactor
+
+	return out
 }
 
 func serializeDiffuseTexture(t *ecs.DiffuseTexture) map[string]interface{} {

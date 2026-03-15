@@ -27,7 +27,7 @@ func ImportTextureWithSRGB(path string, srgb bool) (AssetID, uint32, error) {
 			return a.ID, td.GLID, nil
 		}
 	}
-	texGL, err := engine.LoadTextureWithColorSpace(path, srgb) // see note below
+	texGL, err := engine.LoadTextureWithColorSpace(path, srgb)
 	if err != nil {
 		return 0, 0, err
 	}

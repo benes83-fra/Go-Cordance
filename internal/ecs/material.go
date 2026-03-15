@@ -88,10 +88,20 @@ func (m *Material) EditorFields() map[string]any {
 
 		"ShaderName": m.ShaderName,
 
-		// Asset pipeline fields (hidden from inspector for now)
-		// They can be exposed later when the editor supports asset picking.
-		// "TextureAsset": m.TextureAsset,
-		// "NormalAsset":  m.NormalAsset,
+		// New fields for editor (read-only or editable later)
+		"DiffuseTexturePath":           m.DiffuseTexturePath,
+		"NormalTexturePath":            m.NormalTexturePath,
+		"OcclusionTexturePath":         m.OcclusionTexturePath,
+		"MetallicRoughnessTexturePath": m.MetallicRoughnessTexturePath,
+
+		"TexCoordMap": m.TexCoordMap,
+		"UVScale":     m.UVScale,
+		"UVOffset":    m.UVOffset,
+
+		"NormalScale":    m.NormalScale,
+		"SheenColor":     m.SheenColor,
+		"SheenRoughness": m.SheenRoughness,
+		"SpecularFactor": m.SpecularFactor,
 	}
 }
 
@@ -133,6 +143,20 @@ func (m *Material) SetEditorField(name string, value any) {
 		} else {
 			m.Shader = nil
 		}
+	case "DiffuseTexturePath":
+		m.DiffuseTexturePath = value.(string)
+	case "NormalTexturePath":
+		m.NormalTexturePath = value.(string)
+	case "OcclusionTexturePath":
+		m.OcclusionTexturePath = value.(string)
+	case "MetallicRoughnessTexturePath":
+		m.MetallicRoughnessTexturePath = value.(string)
+	case "NormalScale":
+		m.NormalScale = toFloat32(value)
+	case "SheenRoughness":
+		m.SheenRoughness = toFloat32(value)
+	case "SpecularFactor":
+		m.SpecularFactor = toFloat32(value)
 
 		// --- Asset pipeline fields (future use) ---
 		// case "TextureAsset":
