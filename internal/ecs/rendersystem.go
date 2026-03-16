@@ -476,6 +476,26 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		} else {
 			engine.SetInt(rs.Renderer.LocUseMetallicRoughnessMap, 0)
 		}
+		// Simple: only drive baseColor UV for now
+		if rs.Renderer.LocUVScaleBase != -1 {
+			scale := [2]float32{1, 1}
+			if mat.UVScale != nil {
+				if s, ok := mat.UVScale["baseColor"]; ok {
+					scale = s
+				}
+			}
+			engine.SetVec2(rs.Renderer.LocUVScaleBase, scale[0], scale[1])
+		}
+
+		if rs.Renderer.LocUVOffsetBase != -1 {
+			offset := [2]float32{0, 0}
+			if mat.UVOffset != nil {
+				if o, ok := mat.UVOffset["baseColor"]; ok {
+					offset = o
+				}
+			}
+			engine.SetVec2(rs.Renderer.LocUVOffsetBase, offset[0], offset[1])
+		}
 
 		// Normal map
 		if normalMapComp != nil && normalMapComp.ID != 0 && rs.MeshManager.HasTangents(mesh.ID) {

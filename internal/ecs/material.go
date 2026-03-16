@@ -93,10 +93,13 @@ func (m *Material) EditorFields() map[string]any {
 		"NormalTexturePath":            m.NormalTexturePath,
 		"OcclusionTexturePath":         m.OcclusionTexturePath,
 		"MetallicRoughnessTexturePath": m.MetallicRoughnessTexturePath,
-
-		"TexCoordMap": m.TexCoordMap,
-		"UVScale":     m.UVScale,
-		"UVOffset":    m.UVOffset,
+		"OcclusionAsset":               m.OcclusionAsset,
+		"OcclusionID":                  m.OcclusionID,
+		"MetallicRoughnessAsset":       m.MetallicRoughnessAsset,
+		"MetallicRoughnessID":          m.MetallicRoughnessID,
+		"TexCoordMap":                  m.TexCoordMap,
+		"UVScale":                      m.UVScale,
+		"UVOffset":                     m.UVOffset,
 
 		"NormalScale":    m.NormalScale,
 		"SheenColor":     m.SheenColor,
@@ -151,12 +154,27 @@ func (m *Material) SetEditorField(name string, value any) {
 		m.OcclusionTexturePath = value.(string)
 	case "MetallicRoughnessTexturePath":
 		m.MetallicRoughnessTexturePath = value.(string)
+	case "OcclusionAsset":
+		m.OcclusionAsset = assets.AssetID(toInt(value))
+	case "OcclusionID":
+		m.OcclusionID = uint32(toInt(value))
+
+	case "MetallicRoughnessAsset":
+		m.MetallicRoughnessAsset = assets.AssetID(toInt(value))
+	case "MetallicRoughnessID":
+		m.MetallicRoughnessID = uint32(toInt(value))
 	case "NormalScale":
 		m.NormalScale = toFloat32(value)
 	case "SheenRoughness":
 		m.SheenRoughness = toFloat32(value)
 	case "SpecularFactor":
 		m.SpecularFactor = toFloat32(value)
+	case "TexCoordMap":
+		m.TexCoordMap = value.(map[string]int)
+	case "UVScale":
+		m.UVScale = value.(map[string][2]float32)
+	case "UVOffset":
+		m.UVOffset = value.(map[string][2]float32)
 
 		// --- Asset pipeline fields (future use) ---
 		// case "TextureAsset":
