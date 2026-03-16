@@ -459,6 +459,23 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		} else {
 			engine.SetInt(rs.Renderer.LocUseTexture, 0)
 		}
+		if mat.OcclusionAsset != 0 {
+			gl.ActiveTexture(gl.TEXTURE3)
+			gl.BindTexture(gl.TEXTURE_2D, mat.OcclusionID)
+			engine.SetInt(rs.Renderer.LocOcclusionMap, 3)
+			engine.SetInt(rs.Renderer.LocUseOcclusionMap, 1)
+		} else {
+			engine.SetInt(rs.Renderer.LocUseOcclusionMap, 0)
+		}
+
+		if mat.MetallicRoughnessAsset != 0 {
+			gl.ActiveTexture(gl.TEXTURE4)
+			gl.BindTexture(gl.TEXTURE_2D, mat.MetallicRoughnessID)
+			engine.SetInt(rs.Renderer.LocMetallicRoughnessMap, 4)
+			engine.SetInt(rs.Renderer.LocUseMetallicRoughnessMap, 1)
+		} else {
+			engine.SetInt(rs.Renderer.LocUseMetallicRoughnessMap, 0)
+		}
 
 		// Normal map
 		if normalMapComp != nil && normalMapComp.ID != 0 && rs.MeshManager.HasTangents(mesh.ID) {

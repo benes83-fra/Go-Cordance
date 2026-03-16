@@ -60,6 +60,16 @@ type Renderer struct {
 	LocShadowMapSize    int32
 	LocShadowLightIndex int32
 	// store screen size for viewport restore
+	LocOcclusionMap            int32
+	LocUseOcclusionMap         int32
+	LocMetallicRoughnessMap    int32
+	LocUseMetallicRoughnessMap int32
+
+	LocUVScaleBase  int32 // example: baseColor UV scale uniform name "uvScaleBase"
+	LocUVOffsetBase int32 // "uvOffsetBase"
+	// you can add per-map UV uniforms if your shader supports them:
+	// LocUVScaleNormal, LocUVOffsetNormal, LocUVScaleOcclusion, ...
+
 	ScreenWidth  int
 	ScreenHeight int
 }
@@ -154,6 +164,14 @@ func (r *Renderer) InitUniforms() {
 	r.LocFlipNormalG = gl.GetUniformLocation(r.Program, gl.Str("flipNormalGreen\x00"))
 	r.LocShowMode = gl.GetUniformLocation(r.Program, gl.Str("showMode\x00"))
 	r.LocShadowLightIndex = gl.GetUniformLocation(r.Program, gl.Str("shadowLightIndex\x00"))
+	r.LocOcclusionMap = gl.GetUniformLocation(r.Program, gl.Str("occlusionMap\x00"))
+	r.LocUseOcclusionMap = gl.GetUniformLocation(r.Program, gl.Str("useOcclusionMap\x00"))
+
+	r.LocMetallicRoughnessMap = gl.GetUniformLocation(r.Program, gl.Str("metallicRoughnessMap\x00"))
+	r.LocUseMetallicRoughnessMap = gl.GetUniformLocation(r.Program, gl.Str("useMetallicRoughnessMap\x00"))
+
+	r.LocUVScaleBase = gl.GetUniformLocation(r.Program, gl.Str("uvScaleBase\x00"))
+	r.LocUVOffsetBase = gl.GetUniformLocation(r.Program, gl.Str("uvOffsetBase\x00"))
 
 	names := map[string]int32{
 		"model": r.LocModel, "view": r.LocView, "projection": r.LocProj,

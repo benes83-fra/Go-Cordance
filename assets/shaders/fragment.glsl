@@ -53,6 +53,12 @@ uniform bool useTexture;
 // normal map (optional)
 uniform sampler2D normalMap;
 uniform bool useNormalMap;
+
+uniform sampler2D occlusionMap;
+uniform sampler2D metallicRoughnessMap;
+uniform bool useOcclusionMap;
+uniform bool useMetallicRoughnessMap;
+
     // (width, height) of the shadow map
 
 
