@@ -14,12 +14,19 @@ out VS_OUT {
     vec3 WorldPos;
     vec3 Normal;
     vec2 UV;
+    vec3 Tangent;
+    vec3 Bitangent;
 } vs_out;
 
 void main() {
     vec4 world = model * vec4(aPos, 1.0);
     vs_out.WorldPos = world.xyz;
-    vs_out.Normal = mat3(model) * aNormal;
+
+    mat3 normalMatrix = mat3(model);
+    vs_out.Normal    = normalize(normalMatrix * aNormal);
+    vs_out.Tangent   = normalize(normalMatrix * aTangent);
+    vs_out.Bitangent = normalize(normalMatrix * aBitangent);
+
     vs_out.UV = aUV;
 
     gl_Position = projection * view * world;
