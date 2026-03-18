@@ -12,6 +12,7 @@ layout(std140) uniform MaterialBlock {
     float roughness;
     int   materialType;
     float _pad0;
+    vec4 EmissiveColor;
 };
 
 uniform vec3 viewPos;
@@ -65,6 +66,16 @@ uniform int   lightType[MAX_LIGHTS];
 uniform sampler2D shadowMap;
 uniform vec2 uShadowMapSize;
 uniform int  shadowLightIndex;
+uniform float normalScale;
+// Emissive
+uniform sampler2D emissiveTex;
+uniform bool useEmissiveTex;
+
+// Emissive UV transform + texcoord
+uniform vec2 uvScaleEmissive;
+uniform vec2 uvOffsetEmissive;
+uniform int  texCoordEmissive;
+
 
 in VS_OUT {
     vec3 WorldPos;
@@ -158,6 +169,24 @@ vec3 FresnelSchlick(float cosTheta, vec3 F0)
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
+
+
+// --------------------------------------------------------
+// Tone mapping + gamma correction
+// --------------------------------------------------------
+vec3 ACESFilm(vec3 x)
+{
+    float a = 2.51;
+    float b = 0.03;
+    float c = 2.43;
+    float d = 0.59;
+    float e = 0.14;
+    return clamp((x*(a*x+b)) / (x*(c*x+d)+e), 0.0, 1.0);
+}
+
+
+
+
 // ------------------------------------------------------------
 // Main
 // ------------------------------------------------------------
@@ -177,6 +206,7 @@ void main()
     // --------------------------------------------------------
     // Normal mapping
     // --------------------------------------------------------
+    // Normal mapping
     vec2 uvN = selectUV(texCoordNormal, fs_in.UV0, fs_in.UV1);
     uvN = uvN * uvScaleNormal + uvOffsetNormal;
 
@@ -187,8 +217,14 @@ void main()
 
         vec3 n = texture(normalMap, uvN).rgb;
         n = n * 2.0 - 1.0;
+
+        // GLTF normalTexture.scale
+        n.xy *= normalScale;
+
+        n = normalize(n);
         N = normalize(TBN * n);
     }
+
 
     // --------------------------------------------------------
     // Albedo
@@ -293,6 +329,31 @@ void main()
 
         color += (diffuse + specular) * radiance * NdotL * attenuation * shadowFactor;
     }
+    // --------------------------------------------------------
+    // Emissive
+    // --------------------------------------------------------
+    vec3 emissive = vec3(0.0);
+
+    // Base emissive color from material (if you added EmissiveColor)
+    emissive += EmissiveColor.rgb;
+
+    // Emissive texture
+    vec2 uvEm = selectUV(texCoordEmissive, fs_in.UV0, fs_in.UV1);
+    uvEm = uvEm * uvScaleEmissive + uvOffsetEmissive;
+
+    if (useEmissiveTex) {
+        emissive += texture(emissiveTex, uvEm).rgb;
+    }
+
+    // Add emissive in linear space
+    color += emissive;
+
+    // Tone map (ACES)
+    color = ACESFilm(color);
+
+    // Gamma correction (linear → sRGB)
+    color = pow(color, vec3(1.0/2.2));
 
     FragColor = vec4(color, 1.0);
+
 }
