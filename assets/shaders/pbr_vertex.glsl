@@ -9,13 +9,16 @@ layout(location = 4) in vec3 aBitangent;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
+uniform mat4 lightSpaceMatrix;
 
 out VS_OUT {
     vec3 WorldPos;
     vec3 Normal;
-    vec2 UV;
+    vec2 UV0;
+    vec2 UV1;
     vec3 Tangent;
     vec3 Bitangent;
+    vec4 LightSpacePos;
 } vs_out;
 
 void main() {
@@ -27,7 +30,10 @@ void main() {
     vs_out.Tangent   = normalize(normalMatrix * aTangent);
     vs_out.Bitangent = normalize(normalMatrix * aBitangent);
 
-    vs_out.UV = aUV;
+    vs_out.UV0 = aUV;
+    vs_out.UV1 = aUV; // same for now; TexCoordMap can still switch
+
+    vs_out.LightSpacePos = lightSpaceMatrix * world;
 
     gl_Position = projection * view * world;
 }
