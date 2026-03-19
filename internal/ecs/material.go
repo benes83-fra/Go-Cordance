@@ -47,6 +47,10 @@ type Material struct {
 
 	MetallicRoughnessAsset assets.AssetID
 	MetallicRoughnessID    uint32
+	UseIBL                 bool
+	IrradianceTex          uint32
+	PrefilteredEnvTex      uint32
+	BRDFLUTTex             uint32
 
 	// (optional) OcclusionID/MetallicRoughnessID can be zero if not present
 
@@ -101,10 +105,14 @@ func (m *Material) EditorFields() map[string]any {
 		"UVScale":                      m.UVScale,
 		"UVOffset":                     m.UVOffset,
 
-		"NormalScale":    m.NormalScale,
-		"SheenColor":     m.SheenColor,
-		"SheenRoughness": m.SheenRoughness,
-		"SpecularFactor": m.SpecularFactor,
+		"NormalScale":       m.NormalScale,
+		"SheenColor":        m.SheenColor,
+		"SheenRoughness":    m.SheenRoughness,
+		"SpecularFactor":    m.SpecularFactor,
+		"UseIBL":            m.UseIBL,
+		"IrradianceTex":     m.IrradianceTex,
+		"PrefilteredEnvTex": m.PrefilteredEnvTex,
+		"BRDFLUTTex":        m.BRDFLUTTex,
 	}
 }
 
@@ -175,12 +183,14 @@ func (m *Material) SetEditorField(name string, value any) {
 		m.UVScale = value.(map[string][2]float32)
 	case "UVOffset":
 		m.UVOffset = value.(map[string][2]float32)
-
-		// --- Asset pipeline fields (future use) ---
-		// case "TextureAsset":
-		//     m.TextureAsset = assets.AssetID(toInt(value))
-		// case "NormalAsset":
-		//     m.NormalAsset = assets.AssetID(toInt(value))
+	case "UseIBL":
+		m.UseIBL = toBool(value)
+	case "IrradianceTex":
+		m.IrradianceTex = uint32(toInt(value))
+	case "PrefilteredTex":
+		m.PrefilteredEnvTex = uint32(toInt(value))
+	case "BRFFLUTTex":
+		m.BRDFLUTTex = uint32(toInt(value))
 	}
 
 	m.Dirty = true

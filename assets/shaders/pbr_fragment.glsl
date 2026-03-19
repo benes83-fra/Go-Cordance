@@ -76,6 +76,12 @@ uniform vec2 uvScaleEmissive;
 uniform vec2 uvOffsetEmissive;
 uniform int  texCoordEmissive;
 
+// IBL
+uniform samplerCube irradianceMap;      // diffuse
+uniform samplerCube prefilteredEnvMap;  // specular (mipmapped)
+uniform sampler2D   brdfLUT;            // 2D LUT
+uniform bool        useIBL;
+
 
 in VS_OUT {
     vec3 WorldPos;
@@ -329,6 +335,29 @@ void main()
 
         color += (diffuse + specular) * radiance * NdotL * attenuation * shadowFactor;
     }
+        // ... end of direct lighting loop ...
+
+    // --------------------------------------------------------
+    // Image-Based Lighting (IBL)
+    // --------------------------------------------------------
+    if (useIBL) {
+        // Diffuse IBL (irradiance)
+        vec3 irradiance = texture(irradianceMap, N).rgb;
+        vec3 F_ibl = FresnelSchlick(max(dot(N, V), 0.0), F0);
+        vec3 kd_ibl = (1.0 - F_ibl) * (1.0 - m);
+        vec3 diffuseIBL = kd_ibl * irradiance * albedo;
+
+        // Specular IBL (prefiltered env + BRDF LUT)
+        vec3 R = reflect(-V, N);
+        float mipCount = 5.0; // adjust to your prefiltered env mip levels
+        vec3 prefilteredColor = textureLod(prefilteredEnvMap, R, r * mipCount).rgb;
+
+        vec2 brdfSample = texture(brdfLUT, vec2(max(dot(N, V), 0.0), r)).rg;
+        vec3 specularIBL = prefilteredColor * (F_ibl * brdfSample.x + brdfSample.y);
+
+        color += diffuseIBL + specularIBL;
+    }
+
     // --------------------------------------------------------
     // Emissive
     // --------------------------------------------------------

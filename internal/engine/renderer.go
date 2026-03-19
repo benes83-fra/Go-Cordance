@@ -69,6 +69,10 @@ type Renderer struct {
 	LocUVOffsetBase int32 // "uvOffsetBase"
 	// you can add per-map UV uniforms if your shader supports them:
 	// LocUVScaleNormal, LocUVOffsetNormal, LocUVScaleOcclusion, ...
+	LocIrradianceMap  int32
+	LocPrefilteredEnv int32
+	LocBRDFLUT        int32
+	LocUseIBL         int32
 
 	ScreenWidth  int
 	ScreenHeight int
@@ -172,6 +176,10 @@ func (r *Renderer) InitUniforms() {
 
 	r.LocUVScaleBase = gl.GetUniformLocation(r.Program, gl.Str("uvScaleBase\x00"))
 	r.LocUVOffsetBase = gl.GetUniformLocation(r.Program, gl.Str("uvOffsetBase\x00"))
+	r.LocIrradianceMap = gl.GetUniformLocation(r.Program, gl.Str("irradianceMap\x00"))
+	r.LocPrefilteredEnv = gl.GetUniformLocation(r.Program, gl.Str("prefilteredEnvMap\x00"))
+	r.LocBRDFLUT = gl.GetUniformLocation(r.Program, gl.Str("brdfLUT\x00"))
+	r.LocUseIBL = gl.GetUniformLocation(r.Program, gl.Str("useIBL\x00"))
 
 	names := map[string]int32{
 		"model": r.LocModel, "view": r.LocView, "projection": r.LocProj,
@@ -187,6 +195,10 @@ func (r *Renderer) InitUniforms() {
 			if DebugUniformWarings {
 				fmt.Printf("WARN: uniform %s not found in program\n", n)
 			}
+			if r.LocIrradianceMap == -1 && DebugUniformWarings {
+				fmt.Println("WARN: irradianceMap uniform not found")
+			}
+
 		}
 	}
 } /*

@@ -506,6 +506,40 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		} else {
 			engine.SetInt(rs.Renderer.LocUseNormalMap, 0)
 		}
+		// --------------------------------------------------------
+		// IBL textures
+		// --------------------------------------------------------
+		if mat.UseIBL {
+			if rs.Renderer.LocUseIBL != -1 {
+				engine.SetInt(rs.Renderer.LocUseIBL, 1)
+			}
+
+			// irradiance map → texture unit 10
+			if mat.IrradianceTex != 0 && rs.Renderer.LocIrradianceMap != -1 {
+				gl.ActiveTexture(gl.TEXTURE10)
+				gl.BindTexture(gl.TEXTURE_CUBE_MAP, mat.IrradianceTex)
+				engine.SetInt(rs.Renderer.LocIrradianceMap, 10)
+			}
+
+			// prefiltered env map → texture unit 11
+			if mat.PrefilteredEnvTex != 0 && rs.Renderer.LocPrefilteredEnv != -1 {
+				gl.ActiveTexture(gl.TEXTURE11)
+				gl.BindTexture(gl.TEXTURE_CUBE_MAP, mat.PrefilteredEnvTex)
+				engine.SetInt(rs.Renderer.LocPrefilteredEnv, 11)
+			}
+
+			// BRDF LUT → texture unit 12
+			if mat.BRDFLUTTex != 0 && rs.Renderer.LocBRDFLUT != -1 {
+				gl.ActiveTexture(gl.TEXTURE12)
+				gl.BindTexture(gl.TEXTURE_2D, mat.BRDFLUTTex)
+				engine.SetInt(rs.Renderer.LocBRDFLUT, 12)
+			}
+		} else {
+			if rs.Renderer.LocUseIBL != -1 {
+				engine.SetInt(rs.Renderer.LocUseIBL, 0)
+			}
+		}
+
 		drawItems = drawItems[:0]
 		drawItems = rs.collectMeshes(mesh, multi, mat, multiMat, normalMapComp, drawItems)
 
