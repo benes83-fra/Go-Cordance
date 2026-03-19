@@ -51,6 +51,12 @@ type Material struct {
 	IrradianceTex          uint32
 	PrefilteredEnvTex      uint32
 	BRDFLUTTex             uint32
+	ClearcoatFactor        float32
+	ClearcoatRoughness     float32
+	ClearcoatTexture       uint32
+	ClearcoatRoughTex      uint32
+	ClearcoatNormalTex     uint32
+	UseClearcoat           bool
 
 	// (optional) OcclusionID/MetallicRoughnessID can be zero if not present
 
@@ -105,14 +111,20 @@ func (m *Material) EditorFields() map[string]any {
 		"UVScale":                      m.UVScale,
 		"UVOffset":                     m.UVOffset,
 
-		"NormalScale":       m.NormalScale,
-		"SheenColor":        m.SheenColor,
-		"SheenRoughness":    m.SheenRoughness,
-		"SpecularFactor":    m.SpecularFactor,
-		"UseIBL":            m.UseIBL,
-		"IrradianceTex":     m.IrradianceTex,
-		"PrefilteredEnvTex": m.PrefilteredEnvTex,
-		"BRDFLUTTex":        m.BRDFLUTTex,
+		"NormalScale":        m.NormalScale,
+		"SheenColor":         m.SheenColor,
+		"SheenRoughness":     m.SheenRoughness,
+		"SpecularFactor":     m.SpecularFactor,
+		"UseIBL":             m.UseIBL,
+		"IrradianceTex":      m.IrradianceTex,
+		"PrefilteredEnvTex":  m.PrefilteredEnvTex,
+		"BRDFLUTTex":         m.BRDFLUTTex,
+		"ClearcoatFactor":    m.ClearcoatFactor,
+		"ClearcoatRoughness": m.ClearcoatRoughness,
+		"ClearcoatTexture":   m.ClearcoatTexture,
+		"ClearcoatRoughTex":  m.ClearcoatRoughTex,
+		"ClearcoatNormalTex": m.ClearcoatNormalTex,
+		"UseClearcoat":       m.UseClearcoat,
 	}
 }
 
@@ -191,6 +203,18 @@ func (m *Material) SetEditorField(name string, value any) {
 		m.PrefilteredEnvTex = uint32(toInt(value))
 	case "BRFFLUTTex":
 		m.BRDFLUTTex = uint32(toInt(value))
+	case "ClearcoatFactor":
+		m.ClearcoatFactor = toFloat32(value)
+	case "ClearcoatRoughness":
+		m.ClearcoatRoughness = toFloat32(value)
+	case "ClearcoatTexture":
+		m.ClearcoatTexture = uint32(toInt(value))
+	case "ClearcoatRoughTex":
+		m.ClearcoatRoughTex = uint32(toInt(value))
+	case "ClearcoatNormalTex":
+		m.ClearcoatNormalTex = uint32(toInt(value))
+	case "UseClearcoat":
+		m.UseClearcoat = toBool(value)
 	}
 
 	m.Dirty = true

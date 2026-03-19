@@ -74,6 +74,13 @@ type Renderer struct {
 	LocBRDFLUT        int32
 	LocUseIBL         int32
 
+	LocClearcoatTex          int32
+	LocUseClearcoatTex       int32
+	LocClearcoatRoughTex     int32
+	LocUseClearcoatRoughTex  int32
+	LocClearcoatNormalTex    int32
+	LocUseClearcoatNormalTex int32
+
 	ScreenWidth  int
 	ScreenHeight int
 }
@@ -180,6 +187,14 @@ func (r *Renderer) InitUniforms() {
 	r.LocPrefilteredEnv = gl.GetUniformLocation(r.Program, gl.Str("prefilteredEnvMap\x00"))
 	r.LocBRDFLUT = gl.GetUniformLocation(r.Program, gl.Str("brdfLUT\x00"))
 	r.LocUseIBL = gl.GetUniformLocation(r.Program, gl.Str("useIBL\x00"))
+	r.LocClearcoatTex = gl.GetUniformLocation(r.Program, gl.Str("clearcoatTex\x00"))
+	r.LocUseClearcoatTex = gl.GetUniformLocation(r.Program, gl.Str("useClearcoatTex\x00"))
+
+	r.LocClearcoatRoughTex = gl.GetUniformLocation(r.Program, gl.Str("clearcoatRoughnessTex\x00"))
+	r.LocUseClearcoatRoughTex = gl.GetUniformLocation(r.Program, gl.Str("useClearcoatRoughnessTex\x00"))
+
+	r.LocClearcoatNormalTex = gl.GetUniformLocation(r.Program, gl.Str("clearcoatNormalTex\x00"))
+	r.LocUseClearcoatNormalTex = gl.GetUniformLocation(r.Program, gl.Str("useClearcoatNormalTex\x00"))
 
 	names := map[string]int32{
 		"model": r.LocModel, "view": r.LocView, "projection": r.LocProj,

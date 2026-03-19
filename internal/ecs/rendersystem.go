@@ -36,15 +36,22 @@ type RenderSystem struct {
 
 // std140-compatible layout for the MaterialBlock
 type gpuMaterial struct {
-	BaseColor    [4]float32
-	Ambient      float32
-	Diffuse      float32
-	Specular     float32
-	Shininess    float32
+	BaseColor [4]float32
+	Ambient   float32
+	Diffuse   float32
+	Specular  float32
+	Shininess float32
+
 	Metallic     float32
 	Roughness    float32
-	MaterialType int32   // must be int32 for std140
-	_Pad0        float32 // padding to 16‑byte alignment
+	MaterialType int32
+	_Pad0        float32
+
+	// NEW — must match GLSL std140 alignment
+	ClearcoatFactor    float32
+	ClearcoatRoughness float32
+	_PadCC0            float32
+	_PadCC1            float32
 }
 
 type MeshDrawItem struct {
@@ -429,6 +436,9 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 				Roughness:    mat.Roughness,
 				MaterialType: int32(matType),
 			}
+			m.ClearcoatFactor = mat.ClearcoatFactor
+			m.ClearcoatRoughness = mat.ClearcoatRoughness
+
 			// Selection highlight: override base color if needed
 			if uint64(e.ID) == rs.SelectedEntity {
 				m.BaseColor = [4]float32{1, 1, 0, 1}
@@ -538,6 +548,14 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 			if rs.Renderer.LocUseIBL != -1 {
 				engine.SetInt(rs.Renderer.LocUseIBL, 0)
 			}
+		}
+		if mat.UseClearcoat && mat.ClearcoatTexture != 0 {
+			gl.ActiveTexture(gl.TEXTURE13)
+			gl.BindTexture(gl.TEXTURE_2D, mat.ClearcoatTexture)
+			engine.SetInt(rs.Renderer.LocClearcoatTex, 13)
+			engine.SetInt(rs.Renderer.LocUseClearcoatTex, 1)
+		} else {
+			engine.SetInt(rs.Renderer.LocUseClearcoatTex, 0)
 		}
 
 		drawItems = drawItems[:0]

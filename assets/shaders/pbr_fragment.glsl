@@ -12,8 +12,15 @@ layout(std140) uniform MaterialBlock {
     float roughness;
     int   materialType;
     float _pad0;
+
     vec4 EmissiveColor;
+
+    float clearcoatFactor;
+    float clearcoatRoughness;
+    float _padClearcoat0;
+    float _padClearcoat1;
 };
+
 
 uniform vec3 viewPos;
 
@@ -81,6 +88,18 @@ uniform samplerCube irradianceMap;      // diffuse
 uniform samplerCube prefilteredEnvMap;  // specular (mipmapped)
 uniform sampler2D   brdfLUT;            // 2D LUT
 uniform bool        useIBL;
+uniform sampler2D clearcoatTex;
+uniform bool useClearcoatTex;
+
+uniform sampler2D clearcoatRoughnessTex;
+uniform bool useClearcoatRoughnessTex;
+
+uniform sampler2D clearcoatNormalTex;
+uniform bool useClearcoatNormalTex;
+
+uniform vec2 uvScaleClearcoat;
+uniform vec2 uvOffsetClearcoat;
+uniform int  texCoordClearcoat;
 
 
 in VS_OUT {
@@ -332,10 +351,48 @@ void main()
         }
 
         vec3 radiance = lightColor[i] * lightIntensity[i];
+     // --------------------------------------------------------
+        // Clearcoat BRDF
+        // --------------------------------------------------------
+        float cc = clearcoatFactor;
+        if (cc > 0.0) {
 
+            // Clearcoat normal (optional)
+            vec3 Ncc = N;
+            if (useClearcoatNormalTex) {
+                vec2 uvCC = selectUV(texCoordClearcoat, fs_in.UV0, fs_in.UV1);
+                uvCC = uvCC * uvScaleClearcoat + uvOffsetClearcoat;
+
+                vec3 ncc = texture(clearcoatNormalTex, uvCC).rgb;
+                ncc = ncc * 2.0 - 1.0;
+                ncc.xy *= normalScale; // reuse normalScale
+                ncc = normalize(ncc);
+
+                vec3 T = normalize(fs_in.Tangent);
+                vec3 B = normalize(fs_in.Bitangent);
+                Ncc = normalize(mat3(T, B, N) * ncc);
+            }
+
+            float rcc = clearcoatRoughness;
+            float Dcc = DistributionGGX(Ncc, H, rcc);
+            float Gcc = GeometrySmith(Ncc, V, L, rcc);
+
+            // Clearcoat F0 is fixed at 0.04 (dielectric)
+            float Fcc = FresnelSchlick(max(dot(H, V), 0.0), vec3(0.04)).r;
+
+            float denomCC = 4.0 * max(dot(Ncc, V), 0.0) * NdotL + 0.001;
+            float specCC = (Dcc * Gcc * Fcc) / denomCC;
+
+            // Add clearcoat contribution
+            color += cc * specCC * lightColor[i] * lightIntensity[i] * NdotL * attenuation;
+        }
         color += (diffuse + specular) * radiance * NdotL * attenuation * shadowFactor;
     }
         // ... end of direct lighting loop ...
+
+
+
+   
 
     // --------------------------------------------------------
     // Image-Based Lighting (IBL)
