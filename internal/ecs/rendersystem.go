@@ -54,6 +54,11 @@ type gpuMaterial struct {
 
 	SheenColor     [3]float32
 	SheenRoughness float32
+
+	TransmissionFactor float32
+	_PadT0             float32
+	_PadT1             float32
+	_PadT2             float32
 }
 
 type MeshDrawItem struct {
@@ -219,32 +224,6 @@ func (rs *RenderSystem) RenderShadowPass(entities []*Entity) {
 			continue
 		}
 
-		// Build model matrix
-
-		/*model := mgl32.Translate3D(t.Position[0], t.Position[1], t.Position[2])
-		if t.Rotation != [4]float32{0, 0, 0, 1} {
-			q := mgl32.Quat{
-				W: t.Rotation[3],
-				V: mgl32.Vec3{t.Rotation[0], t.Rotation[1], t.Rotation[2]},
-			}
-			model = model.Mul4(q.Mat4())
-		}
-		sx, sy, sz := t.Scale[0], t.Scale[1], t.Scale[2]
-		if sx == 0 {
-			sx = 1
-		}
-		if sy == 0 {
-			sy = 1
-		}
-		if sz == 0 {
-			sz = 1
-		}
-		model = model.Mul4(mgl32.Scale3D(sx, sy, sz))
-		locModel := gl.GetUniformLocation(rs.Renderer.ShadowProgram, gl.Str("model\x00"))
-		gl.UniformMatrix4fv(locModel, 1, false, &model[0])*/
-
-		//engine.SetMat4(rs.Renderer.LocModel, &t.WorldMatrix[0])
-
 		locModel := gl.GetUniformLocation(rs.Renderer.ShadowProgram, gl.Str("model\x00"))
 		gl.UniformMatrix4fv(locModel, 1, false, &t.WorldMatrix[0])
 		meshIDs = meshIDs[:0]
@@ -382,28 +361,6 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 			}
 		}
 
-		// Build model matrix
-		/*model := mgl32.Translate3D(t.Position[0], t.Position[1], t.Position[2])
-		if t.Rotation != [4]float32{0, 0, 0, 1} {
-			q := mgl32.Quat{
-				W: t.Rotation[3],
-				V: mgl32.Vec3{t.Rotation[0], t.Rotation[1], t.Rotation[2]},
-			}
-			model = model.Mul4(q.Mat4())
-		}
-		sx, sy, sz := t.Scale[0], t.Scale[1], t.Scale[2]
-		if sx == 0 {
-			sx = 1
-		}
-		if sy == 0 {
-			sy = 1
-		}
-		if sz == 0 {
-			sz = 1
-		}
-		model = model.Mul4(mgl32.Scale3D(sx, sy, sz))
-		engine.SetMat4(rs.Renderer.LocModel, &model[0])*/
-		// New Logic useing the World Matrix
 		engine.SetMat4(rs.Renderer.LocModel, &t.WorldMatrix[0])
 		engine.SetMat4(rs.Renderer.LocView, &view[0])
 		engine.SetMat4(rs.Renderer.LocProj, &proj[0])
@@ -442,6 +399,7 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 			m.ClearcoatRoughness = mat.ClearcoatRoughness
 			m.SheenColor = mat.SheenColor
 			m.SheenRoughness = mat.SheenRoughness
+			m.TransmissionFactor = mat.TransmissionFactor
 
 			// Selection highlight: override base color if needed
 			if uint64(e.ID) == rs.SelectedEntity {

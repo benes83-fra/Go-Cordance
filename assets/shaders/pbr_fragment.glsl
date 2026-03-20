@@ -19,10 +19,16 @@ layout(std140) uniform MaterialBlock {
     float clearcoatRoughness;
     float _padClearcoat0;
     float _padClearcoat1;
+
     vec3 sheenColor;
     float sheenRoughness;
 
+    float transmissionFactor;
+    float _padTransmission0;
+    float _padTransmission1;
+    float _padTransmission2;
 };
+
 
 
 uniform vec3 viewPos;
@@ -103,6 +109,7 @@ uniform bool useClearcoatNormalTex;
 uniform vec2 uvScaleClearcoat;
 uniform vec2 uvOffsetClearcoat;
 uniform int  texCoordClearcoat;
+vec3 background = vec3(1.0); // white glass
 
 
 in VS_OUT {
@@ -434,6 +441,20 @@ void main()
         vec3 specularIBL = prefilteredColor * (F_ibl * brdfSample.x + brdfSample.y);
 
         color += diffuseIBL + specularIBL;
+    }
+    // --------------------------------------------------------
+    // Transmission (thin glass)
+    // --------------------------------------------------------
+    if (transmissionFactor > 0.0) {
+
+        // Sample the background using screen-space UV
+        vec2 screenUV = gl_FragCoord.xy / vec2(textureSize(shadowMap, 0)); 
+        // NOTE: replace shadowMap with your actual framebuffer texture later
+
+        vec3 background = vec3(0.0); // placeholder until you add a framebuffer texture
+
+        // Mix surface shading with background
+        color = mix(color, background, transmissionFactor);
     }
 
     // --------------------------------------------------------

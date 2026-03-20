@@ -57,6 +57,9 @@ type Material struct {
 	ClearcoatRoughTex      uint32
 	ClearcoatNormalTex     uint32
 	UseClearcoat           bool
+	TransmissionFactor     float32
+	UseTransmission        bool
+	TransmissionTex        uint32 // optional
 
 	// (optional) OcclusionID/MetallicRoughnessID can be zero if not present
 
@@ -125,6 +128,8 @@ func (m *Material) EditorFields() map[string]any {
 		"ClearcoatRoughTex":  m.ClearcoatRoughTex,
 		"ClearcoatNormalTex": m.ClearcoatNormalTex,
 		"UseClearcoat":       m.UseClearcoat,
+		"TransmissionFactor": m.TransmissionFactor,
+		"UseTransmission":    m.UseTransmission,
 	}
 }
 
@@ -217,6 +222,11 @@ func (m *Material) SetEditorField(name string, value any) {
 		m.ClearcoatNormalTex = uint32(toInt(value))
 	case "UseClearcoat":
 		m.UseClearcoat = toBool(value)
+	case "TransmissionFactor":
+		m.TransmissionFactor = toFloat32(value)
+	case "UseTransmission":
+		m.UseTransmission = toBool(value)
+
 	}
 
 	m.Dirty = true
