@@ -511,6 +511,16 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 				engine.SetInt(rs.Renderer.LocUseIBL, 0)
 			}
 		}
+		// Transmission texture
+		if mat.UseTransmission && mat.TransmissionTex != 0 {
+			gl.ActiveTexture(gl.TEXTURE15)
+			gl.BindTexture(gl.TEXTURE_2D, mat.TransmissionTex)
+			engine.SetInt(rs.Renderer.LocTransmissionTex, 15)
+			engine.SetInt(rs.Renderer.LocUseTransmissionTex, 1)
+		} else {
+			engine.SetInt(rs.Renderer.LocUseTransmissionTex, 0)
+		}
+
 		if mat.UseClearcoat && mat.ClearcoatTexture != 0 {
 			gl.ActiveTexture(gl.TEXTURE13)
 			gl.BindTexture(gl.TEXTURE_2D, mat.ClearcoatTexture)

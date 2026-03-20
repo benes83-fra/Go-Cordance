@@ -80,9 +80,10 @@ type Renderer struct {
 	LocUseClearcoatRoughTex  int32
 	LocClearcoatNormalTex    int32
 	LocUseClearcoatNormalTex int32
-
-	ScreenWidth  int
-	ScreenHeight int
+	LocTransmissionTex       int32
+	LocUseTransmissionTex    int32
+	ScreenWidth              int
+	ScreenHeight             int
 }
 
 func (r *Renderer) InitUniforms() {
@@ -195,6 +196,8 @@ func (r *Renderer) InitUniforms() {
 
 	r.LocClearcoatNormalTex = gl.GetUniformLocation(r.Program, gl.Str("clearcoatNormalTex\x00"))
 	r.LocUseClearcoatNormalTex = gl.GetUniformLocation(r.Program, gl.Str("useClearcoatNormalTex\x00"))
+	r.LocTransmissionTex = gl.GetUniformLocation(r.Program, gl.Str("transmissionTex\x00"))
+	r.LocUseTransmissionTex = gl.GetUniformLocation(r.Program, gl.Str("useTransmissionTex\x00"))
 
 	names := map[string]int32{
 		"model": r.LocModel, "view": r.LocView, "projection": r.LocProj,

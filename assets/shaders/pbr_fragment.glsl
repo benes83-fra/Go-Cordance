@@ -111,6 +111,8 @@ uniform vec2 uvOffsetClearcoat;
 uniform int  texCoordClearcoat;
 vec3 background = vec3(1.0); // white glass
 
+uniform sampler2D transmissionTex;
+uniform bool useTransmissionTex;
 
 in VS_OUT {
     vec3 WorldPos;
@@ -442,20 +444,28 @@ void main()
 
         color += diffuseIBL + specularIBL;
     }
+    
     // --------------------------------------------------------
     // Transmission (thin glass)
     // --------------------------------------------------------
     if (transmissionFactor > 0.0) {
 
-        // Sample the background using screen-space UV
-        vec2 screenUV = gl_FragCoord.xy / vec2(textureSize(shadowMap, 0)); 
-        // NOTE: replace shadowMap with your actual framebuffer texture later
+        // Final transmission factor (with optional texture)
+        float tf = transmissionFactor;
+        if (useTransmissionTex) {
+            tf *= texture(transmissionTex, uvBase).r;
+        }
 
-        vec3 background = vec3(0.0); // placeholder until you add a framebuffer texture
+        // Placeholder background until you add a framebuffer texture
+        vec3 background = vec3(1.0); // white background for now
 
-        // Mix surface shading with background
-        color = mix(color, background, transmissionFactor);
+        // Tint background by albedo (GLTF spec)
+        vec3 transmitted = background * albedo;
+
+        // Mix surface shading with transmitted light
+        color = mix(color, transmitted, tf);
     }
+
 
     // --------------------------------------------------------
     // Emissive

@@ -1,13 +1,24 @@
 {
   "name": "MetalBrushed",
   "shader": "pbr_shader",
+
   "params": {
     "baseColor": [0.8, 0.8, 0.8, 1.0],
     "metallic": 1.0,
-    "roughness": 0.3
+    "roughness": 0.3,
+    "clearcoatFactor": 0.1,
+    "clearcoatRoughness": 0.2
   },
+
   "textures": {
     "albedo": "assets/textures/metal_albedo.png",
-    "normal": "assets/textures/metal_normal.jpg"
+    "normal": "assets/textures/metal_normal.jpg",
+    "metallicRoughness": null,
+    "occlusion": null,
+    "emissive": null,
+    "clearcoat": null,
+    "clearcoatRoughness": null,
+    "clearcoatNormal": null,
+    "transmission": null
   }
 }
