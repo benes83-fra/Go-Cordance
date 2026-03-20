@@ -187,6 +187,8 @@ func (m *Material) SetEditorField(name string, value any) {
 		m.NormalScale = toFloat32(value)
 	case "SheenRoughness":
 		m.SheenRoughness = toFloat32(value)
+	case "SheenColor":
+		m.SheenColor = toVec3(value)
 	case "SpecularFactor":
 		m.SpecularFactor = toFloat32(value)
 	case "TexCoordMap":

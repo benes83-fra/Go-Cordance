@@ -19,6 +19,9 @@ layout(std140) uniform MaterialBlock {
     float clearcoatRoughness;
     float _padClearcoat0;
     float _padClearcoat1;
+    vec3 sheenColor;
+    float sheenRoughness;
+
 };
 
 
@@ -386,6 +389,24 @@ void main()
             // Add clearcoat contribution
             color += cc * specCC * lightColor[i] * lightIntensity[i] * NdotL * attenuation;
         }
+        // --------------------------------------------------------
+        // Sheen BRDF (cloth)
+        // --------------------------------------------------------
+        if (sheenRoughness > 0.0 || length(sheenColor) > 0.0) {
+
+            // Sheen uses a special retroreflective distribution
+            float NdotL = max(dot(N, L), 0.0);
+            float NdotV = max(dot(N, V), 0.0);
+
+            float D_sheen = pow(1.0 - dot(H, N), 2.0) / max(0.001, sheenRoughness);
+
+            vec3 F_sheen = sheenColor;
+
+            float sheenTerm = D_sheen * NdotL * NdotV;
+
+            color += sheenTerm * F_sheen * lightColor[i] * lightIntensity[i] * attenuation;
+        }
+
         color += (diffuse + specular) * radiance * NdotL * attenuation * shadowFactor;
     }
         // ... end of direct lighting loop ...

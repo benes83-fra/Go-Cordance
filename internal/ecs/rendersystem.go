@@ -47,11 +47,13 @@ type gpuMaterial struct {
 	MaterialType int32
 	_Pad0        float32
 
-	// NEW — must match GLSL std140 alignment
 	ClearcoatFactor    float32
 	ClearcoatRoughness float32
 	_PadCC0            float32
 	_PadCC1            float32
+
+	SheenColor     [3]float32
+	SheenRoughness float32
 }
 
 type MeshDrawItem struct {
@@ -438,6 +440,8 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 			}
 			m.ClearcoatFactor = mat.ClearcoatFactor
 			m.ClearcoatRoughness = mat.ClearcoatRoughness
+			m.SheenColor = mat.SheenColor
+			m.SheenRoughness = mat.SheenRoughness
 
 			// Selection highlight: override base color if needed
 			if uint64(e.ID) == rs.SelectedEntity {
