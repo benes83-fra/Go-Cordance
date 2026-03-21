@@ -1,8 +1,8 @@
 package ecs
 
 type MultiMesh struct {
-	Meshes    []string
-	Materials []*Material
+	Meshes []string
+	//Materials map[string]*Material
 }
 
 func NewMultiMesh(meshes []string) *MultiMesh {
@@ -16,8 +16,8 @@ func (mm *MultiMesh) EditorName() string { return "MultiMesh" }
 
 func (mm *MultiMesh) EditorFields() map[string]any {
 	return map[string]any{
-		"Meshes":    mm.Meshes,
-		"Materials": mm.Materials,
+		"Meshes": mm.Meshes,
+		//"Materials": mm.Materials,
 	}
 }
 
@@ -26,6 +26,6 @@ func (mm *MultiMesh) SetEditorField(name string, value any) {
 	case "Meshes":
 		mm.Meshes = value.([]string)
 	case "Materials":
-		mm.Materials = value.([]*Material)
+		//mm.Materials = value.(map[string]*Material)
 	}
 }

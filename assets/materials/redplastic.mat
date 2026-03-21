@@ -1,14 +1,23 @@
 {
   "name": "RedPlastic",
-  "shader": "default_shader",
+  "shader": "pbr_shader",
   "params": {
     "baseColor": [1.0, 0.0, 0.0, 1.0],
     "metallic": 0.0,
-    "roughness": 0.4
+    "roughness": 0.4,
+    "clearcoatFactor": 0.6,
+    "clearcoatRoughness": 0.2,
+    "sheenColor": [0.0, 0.0, 0.0],
+    "sheenRoughness": 0.0,
+    "transmissionFactor": 0.0,
+    "useIBL": true
   },
   "textures": {
     "albedo": null,
     "normal": null,
-    "metallic": null
+    "metallicRoughness": null,
+    "occlusion": null,
+    "transmission": null,
+    "clearcoat": null
   }
 }

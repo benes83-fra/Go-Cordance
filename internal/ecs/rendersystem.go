@@ -314,6 +314,7 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 	// Track which shader is currently bound so we only switch when needed.
 	currentShader := base
 	rs.uploadGlobals(entities, currentShader)
+	// somewhere right before RenderMainPass loop, hack for entity ID 13:
 
 	// 3) Draw all meshes
 	for _, e := range entities {
@@ -323,6 +324,7 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		var normalMapComp *NormalMap
 		var multi *MultiMesh
 		var multiMat *MultiMaterial
+		var hasChildren bool
 
 		for _, c := range e.Components {
 			switch v := c.(type) {
@@ -338,12 +340,18 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 				multi = v
 			case *MultiMaterial:
 				multiMat = v
+			case *Children:
+				hasChildren = true
+
 			}
 		}
+
 		if t == nil || mat == nil {
 			continue
 		}
-
+		if hasChildren {
+			multi = nil
+		}
 		// --- Per-material shader selection (additive) ---
 		resolveMaterialShader(mat)
 		desiredShader := base
@@ -773,6 +781,11 @@ func (rs *RenderSystem) collectMeshes(
 					m = mm
 				}
 			}
+			//  if multi.Materials != nil {
+			// if mm, ok := multi.Materials[meshID]; ok {
+			//     m = mm
+			// }
+
 			out = append(out, MeshDrawItem{
 				MeshID:    meshID,
 				Material:  m,

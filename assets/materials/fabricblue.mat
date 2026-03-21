@@ -1,24 +1,23 @@
 {
   "name": "FabricBlue",
   "shader": "pbr_shader",
-
   "params": {
     "baseColor": [0.2, 0.3, 0.8, 1.0],
     "metallic": 0.0,
     "roughness": 0.8,
+    "clearcoatFactor": 0.0,
+    "clearcoatRoughness": 0.0,
     "sheenColor": [0.2, 0.3, 0.8],
-    "sheenRoughness": 0.5
+    "sheenRoughness": 0.6,
+    "transmissionFactor": 0.0,
+    "useIBL": true
   },
-
   "textures": {
     "albedo": "assets/textures/fabric_blue.jpg",
     "normal": null,
     "metallicRoughness": null,
     "occlusion": null,
-    "emissive": null,
-    "clearcoat": null,
-    "clearcoatRoughness": null,
-    "clearcoatNormal": null,
-    "transmission": null
+    "transmission": null,
+    "clearcoat": null
   }
 }
