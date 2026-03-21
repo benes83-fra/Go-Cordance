@@ -197,11 +197,26 @@ func (m *Material) SetEditorField(name string, value any) {
 	case "SpecularFactor":
 		m.SpecularFactor = toFloat32(value)
 	case "TexCoordMap":
-		m.TexCoordMap = value.(map[string]int)
+		if value == nil {
+			m.TexCoordMap = nil
+		} else if mp, ok := value.(map[string]int); ok {
+			m.TexCoordMap = mp
+		} else {
+			// optional: log.Printf("Material.TexCoordMap: unexpected type %T", value)
+		}
 	case "UVScale":
-		m.UVScale = value.(map[string][2]float32)
+		if value == nil {
+			m.UVScale = nil
+		} else if mp, ok := value.(map[string][2]float32); ok {
+			m.UVScale = mp
+		}
 	case "UVOffset":
-		m.UVOffset = value.(map[string][2]float32)
+		if value == nil {
+			m.UVOffset = nil
+		} else if mp, ok := value.(map[string][2]float32); ok {
+			m.UVOffset = mp
+		}
+
 	case "UseIBL":
 		m.UseIBL = toBool(value)
 	case "IrradianceTex":
