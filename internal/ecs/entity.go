@@ -38,6 +38,15 @@ func (e *Entity) GetTransform() *Transform {
 	}
 	return nil
 }
+func (e *Entity) HasComponent(target Component) bool {
+	t := reflect.TypeOf(target)
+	for _, c := range e.Components {
+		if reflect.TypeOf(c) == t {
+			return true
+		}
+	}
+	return false
+}
 
 // AddComponent appends a component to the entity.
 func (e *Entity) AddComponent(c Component) {

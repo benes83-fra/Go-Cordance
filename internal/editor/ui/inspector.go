@@ -173,6 +173,11 @@ func NewInspectorPanel() (
 						log.Printf("editor: entity %d has %q in snapshot but not in ECS world", entInfo.ID, name)
 						continue
 					}
+					if name == "Material" {
+						if ecsEnt.HasComponent(&ecs.Children{}) {
+							continue
+						}
+					}
 
 					if insp, ok := comp.(ecs.EditorInspectable); ok {
 						fold := buildComponentUI(insp, entInfo.ID, func() {
@@ -758,6 +763,12 @@ func showAddComponentDialog(world *ecs.World, ent *ecs.Entity, entityID int64, c
 	buttons := container.NewVBox()
 	for _, name := range items {
 		compName := name
+		if compName == "Material" {
+			if ent.HasComponent(&ecs.Children{}) {
+				continue // skip Material for parents
+			}
+		}
+
 		btn := widget.NewButton(compName, func() {
 			constructor := ecs.ComponentRegistry[compName]
 			newComp := constructor()

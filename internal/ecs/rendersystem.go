@@ -346,13 +346,14 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 			}
 		}
 
+		if hasChildren {
+			multi = nil
+			mat = nil
+		}
+		// --- Per-material shader selection (additive) ---
 		if t == nil || mat == nil {
 			continue
 		}
-		if hasChildren {
-			multi = nil
-		}
-		// --- Per-material shader selection (additive) ---
 		resolveMaterialShader(mat)
 		desiredShader := base
 		if mat.Shader != nil {
