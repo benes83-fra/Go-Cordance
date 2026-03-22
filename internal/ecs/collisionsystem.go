@@ -11,15 +11,19 @@ type Collider interface {
 
 // --- Sphere Collider ---
 type ColliderSphere struct {
-	Radius float32
-	Layer  int
-	Mask   uint32
+	Radius      float32
+	Layer       int
+	Mask        uint32
+	Restitution float32
+	Friction    float32
 }
 
 func NewColliderSphere(radius float32) *ColliderSphere {
 	return &ColliderSphere{
-		Radius: radius,
-		Mask:   0xFFFFFFFF,
+		Radius:      radius,
+		Mask:        0xFFFFFFFF,
+		Restitution: 0.5,
+		Friction:    0.8,
 	}
 }
 
@@ -27,15 +31,19 @@ func (c *ColliderSphere) ColliderType() string { return "sphere" }
 
 // --- Plane Collider ---
 type ColliderPlane struct {
-	Y     float32 // horizontal plane at this Y level
-	Layer int
-	Mask  uint32
+	Y           float32 // horizontal plane at this Y level
+	Layer       int
+	Mask        uint32
+	Restitution float32
+	Friction    float32
 }
 
 func NewColliderPlane(y float32) *ColliderPlane {
 	return &ColliderPlane{
-		Y:    y,
-		Mask: 0xFFFFFFFF,
+		Y:           y,
+		Mask:        0xFFFFFFFF,
+		Restitution: 0.5,
+		Friction:    0.8,
 	}
 }
 
@@ -44,12 +52,16 @@ type ColliderAABB struct {
 	HalfExtents [3]float32 // half-widths in x,y,z
 	Layer       int
 	Mask        uint32
+	Restitution float32
+	Friction    float32
 }
 
 func NewColliderAABB(halfExtents [3]float32) *ColliderAABB {
 	return &ColliderAABB{
 		HalfExtents: halfExtents,
 		Mask:        0xFFFFFFFF,
+		Restitution: 0.5,
+		Friction:    0.8,
 	}
 }
 
@@ -147,12 +159,13 @@ func (cs *CollisionSystem) handleSpherePlane() {
 			if !canCollide(s.c.Layer, s.c.Mask, p.c.Layer, p.c.Mask) {
 				continue
 			}
-
+			restitution := min(s.c.Restitution, p.c.Restitution)
+			friction := min(s.c.Friction, p.c.Friction)
 			if s.t.Position[1]-s.c.Radius < p.c.Y {
 				s.t.Position[1] = p.c.Y + s.c.Radius
-				s.r.Vel[1] = -s.r.Vel[1] * 0.5
-				s.r.Vel[0] *= 0.9
-				s.r.Vel[2] *= 0.9
+				s.r.Vel[1] = -s.r.Vel[1] * restitution
+				s.r.Vel[0] *= friction
+				s.r.Vel[2] *= friction
 			}
 		}
 	}
@@ -168,7 +181,7 @@ func (cs *CollisionSystem) handleSphereSphere() {
 			if !canCollide(a.c.Layer, a.c.Mask, b.c.Layer, b.c.Mask) {
 				continue
 			}
-
+			restitution := min(a.c.Restitution, b.c.Restitution)
 			dx := b.t.Position[0] - a.t.Position[0]
 			dy := b.t.Position[1] - a.t.Position[1]
 			dz := b.t.Position[2] - a.t.Position[2]
@@ -191,12 +204,19 @@ func (cs *CollisionSystem) handleSphereSphere() {
 
 				va := a.r.Vel[0]*nx + a.r.Vel[1]*ny + a.r.Vel[2]*nz
 				vb := b.r.Vel[0]*nx + b.r.Vel[1]*ny + b.r.Vel[2]*nz
-				a.r.Vel[0] += (vb - va) * nx
-				a.r.Vel[1] += (vb - va) * ny
-				a.r.Vel[2] += (vb - va) * nz
-				b.r.Vel[0] += (va - vb) * nx
-				b.r.Vel[1] += (va - vb) * ny
-				b.r.Vel[2] += (va - vb) * nz
+				vrel := vb - va
+				if vrel < 0 { // only resolve if approaching
+
+					impulse := -(1 + restitution) * vrel * 0.5 // equal mass
+
+					a.r.Vel[0] += impulse * nx
+					a.r.Vel[1] += impulse * ny
+					a.r.Vel[2] += impulse * nz
+
+					b.r.Vel[0] -= impulse * nx
+					b.r.Vel[1] -= impulse * ny
+					b.r.Vel[2] -= impulse * nz
+				}
 			}
 		}
 	}
@@ -208,12 +228,13 @@ func (cs *CollisionSystem) handleBoxPlane() {
 			if !canCollide(b.c.Layer, b.c.Mask, p.c.Layer, p.c.Mask) {
 				continue
 			}
-
+			restitution := min(b.c.Restitution, p.c.Restitution)
+			friction := min(b.c.Friction, p.c.Friction)
 			if b.t.Position[1]-b.c.HalfExtents[1] < p.c.Y {
 				b.t.Position[1] = p.c.Y + b.c.HalfExtents[1]
-				b.r.Vel[1] = -b.r.Vel[1] * 0.5
-				b.r.Vel[0] *= 0.8
-				b.r.Vel[2] *= 0.8
+				b.r.Vel[1] = -b.r.Vel[1] * restitution
+				b.r.Vel[0] *= friction
+				b.r.Vel[2] *= friction
 			}
 		}
 	}
@@ -228,7 +249,7 @@ func (cs *CollisionSystem) handleBoxBox() {
 			if !canCollide(a.c.Layer, a.c.Mask, b.c.Layer, b.c.Mask) {
 				continue
 			}
-
+			restitution := min(a.c.Restitution, b.c.Restitution)
 			minA := [3]float32{
 				a.t.Position[0] - a.c.HalfExtents[0],
 				a.t.Position[1] - a.c.HalfExtents[1],
@@ -267,8 +288,8 @@ func (cs *CollisionSystem) handleBoxBox() {
 						a.t.Position[0] += penX / 2
 						b.t.Position[0] -= penX / 2
 					}
-					a.r.Vel[0] = -a.r.Vel[0] * 0.5
-					b.r.Vel[0] = -b.r.Vel[0] * 0.5
+					a.r.Vel[0] = -a.r.Vel[0] * restitution
+					b.r.Vel[0] = -b.r.Vel[0] * restitution
 				} else if penY < penZ {
 					if a.t.Position[1] < b.t.Position[1] {
 						a.t.Position[1] -= penY / 2
@@ -277,8 +298,8 @@ func (cs *CollisionSystem) handleBoxBox() {
 						a.t.Position[1] += penY / 2
 						b.t.Position[1] -= penY / 2
 					}
-					a.r.Vel[1] = -a.r.Vel[1] * 0.5
-					b.r.Vel[1] = -b.r.Vel[1] * 0.5
+					a.r.Vel[1] = -a.r.Vel[1] * restitution
+					b.r.Vel[1] = -b.r.Vel[1] * restitution
 				} else {
 					if a.t.Position[2] < b.t.Position[2] {
 						a.t.Position[2] -= penZ / 2
@@ -287,8 +308,8 @@ func (cs *CollisionSystem) handleBoxBox() {
 						a.t.Position[2] += penZ / 2
 						b.t.Position[2] -= penZ / 2
 					}
-					a.r.Vel[2] = -a.r.Vel[2] * 0.5
-					b.r.Vel[2] = -b.r.Vel[2] * 0.5
+					a.r.Vel[2] = -a.r.Vel[2] * restitution
+					b.r.Vel[2] = -b.r.Vel[2] * restitution
 				}
 			}
 		}
@@ -301,7 +322,8 @@ func (cs *CollisionSystem) handleSphereBox() {
 			if !canCollide(s.c.Layer, s.c.Mask, b.c.Layer, b.c.Mask) {
 				continue
 			}
-
+			restitution := min(s.c.Restitution, b.c.Restitution)
+			friction := min(s.c.Friction, b.c.Friction)
 			closest := [3]float32{
 				clamp(s.t.Position[0], b.t.Position[0]-b.c.HalfExtents[0], b.t.Position[0]+b.c.HalfExtents[0]),
 				clamp(s.t.Position[1], b.t.Position[1]-b.c.HalfExtents[1], b.t.Position[1]+b.c.HalfExtents[1]),
@@ -330,9 +352,14 @@ func (cs *CollisionSystem) handleSphereBox() {
 				s.r.Vel[1] -= 2 * dot * ny
 				s.r.Vel[2] -= 2 * dot * nz
 
-				s.r.Vel[0] *= 0.5
-				s.r.Vel[1] *= 0.5
-				s.r.Vel[2] *= 0.5
+				s.r.Vel[0] *= restitution
+				s.r.Vel[1] *= restitution
+				s.r.Vel[2] *= restitution
+
+				// tangential friction
+				s.r.Vel[0] *= friction
+				s.r.Vel[1] *= friction
+				s.r.Vel[2] *= friction
 			}
 		}
 	}
@@ -347,6 +374,8 @@ func (c *ColliderAABB) EditorFields() map[string]any {
 		"HalfExtentsZ": c.HalfExtents[2],
 		"Layer":        c.Layer,
 		"Mask":         c.Mask,
+		"Restitution":  c.Restitution,
+		"Friction":     c.Friction,
 	}
 }
 
@@ -362,6 +391,10 @@ func (c *ColliderAABB) SetEditorField(name string, value any) {
 		c.Layer = toInt(value)
 	case "Mask":
 		c.Mask = uint32(toInt(value))
+	case "Restitution":
+		c.Restitution = toFloat32(value)
+	case "Friction":
+		c.Friction = toFloat32(value)
 
 	}
 }
@@ -369,9 +402,11 @@ func (c *ColliderPlane) EditorName() string { return "ColliderPlane" }
 
 func (c *ColliderPlane) EditorFields() map[string]any {
 	return map[string]any{
-		"Y":     c.Y,
-		"Layer": c.Layer,
-		"Mask":  c.Mask,
+		"Y":           c.Y,
+		"Layer":       c.Layer,
+		"Mask":        c.Mask,
+		"Restitution": c.Restitution,
+		"Friction":    c.Friction,
 	}
 }
 
@@ -383,6 +418,10 @@ func (c *ColliderPlane) SetEditorField(name string, value any) {
 		c.Layer = toInt(value)
 	case "Mask":
 		c.Mask = uint32(toInt(value))
+	case "Restitution":
+		c.Restitution = toFloat32(value)
+	case "Friction":
+		c.Friction = toFloat32(value)
 	}
 
 }
@@ -391,9 +430,11 @@ func (c *ColliderSphere) EditorName() string { return "ColliderSphere" }
 
 func (c *ColliderSphere) EditorFields() map[string]any {
 	return map[string]any{
-		"Radius": c.Radius,
-		"Layer":  c.Layer,
-		"Mask":   c.Mask,
+		"Radius":      c.Radius,
+		"Layer":       c.Layer,
+		"Mask":        c.Mask,
+		"Restitution": c.Restitution,
+		"Friction":    c.Friction,
 	}
 }
 
@@ -405,6 +446,10 @@ func (c *ColliderSphere) SetEditorField(name string, value any) {
 		c.Layer = toInt(value)
 	case "Mask":
 		c.Mask = uint32(toInt(value))
+	case "Restitution":
+		c.Restitution = toFloat32(value)
+	case "Friction":
+		c.Friction = toFloat32(value)
 	}
 
 }
