@@ -221,9 +221,9 @@ func (m *Material) SetEditorField(name string, value any) {
 		m.UseIBL = toBool(value)
 	case "IrradianceTex":
 		m.IrradianceTex = uint32(toInt(value))
-	case "PrefilteredTex":
+	case "PrefilteredEnvTex":
 		m.PrefilteredEnvTex = uint32(toInt(value))
-	case "BRFFLUTTex":
+	case "BRDFLUTTex":
 		m.BRDFLUTTex = uint32(toInt(value))
 	case "ClearcoatFactor":
 		m.ClearcoatFactor = toFloat32(value)

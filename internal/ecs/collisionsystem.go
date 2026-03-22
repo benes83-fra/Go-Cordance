@@ -54,18 +54,366 @@ func (c *ColliderAABB) Update(dt float32) {
 }
 
 // CollisionSystem checks for overlaps between colliders and resolves them.
-type CollisionSystem struct{}
+type CollisionSystem struct {
+	spheres []sphereBody
+	boxes   []boxBody
+	planes  []planeBody
+}
 
 func NewCollisionSystem() *CollisionSystem {
 	return &CollisionSystem{}
 }
 
+// keep these types near CollisionSystem
+type sphereBody struct {
+	t *Transform
+	r *RigidBody
+	c *ColliderSphere
+}
+type boxBody struct {
+	t *Transform
+	r *RigidBody
+	c *ColliderAABB
+}
+type planeBody struct {
+	c *ColliderPlane
+}
+
+// func (cs *CollisionSystem) Update(dt float32, entities []*Entity) {
+// 	// Sphere–plane collisions
+// 	for _, e := range entities {
+// 		var t *Transform
+// 		var rb *RigidBody
+// 		var sphere *ColliderSphere
+// 		for _, c := range e.Components {
+// 			switch comp := c.(type) {
+// 			case *Transform:
+// 				t = comp
+// 			case *RigidBody:
+// 				rb = comp
+// 			case *ColliderSphere:
+// 				sphere = comp
+// 			}
+// 		}
+// 		if t != nil && rb != nil && sphere != nil {
+// 			for _, other := range entities {
+// 				var plane *ColliderPlane
+// 				for _, c := range other.Components {
+// 					if p, ok := c.(*ColliderPlane); ok {
+// 						plane = p
+// 					}
+// 				}
+// 				if plane != nil && t.Position[1]-sphere.Radius < plane.Y {
+// 					t.Position[1] = plane.Y + sphere.Radius
+// 					rb.Vel[1] = -rb.Vel[1] * 0.5
+// 					rb.Vel[0] *= 0.9
+// 					rb.Vel[2] *= 0.9
+// 				}
+// 			}
+// 		}
+// 	}
+
+// 	// Sphere–sphere collisions (already added earlier)
+// 	for i := 0; i < len(entities); i++ {
+// 		var tA *Transform
+// 		var rbA *RigidBody
+// 		var sA *ColliderSphere
+// 		for _, c := range entities[i].Components {
+// 			switch comp := c.(type) {
+// 			case *Transform:
+// 				tA = comp
+// 			case *RigidBody:
+// 				rbA = comp
+// 			case *ColliderSphere:
+// 				sA = comp
+// 			}
+// 		}
+// 		if tA == nil || rbA == nil || sA == nil {
+// 			continue
+// 		}
+// 		for j := i + 1; j < len(entities); j++ {
+// 			var tB *Transform
+// 			var rbB *RigidBody
+// 			var sB *ColliderSphere
+// 			for _, c := range entities[j].Components {
+// 				switch comp := c.(type) {
+// 				case *Transform:
+// 					tB = comp
+// 				case *RigidBody:
+// 					rbB = comp
+// 				case *ColliderSphere:
+// 					sB = comp
+// 				}
+// 			}
+// 			if tB == nil || rbB == nil || sB == nil {
+// 				continue
+// 			}
+// 			dx := tB.Position[0] - tA.Position[0]
+// 			dy := tB.Position[1] - tA.Position[1]
+// 			dz := tB.Position[2] - tA.Position[2]
+// 			distSq := dx*dx + dy*dy + dz*dz
+// 			radiusSum := sA.Radius + sB.Radius
+// 			if distSq < radiusSum*radiusSum {
+// 				dist := float32(math.Sqrt(float64(distSq)))
+// 				if dist == 0 {
+// 					dist = 0.0001
+// 				}
+// 				nx, ny, nz := dx/dist, dy/dist, dz/dist
+// 				penetration := radiusSum - dist
+// 				tA.Position[0] -= nx * penetration * 0.5
+// 				tA.Position[1] -= ny * penetration * 0.5
+// 				tA.Position[2] -= nz * penetration * 0.5
+// 				tB.Position[0] += nx * penetration * 0.5
+// 				tB.Position[1] += ny * penetration * 0.5
+// 				tB.Position[2] += nz * penetration * 0.5
+// 				va := rbA.Vel[0]*nx + rbA.Vel[1]*ny + rbA.Vel[2]*nz
+// 				vb := rbB.Vel[0]*nx + rbB.Vel[1]*ny + rbB.Vel[2]*nz
+// 				rbA.Vel[0] += (vb - va) * nx
+// 				rbA.Vel[1] += (vb - va) * ny
+// 				rbA.Vel[2] += (vb - va) * nz
+// 				rbB.Vel[0] += (va - vb) * nx
+// 				rbB.Vel[1] += (va - vb) * ny
+// 				rbB.Vel[2] += (va - vb) * nz
+// 			}
+// 		}
+// 	}
+
+// 	// AABB–plane collisions
+// 	for _, e := range entities {
+// 		var t *Transform
+// 		var rb *RigidBody
+// 		var box *ColliderAABB
+// 		for _, c := range e.Components {
+// 			switch comp := c.(type) {
+// 			case *Transform:
+// 				t = comp
+// 			case *RigidBody:
+// 				rb = comp
+// 			case *ColliderAABB:
+// 				box = comp
+// 			}
+// 		}
+// 		if t != nil && rb != nil && box != nil {
+// 			for _, other := range entities {
+// 				var plane *ColliderPlane
+// 				for _, c := range other.Components {
+// 					if p, ok := c.(*ColliderPlane); ok {
+// 						plane = p
+// 					}
+// 				}
+// 				if plane != nil {
+// 					// Check bottom of box against plane
+// 					if t.Position[1]-box.HalfExtents[1] < plane.Y {
+// 						t.Position[1] = plane.Y + box.HalfExtents[1]
+// 						rb.Vel[1] = -rb.Vel[1] * 0.5
+// 						rb.Vel[0] *= 0.8
+// 						rb.Vel[2] *= 0.8
+// 					}
+// 				}
+// 			}
+// 		}
+// 	}
+// 	// AABB–AABB collisions
+// 	for i := 0; i < len(entities); i++ {
+// 		var tA *Transform
+// 		var rbA *RigidBody
+// 		var boxA *ColliderAABB
+// 		for _, c := range entities[i].Components {
+// 			switch comp := c.(type) {
+// 			case *Transform:
+// 				tA = comp
+// 			case *RigidBody:
+// 				rbA = comp
+// 			case *ColliderAABB:
+// 				boxA = comp
+// 			}
+// 		}
+// 		if tA == nil || rbA == nil || boxA == nil {
+// 			continue
+// 		}
+
+// 		for j := i + 1; j < len(entities); j++ {
+// 			var tB *Transform
+// 			var rbB *RigidBody
+// 			var boxB *ColliderAABB
+// 			for _, c := range entities[j].Components {
+// 				switch comp := c.(type) {
+// 				case *Transform:
+// 					tB = comp
+// 				case *RigidBody:
+// 					rbB = comp
+// 				case *ColliderAABB:
+// 					boxB = comp
+// 				}
+// 			}
+// 			if tB == nil || rbB == nil || boxB == nil {
+// 				continue
+// 			}
+
+// 			// Compute min/max for each box
+// 			minA := [3]float32{
+// 				tA.Position[0] - boxA.HalfExtents[0],
+// 				tA.Position[1] - boxA.HalfExtents[1],
+// 				tA.Position[2] - boxA.HalfExtents[2],
+// 			}
+// 			maxA := [3]float32{
+// 				tA.Position[0] + boxA.HalfExtents[0],
+// 				tA.Position[1] + boxA.HalfExtents[1],
+// 				tA.Position[2] + boxA.HalfExtents[2],
+// 			}
+// 			minB := [3]float32{
+// 				tB.Position[0] - boxB.HalfExtents[0],
+// 				tB.Position[1] - boxB.HalfExtents[1],
+// 				tB.Position[2] - boxB.HalfExtents[2],
+// 			}
+// 			maxB := [3]float32{
+// 				tB.Position[0] + boxB.HalfExtents[0],
+// 				tB.Position[1] + boxB.HalfExtents[1],
+// 				tB.Position[2] + boxB.HalfExtents[2],
+// 			}
+
+// 			// Check overlap
+// 			overlapX := minA[0] <= maxB[0] && maxA[0] >= minB[0]
+// 			overlapY := minA[1] <= maxB[1] && maxA[1] >= minB[1]
+// 			overlapZ := minA[2] <= maxB[2] && maxA[2] >= minB[2]
+
+// 			if overlapX && overlapY && overlapZ {
+// 				// Compute penetration depths
+// 				penX := min(maxA[0]-minB[0], maxB[0]-minA[0])
+// 				penY := min(maxA[1]-minB[1], maxB[1]-minA[1])
+// 				penZ := min(maxA[2]-minB[2], maxB[2]-minA[2])
+
+// 				// Resolve along smallest axis
+// 				if penX < penY && penX < penZ {
+// 					// Separate along X
+// 					if tA.Position[0] < tB.Position[0] {
+// 						tA.Position[0] -= penX / 2
+// 						tB.Position[0] += penX / 2
+// 					} else {
+// 						tA.Position[0] += penX / 2
+// 						tB.Position[0] -= penX / 2
+// 					}
+// 					rbA.Vel[0] = -rbA.Vel[0] * 0.5
+// 					rbB.Vel[0] = -rbB.Vel[0] * 0.5
+// 				} else if penY < penZ {
+// 					// Separate along Y
+// 					if tA.Position[1] < tB.Position[1] {
+// 						tA.Position[1] -= penY / 2
+// 						tB.Position[1] += penY / 2
+// 					} else {
+// 						tA.Position[1] += penY / 2
+// 						tB.Position[1] -= penY / 2
+// 					}
+// 					rbA.Vel[1] = -rbA.Vel[1] * 0.5
+// 					rbB.Vel[1] = -rbB.Vel[1] * 0.5
+// 				} else {
+// 					// Separate along Z
+// 					if tA.Position[2] < tB.Position[2] {
+// 						tA.Position[2] -= penZ / 2
+// 						tB.Position[2] += penZ / 2
+// 					} else {
+// 						tA.Position[2] += penZ / 2
+// 						tB.Position[2] -= penZ / 2
+// 					}
+// 					rbA.Vel[2] = -rbA.Vel[2] * 0.5
+// 					rbB.Vel[2] = -rbB.Vel[2] * 0.5
+// 				}
+// 			}
+// 		}
+// 	}
+// 	// Sphere–AABB collisions
+// 	for _, e := range entities {
+// 		var tS *Transform
+// 		var rbS *RigidBody
+// 		var sphere *ColliderSphere
+// 		for _, c := range e.Components {
+// 			switch comp := c.(type) {
+// 			case *Transform:
+// 				tS = comp
+// 			case *RigidBody:
+// 				rbS = comp
+// 			case *ColliderSphere:
+// 				sphere = comp
+// 			}
+// 		}
+// 		if tS == nil || rbS == nil || sphere == nil {
+// 			continue
+// 		}
+
+// 		for _, other := range entities {
+// 			var tB *Transform
+// 			//var rbB *RigidBody
+// 			var box *ColliderAABB
+// 			for _, c := range other.Components {
+// 				switch comp := c.(type) {
+// 				case *Transform:
+// 					tB = comp
+// 					//	case *RigidBody:
+// 					//			rbB = comp
+// 				case *ColliderAABB:
+// 					box = comp
+// 				}
+// 			}
+// 			if tB == nil || box == nil {
+// 				continue
+// 			}
+
+// 			// Find closest point on AABB to sphere center
+// 			closest := [3]float32{
+// 				clamp(tS.Position[0], tB.Position[0]-box.HalfExtents[0], tB.Position[0]+box.HalfExtents[0]),
+// 				clamp(tS.Position[1], tB.Position[1]-box.HalfExtents[1], tB.Position[1]+box.HalfExtents[1]),
+// 				clamp(tS.Position[2], tB.Position[2]-box.HalfExtents[2], tB.Position[2]+box.HalfExtents[2]),
+// 			}
+
+// 			dx := tS.Position[0] - closest[0]
+// 			dy := tS.Position[1] - closest[1]
+// 			dz := tS.Position[2] - closest[2]
+// 			distSq := dx*dx + dy*dy + dz*dz
+
+// 			if distSq < sphere.Radius*sphere.Radius {
+// 				dist := float32(math.Sqrt(float64(distSq)))
+// 				if dist == 0 {
+// 					dist = 0.0001
+// 				}
+// 				nx, ny, nz := dx/dist, dy/dist, dz/dist
+// 				penetration := sphere.Radius - dist
+
+// 				// Push sphere out of box
+// 				tS.Position[0] += nx * penetration
+// 				tS.Position[1] += ny * penetration
+// 				tS.Position[2] += nz * penetration
+
+// 				// Reflect sphere Vel
+// 				dot := rbS.Vel[0]*nx + rbS.Vel[1]*ny + rbS.Vel[2]*nz
+// 				rbS.Vel[0] -= 2 * dot * nx
+// 				rbS.Vel[1] -= 2 * dot * ny
+// 				rbS.Vel[2] -= 2 * dot * nz
+
+// 				// Damping
+// 				rbS.Vel[0] *= 0.5
+// 				rbS.Vel[1] *= 0.5
+// 				rbS.Vel[2] *= 0.5
+
+// 			}
+
+//			}
+//		}
+//	}
 func (cs *CollisionSystem) Update(dt float32, entities []*Entity) {
-	// Sphere–plane collisions
+	_ = dt
+
+	// Precollect components so we don't rescan entities repeatedly.
+	cs.spheres = cs.spheres[:0]
+	cs.boxes = cs.boxes[:0]
+	cs.planes = cs.planes[:0]
+
 	for _, e := range entities {
 		var t *Transform
 		var rb *RigidBody
-		var sphere *ColliderSphere
+		var sph *ColliderSphere
+		var box *ColliderAABB
+		var plane *ColliderPlane
+
 		for _, c := range e.Components {
 			switch comp := c.(type) {
 			case *Transform:
@@ -73,67 +421,54 @@ func (cs *CollisionSystem) Update(dt float32, entities []*Entity) {
 			case *RigidBody:
 				rb = comp
 			case *ColliderSphere:
-				sphere = comp
+				sph = comp
+			case *ColliderAABB:
+				box = comp
+			case *ColliderPlane:
+				plane = comp
 			}
 		}
-		if t != nil && rb != nil && sphere != nil {
-			for _, other := range entities {
-				var plane *ColliderPlane
-				for _, c := range other.Components {
-					if p, ok := c.(*ColliderPlane); ok {
-						plane = p
-					}
-				}
-				if plane != nil && t.Position[1]-sphere.Radius < plane.Y {
-					t.Position[1] = plane.Y + sphere.Radius
-					rb.Vel[1] = -rb.Vel[1] * 0.5
-					rb.Vel[0] *= 0.9
-					rb.Vel[2] *= 0.9
-				}
+
+		if sph != nil && t != nil && rb != nil {
+			cs.spheres = append(cs.spheres, sphereBody{t: t, r: rb, c: sph})
+		}
+		if box != nil && t != nil && rb != nil {
+			cs.boxes = append(cs.boxes, boxBody{t: t, r: rb, c: box})
+		}
+		if plane != nil {
+			cs.planes = append(cs.planes, planeBody{c: plane})
+		}
+	}
+	spheres := cs.spheres
+	boxes := cs.boxes
+	planes := cs.planes
+	// ----------------------------------------------------------------
+	// Sphere–plane collisions (same logic, just using precollected data)
+	// ----------------------------------------------------------------
+	for _, s := range spheres {
+		for _, p := range planes {
+			if s.t.Position[1]-s.c.Radius < p.c.Y {
+				s.t.Position[1] = p.c.Y + s.c.Radius
+				s.r.Vel[1] = -s.r.Vel[1] * 0.5
+				s.r.Vel[0] *= 0.9
+				s.r.Vel[2] *= 0.9
 			}
 		}
 	}
 
-	// Sphere–sphere collisions (already added earlier)
-	for i := 0; i < len(entities); i++ {
-		var tA *Transform
-		var rbA *RigidBody
-		var sA *ColliderSphere
-		for _, c := range entities[i].Components {
-			switch comp := c.(type) {
-			case *Transform:
-				tA = comp
-			case *RigidBody:
-				rbA = comp
-			case *ColliderSphere:
-				sA = comp
-			}
-		}
-		if tA == nil || rbA == nil || sA == nil {
-			continue
-		}
-		for j := i + 1; j < len(entities); j++ {
-			var tB *Transform
-			var rbB *RigidBody
-			var sB *ColliderSphere
-			for _, c := range entities[j].Components {
-				switch comp := c.(type) {
-				case *Transform:
-					tB = comp
-				case *RigidBody:
-					rbB = comp
-				case *ColliderSphere:
-					sB = comp
-				}
-			}
-			if tB == nil || rbB == nil || sB == nil {
-				continue
-			}
-			dx := tB.Position[0] - tA.Position[0]
-			dy := tB.Position[1] - tA.Position[1]
-			dz := tB.Position[2] - tA.Position[2]
+	// ----------------------------------------------------------------
+	// Sphere–sphere collisions
+	// ----------------------------------------------------------------
+	for i := 0; i < len(spheres); i++ {
+		a := &spheres[i]
+		for j := i + 1; j < len(spheres); j++ {
+			b := &spheres[j]
+
+			dx := b.t.Position[0] - a.t.Position[0]
+			dy := b.t.Position[1] - a.t.Position[1]
+			dz := b.t.Position[2] - a.t.Position[2]
 			distSq := dx*dx + dy*dy + dz*dz
-			radiusSum := sA.Radius + sB.Radius
+			radiusSum := a.c.Radius + b.c.Radius
 			if distSq < radiusSum*radiusSum {
 				dist := float32(math.Sqrt(float64(distSq)))
 				if dist == 0 {
@@ -141,242 +476,150 @@ func (cs *CollisionSystem) Update(dt float32, entities []*Entity) {
 				}
 				nx, ny, nz := dx/dist, dy/dist, dz/dist
 				penetration := radiusSum - dist
-				tA.Position[0] -= nx * penetration * 0.5
-				tA.Position[1] -= ny * penetration * 0.5
-				tA.Position[2] -= nz * penetration * 0.5
-				tB.Position[0] += nx * penetration * 0.5
-				tB.Position[1] += ny * penetration * 0.5
-				tB.Position[2] += nz * penetration * 0.5
-				va := rbA.Vel[0]*nx + rbA.Vel[1]*ny + rbA.Vel[2]*nz
-				vb := rbB.Vel[0]*nx + rbB.Vel[1]*ny + rbB.Vel[2]*nz
-				rbA.Vel[0] += (vb - va) * nx
-				rbA.Vel[1] += (vb - va) * ny
-				rbA.Vel[2] += (vb - va) * nz
-				rbB.Vel[0] += (va - vb) * nx
-				rbB.Vel[1] += (va - vb) * ny
-				rbB.Vel[2] += (va - vb) * nz
+
+				a.t.Position[0] -= nx * penetration * 0.5
+				a.t.Position[1] -= ny * penetration * 0.5
+				a.t.Position[2] -= nz * penetration * 0.5
+				b.t.Position[0] += nx * penetration * 0.5
+				b.t.Position[1] += ny * penetration * 0.5
+				b.t.Position[2] += nz * penetration * 0.5
+
+				va := a.r.Vel[0]*nx + a.r.Vel[1]*ny + a.r.Vel[2]*nz
+				vb := b.r.Vel[0]*nx + b.r.Vel[1]*ny + b.r.Vel[2]*nz
+				a.r.Vel[0] += (vb - va) * nx
+				a.r.Vel[1] += (vb - va) * ny
+				a.r.Vel[2] += (vb - va) * nz
+				b.r.Vel[0] += (va - vb) * nx
+				b.r.Vel[1] += (va - vb) * ny
+				b.r.Vel[2] += (va - vb) * nz
 			}
 		}
 	}
 
+	// ----------------------------------------------------------------
 	// AABB–plane collisions
-	for _, e := range entities {
-		var t *Transform
-		var rb *RigidBody
-		var box *ColliderAABB
-		for _, c := range e.Components {
-			switch comp := c.(type) {
-			case *Transform:
-				t = comp
-			case *RigidBody:
-				rb = comp
-			case *ColliderAABB:
-				box = comp
-			}
-		}
-		if t != nil && rb != nil && box != nil {
-			for _, other := range entities {
-				var plane *ColliderPlane
-				for _, c := range other.Components {
-					if p, ok := c.(*ColliderPlane); ok {
-						plane = p
-					}
-				}
-				if plane != nil {
-					// Check bottom of box against plane
-					if t.Position[1]-box.HalfExtents[1] < plane.Y {
-						t.Position[1] = plane.Y + box.HalfExtents[1]
-						rb.Vel[1] = -rb.Vel[1] * 0.5
-						rb.Vel[0] *= 0.8
-						rb.Vel[2] *= 0.8
-					}
-				}
+	// ----------------------------------------------------------------
+	for _, b := range boxes {
+		for _, p := range planes {
+			if b.t.Position[1]-b.c.HalfExtents[1] < p.c.Y {
+				b.t.Position[1] = p.c.Y + b.c.HalfExtents[1]
+				b.r.Vel[1] = -b.r.Vel[1] * 0.5
+				b.r.Vel[0] *= 0.8
+				b.r.Vel[2] *= 0.8
 			}
 		}
 	}
+
+	// ----------------------------------------------------------------
 	// AABB–AABB collisions
-	for i := 0; i < len(entities); i++ {
-		var tA *Transform
-		var rbA *RigidBody
-		var boxA *ColliderAABB
-		for _, c := range entities[i].Components {
-			switch comp := c.(type) {
-			case *Transform:
-				tA = comp
-			case *RigidBody:
-				rbA = comp
-			case *ColliderAABB:
-				boxA = comp
-			}
-		}
-		if tA == nil || rbA == nil || boxA == nil {
-			continue
-		}
+	// ----------------------------------------------------------------
+	for i := 0; i < len(boxes); i++ {
+		a := &boxes[i]
+		for j := i + 1; j < len(boxes); j++ {
+			b := &boxes[j]
 
-		for j := i + 1; j < len(entities); j++ {
-			var tB *Transform
-			var rbB *RigidBody
-			var boxB *ColliderAABB
-			for _, c := range entities[j].Components {
-				switch comp := c.(type) {
-				case *Transform:
-					tB = comp
-				case *RigidBody:
-					rbB = comp
-				case *ColliderAABB:
-					boxB = comp
-				}
-			}
-			if tB == nil || rbB == nil || boxB == nil {
-				continue
-			}
-
-			// Compute min/max for each box
 			minA := [3]float32{
-				tA.Position[0] - boxA.HalfExtents[0],
-				tA.Position[1] - boxA.HalfExtents[1],
-				tA.Position[2] - boxA.HalfExtents[2],
+				a.t.Position[0] - a.c.HalfExtents[0],
+				a.t.Position[1] - a.c.HalfExtents[1],
+				a.t.Position[2] - a.c.HalfExtents[2],
 			}
 			maxA := [3]float32{
-				tA.Position[0] + boxA.HalfExtents[0],
-				tA.Position[1] + boxA.HalfExtents[1],
-				tA.Position[2] + boxA.HalfExtents[2],
+				a.t.Position[0] + a.c.HalfExtents[0],
+				a.t.Position[1] + a.c.HalfExtents[1],
+				a.t.Position[2] + a.c.HalfExtents[2],
 			}
 			minB := [3]float32{
-				tB.Position[0] - boxB.HalfExtents[0],
-				tB.Position[1] - boxB.HalfExtents[1],
-				tB.Position[2] - boxB.HalfExtents[2],
+				b.t.Position[0] - b.c.HalfExtents[0],
+				b.t.Position[1] - b.c.HalfExtents[1],
+				b.t.Position[2] - b.c.HalfExtents[2],
 			}
 			maxB := [3]float32{
-				tB.Position[0] + boxB.HalfExtents[0],
-				tB.Position[1] + boxB.HalfExtents[1],
-				tB.Position[2] + boxB.HalfExtents[2],
+				b.t.Position[0] + b.c.HalfExtents[0],
+				b.t.Position[1] + b.c.HalfExtents[1],
+				b.t.Position[2] + b.c.HalfExtents[2],
 			}
 
-			// Check overlap
 			overlapX := minA[0] <= maxB[0] && maxA[0] >= minB[0]
 			overlapY := minA[1] <= maxB[1] && maxA[1] >= minB[1]
 			overlapZ := minA[2] <= maxB[2] && maxA[2] >= minB[2]
 
 			if overlapX && overlapY && overlapZ {
-				// Compute penetration depths
 				penX := min(maxA[0]-minB[0], maxB[0]-minA[0])
 				penY := min(maxA[1]-minB[1], maxB[1]-minA[1])
 				penZ := min(maxA[2]-minB[2], maxB[2]-minA[2])
 
-				// Resolve along smallest axis
 				if penX < penY && penX < penZ {
-					// Separate along X
-					if tA.Position[0] < tB.Position[0] {
-						tA.Position[0] -= penX / 2
-						tB.Position[0] += penX / 2
+					if a.t.Position[0] < b.t.Position[0] {
+						a.t.Position[0] -= penX / 2
+						b.t.Position[0] += penX / 2
 					} else {
-						tA.Position[0] += penX / 2
-						tB.Position[0] -= penX / 2
+						a.t.Position[0] += penX / 2
+						b.t.Position[0] -= penX / 2
 					}
-					rbA.Vel[0] = -rbA.Vel[0] * 0.5
-					rbB.Vel[0] = -rbB.Vel[0] * 0.5
+					a.r.Vel[0] = -a.r.Vel[0] * 0.5
+					b.r.Vel[0] = -b.r.Vel[0] * 0.5
 				} else if penY < penZ {
-					// Separate along Y
-					if tA.Position[1] < tB.Position[1] {
-						tA.Position[1] -= penY / 2
-						tB.Position[1] += penY / 2
+					if a.t.Position[1] < b.t.Position[1] {
+						a.t.Position[1] -= penY / 2
+						b.t.Position[1] += penY / 2
 					} else {
-						tA.Position[1] += penY / 2
-						tB.Position[1] -= penY / 2
+						a.t.Position[1] += penY / 2
+						b.t.Position[1] -= penY / 2
 					}
-					rbA.Vel[1] = -rbA.Vel[1] * 0.5
-					rbB.Vel[1] = -rbB.Vel[1] * 0.5
+					a.r.Vel[1] = -a.r.Vel[1] * 0.5
+					b.r.Vel[1] = -b.r.Vel[1] * 0.5
 				} else {
-					// Separate along Z
-					if tA.Position[2] < tB.Position[2] {
-						tA.Position[2] -= penZ / 2
-						tB.Position[2] += penZ / 2
+					if a.t.Position[2] < b.t.Position[2] {
+						a.t.Position[2] -= penZ / 2
+						b.t.Position[2] += penZ / 2
 					} else {
-						tA.Position[2] += penZ / 2
-						tB.Position[2] -= penZ / 2
+						a.t.Position[2] += penZ / 2
+						b.t.Position[2] -= penZ / 2
 					}
-					rbA.Vel[2] = -rbA.Vel[2] * 0.5
-					rbB.Vel[2] = -rbB.Vel[2] * 0.5
+					a.r.Vel[2] = -a.r.Vel[2] * 0.5
+					b.r.Vel[2] = -b.r.Vel[2] * 0.5
 				}
 			}
 		}
 	}
+
+	// ----------------------------------------------------------------
 	// Sphere–AABB collisions
-	for _, e := range entities {
-		var tS *Transform
-		var rbS *RigidBody
-		var sphere *ColliderSphere
-		for _, c := range e.Components {
-			switch comp := c.(type) {
-			case *Transform:
-				tS = comp
-			case *RigidBody:
-				rbS = comp
-			case *ColliderSphere:
-				sphere = comp
-			}
-		}
-		if tS == nil || rbS == nil || sphere == nil {
-			continue
-		}
-
-		for _, other := range entities {
-			var tB *Transform
-			//var rbB *RigidBody
-			var box *ColliderAABB
-			for _, c := range other.Components {
-				switch comp := c.(type) {
-				case *Transform:
-					tB = comp
-					//	case *RigidBody:
-					//			rbB = comp
-				case *ColliderAABB:
-					box = comp
-				}
-			}
-			if tB == nil || box == nil {
-				continue
-			}
-
-			// Find closest point on AABB to sphere center
+	// ----------------------------------------------------------------
+	for _, s := range spheres {
+		for _, b := range boxes {
 			closest := [3]float32{
-				clamp(tS.Position[0], tB.Position[0]-box.HalfExtents[0], tB.Position[0]+box.HalfExtents[0]),
-				clamp(tS.Position[1], tB.Position[1]-box.HalfExtents[1], tB.Position[1]+box.HalfExtents[1]),
-				clamp(tS.Position[2], tB.Position[2]-box.HalfExtents[2], tB.Position[2]+box.HalfExtents[2]),
+				clamp(s.t.Position[0], b.t.Position[0]-b.c.HalfExtents[0], b.t.Position[0]+b.c.HalfExtents[0]),
+				clamp(s.t.Position[1], b.t.Position[1]-b.c.HalfExtents[1], b.t.Position[1]+b.c.HalfExtents[1]),
+				clamp(s.t.Position[2], b.t.Position[2]-b.c.HalfExtents[2], b.t.Position[2]+b.c.HalfExtents[2]),
 			}
 
-			dx := tS.Position[0] - closest[0]
-			dy := tS.Position[1] - closest[1]
-			dz := tS.Position[2] - closest[2]
+			dx := s.t.Position[0] - closest[0]
+			dy := s.t.Position[1] - closest[1]
+			dz := s.t.Position[2] - closest[2]
 			distSq := dx*dx + dy*dy + dz*dz
 
-			if distSq < sphere.Radius*sphere.Radius {
+			if distSq < s.c.Radius*s.c.Radius {
 				dist := float32(math.Sqrt(float64(distSq)))
 				if dist == 0 {
 					dist = 0.0001
 				}
 				nx, ny, nz := dx/dist, dy/dist, dz/dist
-				penetration := sphere.Radius - dist
+				penetration := s.c.Radius - dist
 
-				// Push sphere out of box
-				tS.Position[0] += nx * penetration
-				tS.Position[1] += ny * penetration
-				tS.Position[2] += nz * penetration
+				s.t.Position[0] += nx * penetration
+				s.t.Position[1] += ny * penetration
+				s.t.Position[2] += nz * penetration
 
-				// Reflect sphere Vel
-				dot := rbS.Vel[0]*nx + rbS.Vel[1]*ny + rbS.Vel[2]*nz
-				rbS.Vel[0] -= 2 * dot * nx
-				rbS.Vel[1] -= 2 * dot * ny
-				rbS.Vel[2] -= 2 * dot * nz
+				dot := s.r.Vel[0]*nx + s.r.Vel[1]*ny + s.r.Vel[2]*nz
+				s.r.Vel[0] -= 2 * dot * nx
+				s.r.Vel[1] -= 2 * dot * ny
+				s.r.Vel[2] -= 2 * dot * nz
 
-				// Damping
-				rbS.Vel[0] *= 0.5
-				rbS.Vel[1] *= 0.5
-				rbS.Vel[2] *= 0.5
-
+				s.r.Vel[0] *= 0.5
+				s.r.Vel[1] *= 0.5
+				s.r.Vel[2] *= 0.5
 			}
-
 		}
 	}
 }
