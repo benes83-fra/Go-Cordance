@@ -5,10 +5,12 @@ import (
 )
 
 type Contact struct {
-	A, B     *RigidBody
-	Normal   [3]float32
-	Friction float32
-	Lifetime int
+	A, B        *RigidBody
+	TA, TB      *Transform
+	Normal      [3]float32
+	Friction    float32
+	Lifetime    int
+	Penetration float32
 }
 
 // Collider is a component with a simple bounding sphere.
@@ -188,7 +190,9 @@ func (cs *CollisionSystem) handleSpherePlane() {
 				s.r.Vel[1] = -s.r.Vel[1] * restitution
 				// s.r.Vel[0] *= friction
 				// s.r.Vel[2] *= friction
-				cs.addContact(s.r, nil, [3]float32{0, 1, 0}, friction)
+				penetration := (p.c.Y + s.c.Radius) - s.t.Position[1]
+
+				cs.addContact(s.r, s.t, nil, nil, [3]float32{0, 1, 0}, friction, penetration)
 
 			}
 		}
@@ -241,7 +245,7 @@ func (cs *CollisionSystem) handleSphereSphere() {
 					b.r.Vel[1] -= impulse * ny
 					b.r.Vel[2] -= impulse * nz
 				}
-				cs.addContact(a.r, b.r, [3]float32{nx, ny, nz}, min(a.c.Friction, b.c.Friction))
+				cs.addContact(a.r, a.t, b.r, b.t, [3]float32{nx, ny, nz}, min(a.c.Friction, b.c.Friction), penetration)
 
 			}
 		}
@@ -261,7 +265,9 @@ func (cs *CollisionSystem) handleBoxPlane() {
 				b.r.Vel[1] = -b.r.Vel[1] * restitution
 				// b.r.Vel[0] *= friction
 				// b.r.Vel[2] *= friction
-				cs.addContact(b.r, nil, [3]float32{0, 1, 0}, friction)
+
+				penetration := (p.c.Y + b.c.HalfExtents[1]) - b.t.Position[1]
+				cs.addContact(b.r, b.t, nil, nil, [3]float32{0, 1, 0}, friction, penetration)
 
 			}
 		}
@@ -345,7 +351,9 @@ func (cs *CollisionSystem) handleBoxBox() {
 					a.r.Vel[2] = -a.r.Vel[2] * restitution
 					b.r.Vel[2] = -b.r.Vel[2] * restitution
 				}
-				cs.addContact(a.r, b.r, n, min(a.c.Friction, b.c.Friction))
+				penetration := min(penX, min(penY, penZ))
+
+				cs.addContact(a.r, a.t, b.r, b.t, n, min(a.c.Friction, b.c.Friction), penetration)
 
 			}
 		}
@@ -396,7 +404,7 @@ func (cs *CollisionSystem) handleSphereBox() {
 				// s.r.Vel[0] *= friction
 				// s.r.Vel[1] *= friction
 				// s.r.Vel[2] *= friction
-				cs.addContact(s.r, b.r, [3]float32{nx, ny, nz}, friction)
+				cs.addContact(s.r, s.t, b.r, b.t, [3]float32{nx, ny, nz}, friction, penetration)
 
 			}
 		}
@@ -724,7 +732,9 @@ func add3(a, b [3]float32) [3]float32 {
 	return [3]float32{a[0] + b[0], a[1] + b[1], a[2] + b[2]}
 }
 
-func (cs *CollisionSystem) addContact(a, b *RigidBody, n [3]float32, friction float32) {
+func (cs *CollisionSystem) addContact(a *RigidBody, ta *Transform,
+	b *RigidBody, tb *Transform,
+	n [3]float32, friction float32, penetration float32) {
 	n = normalize3(n)
 
 	for i := range cs.contacts {
@@ -732,34 +742,46 @@ func (cs *CollisionSystem) addContact(a, b *RigidBody, n [3]float32, friction fl
 		if (c.A == a && c.B == b) || (c.A == b && c.B == a) {
 			c.Normal = n
 			c.Friction = friction
+			c.Penetration = penetration
 			c.Lifetime++
 			return
 		}
 	}
 
 	cs.contacts = append(cs.contacts, Contact{
-		A:        a,
-		B:        b,
-		Normal:   n,
-		Friction: friction,
-		Lifetime: 1,
+		A:           a,
+		B:           b,
+		Normal:      n,
+		Friction:    friction,
+		Lifetime:    1,
+		Penetration: penetration,
 	})
 }
 
 func (cs *CollisionSystem) solveContacts() {
 	for i := range cs.contacts {
 		c := &cs.contacts[i]
-		n := c.Normal
-		fr := c.Friction
 
+		// friction
 		if c.A != nil {
-			applyFrictionToBody(c.A, n, fr)
+			applyFrictionToBody(c.A, c.Normal, c.Friction)
 		}
 		if c.B != nil {
-			applyFrictionToBody(c.B, n, fr)
+			applyFrictionToBody(c.B, c.Normal, c.Friction)
+		}
+
+		// positional correction
+		correction := c.Penetration * 0.5
+
+		if c.TA != nil {
+			c.TA.Position = add3(c.TA.Position, mul3(c.Normal, -correction))
+		}
+		if c.TB != nil {
+			c.TB.Position = add3(c.TB.Position, mul3(c.Normal, correction))
 		}
 	}
 }
+
 func applyFrictionToBody(rb *RigidBody, n [3]float32, friction float32) {
 	vn := dot3(rb.Vel, n)
 	v_n := mul3(n, vn)
