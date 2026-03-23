@@ -174,7 +174,11 @@ func (cs *CollisionSystem) Update(dt float32, entities []*Entity) {
 	cs.handleBoxBox()
 	cs.handleSphereBox()
 	//cs.applyFriction()
-	cs.solveContacts()
+	//cs.applyFriction()
+	for i := 0; i < 4; i++ { // 4–10 is typical; tune as needed
+		cs.solveContacts()
+	}
+
 }
 
 func (cs *CollisionSystem) handleSpherePlane() {
@@ -741,6 +745,8 @@ func (cs *CollisionSystem) addContact(a *RigidBody, ta *Transform,
 		c := &cs.contacts[i]
 		if (c.A == a && c.B == b) || (c.A == b && c.B == a) {
 			c.Normal = n
+			c.TA = ta
+			c.TB = tb
 			c.Friction = friction
 			c.Penetration = penetration
 			c.Lifetime++
@@ -751,14 +757,20 @@ func (cs *CollisionSystem) addContact(a *RigidBody, ta *Transform,
 	cs.contacts = append(cs.contacts, Contact{
 		A:           a,
 		B:           b,
+		TA:          ta,
+		TB:          tb,
 		Normal:      n,
 		Friction:    friction,
 		Lifetime:    1,
 		Penetration: penetration,
 	})
+
 }
 
 func (cs *CollisionSystem) solveContacts() {
+	const baumgarte = float32(0.2)
+	const slop = float32(0.001) // small allowed penetration
+
 	for i := range cs.contacts {
 		c := &cs.contacts[i]
 
@@ -770,14 +782,34 @@ func (cs *CollisionSystem) solveContacts() {
 			applyFrictionToBody(c.B, c.Normal, c.Friction)
 		}
 
-		// positional correction
-		correction := c.Penetration * 0.5
+		// positional correction with slop
+		penetration := c.Penetration - slop
+		if penetration <= 0 {
+			continue
+		}
+		correction := penetration * baumgarte
+
+		invA := float32(0)
+		invB := float32(0)
+
+		if c.A != nil && c.A.Mass > 0 {
+			invA = 1.0 / c.A.Mass
+		}
+		if c.B != nil && c.B.Mass > 0 {
+			invB = 1.0 / c.B.Mass
+		}
+		invSum := invA + invB
+		if invSum == 0 {
+			continue // both static
+		}
 
 		if c.TA != nil {
-			c.TA.Position = add3(c.TA.Position, mul3(c.Normal, -correction))
+			factorA := invA / invSum
+			c.TA.Position = add3(c.TA.Position, mul3(c.Normal, -correction*factorA))
 		}
 		if c.TB != nil {
-			c.TB.Position = add3(c.TB.Position, mul3(c.Normal, correction))
+			factorB := invB / invSum
+			c.TB.Position = add3(c.TB.Position, mul3(c.Normal, correction*factorB))
 		}
 	}
 }
