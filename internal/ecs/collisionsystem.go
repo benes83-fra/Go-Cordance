@@ -238,17 +238,30 @@ func (cs *CollisionSystem) handleSphereSphere() {
 				vb := b.r.Vel[0]*nx + b.r.Vel[1]*ny + b.r.Vel[2]*nz
 				vrel := vb - va
 				if vrel < 0 { // only resolve if approaching
+					invA := float32(0)
+					invB := float32(0)
+					if a.r.Mass > 0 {
+						invA = 1.0 / a.r.Mass
+					}
+					if b.r.Mass > 0 {
+						invB = 1.0 / b.r.Mass
+					}
+					invSum := invA + invB
+					if invSum > 0 {
+						j := -(1 + restitution) * vrel / invSum
 
-					impulse := -(1 + restitution) * vrel * 0.5 // equal mass
+						// A moves opposite to normal
+						a.r.Vel[0] -= j * invA * nx
+						a.r.Vel[1] -= j * invA * ny
+						a.r.Vel[2] -= j * invA * nz
 
-					a.r.Vel[0] += impulse * nx
-					a.r.Vel[1] += impulse * ny
-					a.r.Vel[2] += impulse * nz
-
-					b.r.Vel[0] -= impulse * nx
-					b.r.Vel[1] -= impulse * ny
-					b.r.Vel[2] -= impulse * nz
+						// B moves along normal
+						b.r.Vel[0] += j * invB * nx
+						b.r.Vel[1] += j * invB * ny
+						b.r.Vel[2] += j * invB * nz
+					}
 				}
+
 				cs.addContact(a.r, a.t, b.r, b.t, [3]float32{nx, ny, nz}, min(a.c.Friction, b.c.Friction), penetration)
 
 			}
