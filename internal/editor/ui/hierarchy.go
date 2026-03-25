@@ -58,6 +58,12 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 			go editorlink.WriteDeleteEntity(editorlink.EditorConn, st.Selection.ActiveID, deleted.Name)
 		}
 	})
+	createBtn := widget.NewButton("Create Empty", func() {
+		if editorlink.EditorConn != nil {
+			// Create an empty entity with default name
+			go editorlink.WriteCreateEntity(editorlink.EditorConn, "Empty")
+		}
+	})
 
 	makeItem := func() fyne.CanvasObject {
 		return newHierarchyDropItem()
@@ -166,7 +172,7 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 		},
 	)
 
-	topBar := container.NewHBox(dupBtn, delBtn)
+	topBar := container.NewHBox(createBtn, dupBtn, delBtn)
 	panel := container.NewBorder(topBar, nil, nil, nil, list)
 
 	return panel, list

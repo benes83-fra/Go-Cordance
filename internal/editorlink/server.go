@@ -168,6 +168,31 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 
 			// Tell the camera system to focus
 			camSys.FocusOn(ent)
+		case "CreateEntity":
+			var m MsgCreateEntity
+			if err := json.Unmarshal(msg.Data, &m); err != nil {
+				log.Printf("editorlink: bad CreateEntity: %v", err)
+				continue
+			}
+
+			// Create entity in ECS
+			ent := sc.NewEntity(m.Name)
+			ent.AddComponent(ecs.NewName(m.Name))
+			ent.AddComponent(ecs.NewTransform([3]float32{0, 0, 0}))
+
+			// Push undo
+			undo.Global.PushStructural(undo.CreateEntityCommand{Entity: ent})
+
+			// Select it
+			sc.Selected = ent
+			sc.SelectedEntity = uint64(ent.ID)
+
+			// Send updated snapshot
+			if EditorConn != nil {
+				snap := buildSceneSnapshot(sc)
+				writeMsg(EditorConn, "SceneSnapshot", MsgSceneSnapshot{Snapshot: snap})
+			}
+
 		case "DuplicateEntity":
 			var m MsgDuplicateEntity
 			json.Unmarshal(msg.Data, &m)

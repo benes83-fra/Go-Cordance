@@ -150,6 +150,26 @@ func (s *Scene) DuplicateEntity(src *ecs.Entity) *ecs.Entity {
 	return dup
 }
 
+func (s *Scene) NewEntity(name string) *ecs.Entity {
+	// 1. Allocate new ID
+	id := atomic.AddInt64(&s.nextID, 1)
+
+	// 2. Create ECS entity
+	e := ecs.NewEntity(id)
+
+	// 3. Add default components
+	e.AddComponent(ecs.NewName(name))
+	e.AddComponent(ecs.NewTransform([3]float32{0, 0, 0}))
+
+	// 4. Insert into scene + world
+	s.entities = append(s.entities, e)
+	if s.world != nil {
+		s.world.AddEntity(e)
+	}
+
+	return e
+}
+
 func (s *Scene) DeleteEntityByID(id int64) {
 	// Remove from scene.entities
 	newList := make([]*ecs.Entity, 0, len(s.entities))

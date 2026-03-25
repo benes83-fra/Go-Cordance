@@ -155,6 +155,9 @@ type MsgDuplicateEntity struct {
 	ID   uint64 `json:"id"`
 	Name string `json:"name"`
 }
+type MsgCreateEntity struct {
+	Name string `json:"name"`
+}
 
 type MsgSetGlobalShader struct {
 	Name string `json:"name"`
@@ -371,4 +374,9 @@ func SendSetGlobalShader(conn net.Conn, name string) error {
 func WriteRequestAssetReload(conn net.Conn) error {
 	msg := MsgRequestAssetReload{Type: MsgTypeRequestAssetReload}
 	return writeMsg(conn, MsgTypeRequestAssetReload, msg)
+}
+
+func WriteCreateEntity(conn net.Conn, name string) error {
+	msg := MsgCreateEntity{Name: name}
+	return writeMsg(conn, "CreateEntity", msg)
 }
