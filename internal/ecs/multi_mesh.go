@@ -24,7 +24,13 @@ func (mm *MultiMesh) EditorFields() map[string]any {
 func (mm *MultiMesh) SetEditorField(name string, value any) {
 	switch name {
 	case "Meshes":
-		mm.Meshes = value.([]string)
+		if value == nil {
+			mm.Meshes = nil
+		} else if meshes, ok := value.([]string); ok {
+			mm.Meshes = meshes
+
+		}
+
 	case "Materials":
 		//mm.Materials = value.(map[string]*Material)
 	}
