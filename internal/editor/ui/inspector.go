@@ -142,8 +142,34 @@ func NewInspectorPanel() (
 		scaleFoldout.SetOnToggle(func(expanded bool) {
 			st.Foldout["Scale"] = expanded
 		})
+		resetBtn := widget.NewButton("Reset Transform", func() {
+			if st.SelectedIndex < 0 || st.SelectedIndex >= len(st.Entities) {
+				return
+			}
+
+			ent := &st.Entities[st.SelectedIndex]
+
+			// Reset values
+			ent.Position = [3]float32{0, 0, 0}
+			ent.Rotation = [4]float32{0, 0, 0, 1}
+			ent.Scale = [3]float32{1, 1, 1}
+
+			// Clear cached Euler so UI recomputes correctly
+			delete(st.EulerCache, uint64(ent.ID))
+
+			// Send to game
+			sendTransformIfConnected(st, st.SelectedIndex)
+
+			// Rebuild UI
+			rebuild(world, st, hierarchy)
+		})
 		// Create left column for transform
-		left := container.NewVBox(posFoldout, rotFoldout, scaleFoldout)
+		left := container.NewVBox(
+			posFoldout,
+			rotFoldout,
+			scaleFoldout,
+			resetBtn,
+		)
 
 		// Create right column for components
 		right := container.NewVBox()
