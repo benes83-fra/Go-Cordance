@@ -13,4 +13,5 @@ var ComponentRegistry = map[string]func() Component{
 	"MultiMesh":      func() Component { return NewMultiMesh(nil) },
 	"Parent":         func() Component { return &Parent{} },
 	"Children":       func() Component { return NewChildren() },
+	"Name":           func() Component { return NewName("") },
 }

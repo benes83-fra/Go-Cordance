@@ -177,8 +177,6 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 
 			// Create entity in ECS
 			ent := sc.NewEntity(m.Name)
-			ent.AddComponent(ecs.NewName(m.Name))
-			ent.AddComponent(ecs.NewTransform([3]float32{0, 0, 0}))
 
 			// Push undo
 			undo.Global.PushStructural(undo.CreateEntityCommand{Entity: ent})
@@ -387,6 +385,9 @@ func buildSceneSnapshot(sc *scene.Scene) SceneSnapshot {
 		}
 		if ent.GetComponent((*ecs.MultiMesh)(nil)) != nil {
 			view.Components = append(view.Components, "MultiMesh")
+		}
+		if ent.GetComponent((*ecs.Mesh)(nil)) != nil {
+			view.Components = append(view.Components, "Mesh")
 		}
 		// Parent
 		if c := ent.GetComponent((*ecs.Parent)(nil)); c != nil {

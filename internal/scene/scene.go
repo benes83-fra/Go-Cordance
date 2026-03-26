@@ -160,7 +160,12 @@ func (s *Scene) NewEntity(name string) *ecs.Entity {
 	// 3. Add default components
 	e.AddComponent(ecs.NewName(name))
 	e.AddComponent(ecs.NewTransform([3]float32{0, 0, 0}))
-
+	if !e.HasComponent(&ecs.Material{}) {
+		e.AddComponent(ecs.NewMaterial([4]float32{0, 0, 0, 0}))
+	}
+	if !e.HasComponent(&ecs.Mesh{}) {
+		e.AddComponent(ecs.NewMesh(""))
+	}
 	// 4. Insert into scene + world
 	s.entities = append(s.entities, e)
 	if s.world != nil {
