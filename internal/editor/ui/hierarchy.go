@@ -30,20 +30,16 @@ type HierarchyRow struct {
 // 1) The UI container (button + list)
 // 2) The underlying *widget.List for inspector rebuild
 func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasObject, *widget.List) {
+	var renameIndex = -1
 
 	dupBtn := widget.NewButton("Duplicate", func() {
 		if st.Selection.ActiveID != 0 && editorlink.EditorConn != nil {
-
-			// Capture source entity info BEFORE duplication
-
 			go editorlink.WriteDuplicateEntity(editorlink.EditorConn, st.Selection.ActiveID)
 		}
 	})
 
 	delBtn := widget.NewButton("Delete", func() {
 		if st.Selection.ActiveID != 0 && editorlink.EditorConn != nil {
-
-			// Capture entity info for undo
 			var deleted bridge.EntityInfo
 			for _, e := range st.Entities {
 				if e.ID == st.Selection.ActiveID {
@@ -51,16 +47,12 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 					break
 				}
 			}
-
-			// Push structural undo
-
-			// Send delete request to game
 			go editorlink.WriteDeleteEntity(editorlink.EditorConn, st.Selection.ActiveID, deleted.Name)
 		}
 	})
+
 	createBtn := widget.NewButton("Create Empty", func() {
 		if editorlink.EditorConn != nil {
-			// Create an empty entity with default name
 			go editorlink.WriteCreateEntity(editorlink.EditorConn, "Empty")
 		}
 	})
@@ -68,30 +60,60 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 	makeItem := func() fyne.CanvasObject {
 		return newHierarchyDropItem()
 	}
-	var rows []HierarchyRow
 
-	list := widget.NewList(
+	var rows []HierarchyRow
+	var list *widget.List
+
+	list = widget.NewList(
 		func() int {
 			rows = BuildHierarchyRows(st)
 			return len(rows)
 		},
 		makeItem,
 		func(i int, o fyne.CanvasObject) {
+			item := o.(*hierarchyDropItem)
+
 			if i < 0 || i >= len(rows) {
-				item := o.(*hierarchyDropItem)
 				item.check.SetChecked(false)
 				item.btn.SetText("")
+				item.entry.Hide()
+				item.btn.Show()
 				return
 			}
 
 			row := rows[i]
-			item := o.(*hierarchyDropItem)
 			check := item.check
 			btn := item.btn
+			entry := item.entry
 			item.entityID = row.ID
 
 			indent := strings.Repeat("  ", row.Depth)
 			btn.SetText(indent + row.Name)
+
+			// Inline rename mode
+			if renameIndex == i {
+				btn.Hide()
+				entry.Show()
+				entry.SetText(row.Name)
+
+				entry.OnSubmitted = func(newName string) {
+					renameIndex = -1
+					entry.Hide()
+					btn.Show()
+
+					msg := editorlink.MsgSetComponent{
+						EntityID: uint64(row.ID),
+						Name:     "Name",
+						Fields: map[string]any{
+							"Value": newName,
+						},
+					}
+					go editorlink.WriteSetComponent(editorlink.EditorConn, msg)
+				}
+			} else {
+				entry.Hide()
+				btn.Show()
+			}
 
 			// checkbox state
 			checked := false
@@ -137,17 +159,17 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 			btn.OnTapped = func() {
 				now := time.Now()
 
+				// Double-click → enter rename mode
 				if lastClickIndex == i && now.Sub(lastClickTime) < 300*time.Millisecond {
-					if editorlink.EditorConn != nil {
-						go editorlink.WriteFocusEntity(editorlink.EditorConn, row.ID)
-					}
+					renameIndex = i
+					list.Refresh()
 					return
 				}
 
 				lastClickTime = now
 				lastClickIndex = i
 
-				// Map row.ID back to index in st.Entities for inspector
+				// Single-click → select
 				entIndex := -1
 				for idx, e := range st.Entities {
 					if e.ID == row.ID {
@@ -177,12 +199,12 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 
 	return panel, list
 }
+
 func BuildHierarchyRows(st *state.EditorState) []HierarchyRow {
 	ents := st.Entities
 	parentMap := st.ParentMap
 	childrenMap := st.ChildrenMap
 
-	// Lookup by ID
 	byID := map[int64]bridge.EntityInfo{}
 	for _, e := range ents {
 		byID[e.ID] = e
@@ -211,20 +233,17 @@ func BuildHierarchyRows(st *state.EditorState) []HierarchyRow {
 			Depth:     depth,
 		})
 
-		// deterministic children order
 		for _, childID := range childrenMap[id] {
 			walk(childID, depth+1)
 		}
 	}
 
-	// Roots: Parent == 0 in snapshot
 	for _, e := range ents {
 		if e.Parent == 0 {
 			walk(e.ID, 0)
 		}
 	}
 
-	// Defensive: any entities not reached (broken parent data)
 	for _, e := range ents {
 		if !seen[e.ID] {
 			walk(e.ID, 0)
@@ -237,7 +256,6 @@ func BuildHierarchyRows(st *state.EditorState) []HierarchyRow {
 func buildHierarchyOrder(ents []bridge.EntityInfo, childrenMap map[int64][]int64) []int64 {
 	var out []int64
 
-	// 1. find all roots
 	roots := []int64{}
 	for _, e := range ents {
 		if e.Parent == 0 {
@@ -245,7 +263,6 @@ func buildHierarchyOrder(ents []bridge.EntityInfo, childrenMap map[int64][]int64
 		}
 	}
 
-	// 2. DFS to preserve order
 	var walk func(id int64)
 	walk = func(id int64) {
 		out = append(out, id)
@@ -265,6 +282,7 @@ type hierarchyDropItem struct {
 	widget.BaseWidget
 	check    *widget.Check
 	btn      *widget.Button
+	entry    *widget.Entry
 	entityID int64
 }
 
@@ -272,10 +290,13 @@ func newHierarchyDropItem() *hierarchyDropItem {
 	check := widget.NewCheck("", nil)
 	btn := widget.NewButton("", nil)
 	btn.Importance = widget.LowImportance
+	entry := widget.NewEntry()
+	entry.Hide()
 
 	item := &hierarchyDropItem{
 		check: check,
 		btn:   btn,
+		entry: entry,
 	}
 	item.ExtendBaseWidget(item)
 	return item
@@ -283,7 +304,10 @@ func newHierarchyDropItem() *hierarchyDropItem {
 
 func (h *hierarchyDropItem) CreateRenderer() fyne.WidgetRenderer {
 	return widget.NewSimpleRenderer(
-		container.NewHBox(h.check, h.btn),
+		container.NewHBox(
+			h.check,
+			container.NewMax(h.btn, h.entry),
+		),
 	)
 }
 
