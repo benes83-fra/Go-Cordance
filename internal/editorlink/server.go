@@ -349,7 +349,9 @@ func buildSceneSnapshot(sc *scene.Scene) SceneSnapshot {
 
 		if c := ent.GetComponent((*ecs.Name)(nil)); c != nil {
 			view.Name = c.(*ecs.Name).Value
+			view.Components = append(view.Components, "Name")
 		}
+
 		if c := ent.GetComponent((*ecs.Transform)(nil)); c != nil {
 			tr := c.(*ecs.Transform)
 			view.Position = Vec3(tr.Position)

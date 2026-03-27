@@ -22,7 +22,7 @@ func (n *Name) EditorFields() map[string]any {
 
 func (n *Name) SetEditorField(name string, value any) {
 	switch name {
-	case "Meshes":
+	case "Value":
 		n.Value = value.(string)
 	}
 }
