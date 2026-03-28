@@ -162,6 +162,11 @@ func Load(path string) (*Scene, error) {
 				b, _ := json.Marshal(raw)
 				json.Unmarshal(b, &m)
 				e.AddComponent(ecs.NewMesh(m.ID))
+			case "Name":
+				var n struct{ Value string }
+				b, _ := json.Marshal(raw)
+				json.Unmarshal(b, &n)
+				e.AddComponent(ecs.NewName(n.Value))
 
 			case "Material":
 				var m struct {

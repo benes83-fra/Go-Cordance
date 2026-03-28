@@ -82,6 +82,11 @@ func serializeEntity(e *ecs.Entity) SerializedEntity {
 	if dt := e.GetComponent((*ecs.DiffuseTexture)(nil)); dt != nil {
 		se.Components["DiffuseTexture"] = serializeDiffuseTexture(dt.(*ecs.DiffuseTexture))
 	}
+	if n := e.GetComponent((*ecs.Name)(nil)); n != nil {
+		se.Components["Name"] = map[string]interface{}{
+			"value": n.(*ecs.Name).Value,
+		}
+	}
 
 	// NormalMap
 	if nm := e.GetComponent((*ecs.NormalMap)(nil)); nm != nil {

@@ -60,7 +60,7 @@ func Run(world *ecs.World) {
 	}
 
 	// Now create the hierarchy and pass a callback that calls inspectorRebuild.
-	hierarchyWidget, hierarchyList = ui.NewHierarchyPanel(st, func(id int) {
+	hierarchyWidget, hierarchyList = ui.NewHierarchyPanel(st, win, func(id int) {
 		st.SelectedIndex = id
 		inspectorRebuild(world, st, hierarchyList)
 	})

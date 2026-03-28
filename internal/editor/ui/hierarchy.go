@@ -12,6 +12,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -29,7 +30,7 @@ type HierarchyRow struct {
 // NewHierarchyPanel returns BOTH:
 // 1) The UI container (button + list)
 // 2) The underlying *widget.List for inspector rebuild
-func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasObject, *widget.List) {
+func NewHierarchyPanel(st *state.EditorState, win fyne.Window, onSelect func(int)) (fyne.CanvasObject, *widget.List) {
 	state.Global.RenameIndex = -1
 
 	dupBtn := widget.NewButton("Duplicate", func() {
@@ -49,6 +50,25 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 			}
 			go editorlink.WriteDeleteEntity(editorlink.EditorConn, st.Selection.ActiveID, deleted.Name)
 		}
+	})
+	saveBtn := widget.NewButton("Save Scene", func() {
+		dialog.ShowFileSave(func(uc fyne.URIWriteCloser, err error) {
+			if uc == nil {
+				return
+			}
+			path := uc.URI().Path()
+			editorlink.WriteSaveScene(editorlink.EditorConn, path)
+		}, win)
+	})
+
+	loadBtn := widget.NewButton("Load Scene", func() {
+		dialog.ShowFileOpen(func(ur fyne.URIReadCloser, err error) {
+			if ur == nil {
+				return
+			}
+			path := ur.URI().Path()
+			editorlink.WriteLoadScene(editorlink.EditorConn, path)
+		}, win)
 	})
 
 	createBtn := widget.NewButton("Create Empty", func() {
@@ -200,7 +220,8 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 		},
 	)
 
-	topBar := container.NewHBox(createBtn, dupBtn, delBtn)
+	topBar := container.NewHBox(createBtn, dupBtn, delBtn, saveBtn, loadBtn)
+
 	panel := container.NewBorder(topBar, nil, nil, nil, list)
 
 	return panel, list

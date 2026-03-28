@@ -283,6 +283,21 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 			}
 
 			RequestedShader = m.Name
+		case "SaveScene":
+			var m MsgSaveScene
+			json.Unmarshal(msg.Data, &m)
+			sc.Save(m.Path)
+
+		case "LoadScene":
+			var m MsgLoadScene
+			json.Unmarshal(msg.Data, &m)
+			newScene, err := scene.Load(m.Path)
+			if err != nil {
+				log.Printf("load failed: %v", err)
+				return
+			}
+			*sc = *newScene
+			SendFullSnapshot(sc)
 
 		default:
 			log.Printf("editorlink: unknown msg type %q", msg.Type)

@@ -163,6 +163,14 @@ type MsgSetGlobalShader struct {
 	Name string `json:"name"`
 }
 
+type MsgSaveScene struct {
+	Path string `json:"path"`
+}
+
+type MsgLoadScene struct {
+	Path string `json:"path"`
+}
+
 func readMsg(conn net.Conn) (Msg, error) {
 	var m Msg
 	header := make([]byte, 4)
@@ -379,4 +387,14 @@ func WriteRequestAssetReload(conn net.Conn) error {
 func WriteCreateEntity(conn net.Conn, name string) error {
 	msg := MsgCreateEntity{Name: name}
 	return writeMsg(conn, "CreateEntity", msg)
+}
+
+func WriteSaveScene(conn net.Conn, path string) error {
+	msg := MsgSaveScene{Path: path}
+	return writeMsg(conn, "SaveScene", msg)
+}
+
+func WriteLoadScene(conn net.Conn, path string) error {
+	msg := MsgLoadScene{Path: path}
+	return writeMsg(conn, "LoadScene", msg)
 }
