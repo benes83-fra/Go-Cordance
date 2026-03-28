@@ -30,7 +30,7 @@ type HierarchyRow struct {
 // 1) The UI container (button + list)
 // 2) The underlying *widget.List for inspector rebuild
 func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasObject, *widget.List) {
-	var renameIndex = -1
+	state.Global.RenameIndex = -1
 
 	dupBtn := widget.NewButton("Duplicate", func() {
 		if st.Selection.ActiveID != 0 && editorlink.EditorConn != nil {
@@ -72,6 +72,8 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 		makeItem,
 		func(i int, o fyne.CanvasObject) {
 			item := o.(*hierarchyDropItem)
+			row := rows[i]
+			item.entityID = row.ID
 
 			if i < 0 || i >= len(rows) {
 				item.check.SetChecked(false)
@@ -81,7 +83,6 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 				return
 			}
 
-			row := rows[i]
 			check := item.check
 			btn := item.btn
 			entry := item.entry
@@ -91,13 +92,13 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 			btn.SetText(indent + row.Name)
 
 			// Inline rename mode
-			if renameIndex == i {
+			if state.Global.RenameIndex == i {
 				btn.Hide()
 				entry.Show()
 				entry.SetText(row.Name)
 
 				entry.OnSubmitted = func(newName string) {
-					renameIndex = -1
+					state.Global.RenameIndex = -1
 					entry.Hide()
 					btn.Show()
 
@@ -161,7 +162,7 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 
 				// Double-click → enter rename mode
 				if lastClickIndex == i && now.Sub(lastClickTime) < 300*time.Millisecond {
-					renameIndex = i
+					state.Global.RenameIndex = i
 					list.Refresh()
 					return
 				}
@@ -191,6 +192,11 @@ func NewHierarchyPanel(st *state.EditorState, onSelect func(int)) (fyne.CanvasOb
 					onSelect(entIndex)
 				}
 			}
+			// Right-click → context menu
+			item.OnTappedSecondary = func(ev *fyne.PointEvent) {
+				showHierarchyContextMenu(item, row, st, list, onSelect)
+			}
+
 		},
 	)
 
@@ -284,6 +290,14 @@ type hierarchyDropItem struct {
 	btn      *widget.Button
 	entry    *widget.Entry
 	entityID int64
+
+	OnTappedSecondary func(*fyne.PointEvent)
+}
+
+func (h *hierarchyDropItem) TappedSecondary(ev *fyne.PointEvent) {
+	if h.OnTappedSecondary != nil {
+		h.OnTappedSecondary(ev)
+	}
 }
 
 func newHierarchyDropItem() *hierarchyDropItem {
@@ -373,4 +387,39 @@ func findMeshAssetByID(meshes []state.AssetView, id uint64) state.AssetView {
 		}
 	}
 	return state.AssetView{}
+}
+func showHierarchyContextMenu(
+	item *hierarchyDropItem,
+	row HierarchyRow,
+	st *state.EditorState,
+	list *widget.List,
+	onSelect func(int),
+) {
+	rename := fyne.NewMenuItem("Rename", func() {
+		// Trigger inline rename mode
+		for idx, e := range st.Entities {
+			if e.ID == row.ID {
+				// Set renameIndex and refresh
+				// We need to store renameIndex globally or in EditorState
+				state.Global.RenameIndex = idx
+				list.Refresh()
+				return
+			}
+		}
+	})
+
+	duplicate := fyne.NewMenuItem("Duplicate", func() {
+		if editorlink.EditorConn != nil {
+			go editorlink.WriteDuplicateEntity(editorlink.EditorConn, row.ID)
+		}
+	})
+
+	delete := fyne.NewMenuItem("Delete", func() {
+		if editorlink.EditorConn != nil {
+			go editorlink.WriteDeleteEntity(editorlink.EditorConn, row.ID, row.Name)
+		}
+	})
+
+	menu := fyne.NewMenu("", rename, duplicate, delete)
+	widget.ShowPopUpMenuAtPosition(menu, fyne.CurrentApp().Driver().CanvasForObject(item), item.Position())
 }
