@@ -92,6 +92,56 @@ func (s *Scene) Save(path string) error {
 		if m := e.GetComponent((*ecs.Material)(nil)); m != nil {
 			se.Components["Material"] = serializeMaterial(m.(*ecs.Material))
 		}
+		if mm := e.GetComponent((*ecs.MultiMesh)(nil)); mm != nil {
+			se.Components["MultiMesh"] = map[string]any{
+				"Meshes": mm.(*ecs.MultiMesh).Meshes,
+			}
+		}
+
+		type RigidBody struct {
+			Mass  float32
+			Vel   [3]float32
+			Force [3]float32
+		}
+		if rb := e.GetComponent((*ecs.RigidBody)(nil)); rb != nil {
+			se.Components["RigidBody"] = map[string]any{
+				"Mass":  rb.(*ecs.RigidBody).Mass,
+				"Vel":   rb.(*ecs.RigidBody).Vel,
+				"Force": rb.(*ecs.RigidBody).Force,
+			}
+		}
+		if c := e.GetComponent((*ecs.ColliderSphere)(nil)); c != nil {
+			cs := c.(*ecs.ColliderSphere)
+			se.Components["ColliderSphere"] = map[string]any{
+				"Radius":      cs.Radius,
+				"Layer":       cs.Layer,
+				"Mask":        cs.Mask,
+				"Restitution": cs.Restitution,
+				"Friction":    cs.Friction,
+			}
+		}
+
+		if c := e.GetComponent((*ecs.ColliderAABB)(nil)); c != nil {
+			ca := c.(*ecs.ColliderAABB)
+			se.Components["ColliderAABB"] = map[string]any{
+				"HalfExtents": ca.HalfExtents,
+				"Layer":       ca.Layer,
+				"Mask":        ca.Mask,
+				"Restitution": ca.Restitution,
+				"Friction":    ca.Friction,
+			}
+		}
+
+		if c := e.GetComponent((*ecs.ColliderPlane)(nil)); c != nil {
+			cp := c.(*ecs.ColliderPlane)
+			se.Components["ColliderPlane"] = map[string]any{
+				"Y":           cp.Y,
+				"Layer":       cp.Layer,
+				"Mask":        cp.Mask,
+				"Restitution": cp.Restitution,
+				"Friction":    cp.Friction,
+			}
+		}
 
 		// DiffuseTexture
 		if dt := e.GetComponent((*ecs.DiffuseTexture)(nil)); dt != nil {
@@ -101,6 +151,26 @@ func (s *Scene) Save(path string) error {
 		// NormalMap
 		if nm := e.GetComponent((*ecs.NormalMap)(nil)); nm != nil {
 			se.Components["NormalMap"] = serializeNormalMap(nm.(*ecs.NormalMap))
+		}
+		if n := e.GetComponent((*ecs.Name)(nil)); n != nil {
+			se.Components["Name"] = map[string]interface{}{
+				"Value": n.(*ecs.Name).Value,
+			}
+		}
+		// example Camera component
+		// example Camera component
+		if c := e.GetComponent((*ecs.Camera)(nil)); c != nil {
+			cam := c.(*ecs.Camera)
+			se.Components["Camera"] = map[string]interface{}{
+				"position": cam.Position,
+				"target":   cam.Target,
+				"up":       cam.Up,
+				"fov":      cam.Fov,
+				"near":     cam.Near,
+				"far":      cam.Far,
+				"aspect":   cam.Aspect,
+				"active":   cam.Active,
+			}
 		}
 
 		out.Entities = append(out.Entities, se)
@@ -157,6 +227,101 @@ func Load(path string) (*Scene, error) {
 				tr.RecalculateLocal()
 				e.AddComponent(tr)
 
+			case "RigidBody":
+				var rb struct {
+					Mass  float32
+					Vel   [3]float32
+					Force [3]float32
+				}
+				b, _ := json.Marshal(raw)
+				json.Unmarshal(b, &rb)
+				rbody := ecs.NewRigidBody(rb.Mass)
+				rbody.Vel = rb.Vel
+				rbody.Force = rb.Force
+				e.AddComponent(rbody)
+
+			case "ColliderSphere":
+				var c struct {
+					Radius      float32
+					Layer       int
+					Mask        uint32
+					Restitution float32
+					Friction    float32
+				}
+				b, _ := json.Marshal(raw)
+				json.Unmarshal(b, &c)
+				col := ecs.NewColliderSphere(c.Radius)
+				col.Layer = c.Layer
+				col.Mask = c.Mask
+				col.Restitution = c.Restitution
+				col.Friction = c.Friction
+				e.AddComponent(col)
+
+			case "ColliderAABB":
+				var c struct {
+					HalfExtents [3]float32
+					Layer       int
+					Mask        uint32
+					Restitution float32
+					Friction    float32
+				}
+				b, _ := json.Marshal(raw)
+				json.Unmarshal(b, &c)
+				col := ecs.NewColliderAABB(c.HalfExtents)
+				col.Layer = c.Layer
+				col.Mask = c.Mask
+				col.Restitution = c.Restitution
+				col.Friction = c.Friction
+				e.AddComponent(col)
+
+			case "ColliderPlane":
+				var c struct {
+					Y           float32
+					Layer       int
+					Mask        uint32
+					Restitution float32
+					Friction    float32
+				}
+				b, _ := json.Marshal(raw)
+				json.Unmarshal(b, &c)
+				col := ecs.NewColliderPlane(c.Y)
+				col.Layer = c.Layer
+				col.Mask = c.Mask
+				col.Restitution = c.Restitution
+				col.Friction = c.Friction
+				e.AddComponent(col)
+
+			case "Camera":
+				var c struct {
+					Position [3]float32
+					Target   [3]float32
+					Up       [3]float32
+					Fov      float32
+					Near     float32
+					Far      float32
+					Aspect   float32
+					Active   bool
+				}
+				b, _ := json.Marshal(raw)
+				json.Unmarshal(b, &c)
+
+				cam := ecs.NewCamera()
+				cam.Position = c.Position
+				cam.Target = c.Target
+				cam.Up = c.Up
+				cam.Fov = c.Fov
+				cam.Near = c.Near
+				cam.Far = c.Far
+				cam.Aspect = c.Aspect
+				cam.Active = c.Active
+
+				e.AddComponent(cam)
+			case "MultiMesh":
+				var mm struct{ Meshes []string }
+				b, _ := json.Marshal(raw)
+				json.Unmarshal(b, &mm)
+				e.AddComponent(ecs.NewMultiMesh(mm.Meshes))
+
 			case "Mesh":
 				var m struct{ ID string }
 				b, _ := json.Marshal(raw)
@@ -175,6 +340,8 @@ func Load(path string) (*Scene, error) {
 					Diffuse   float32
 					Specular  float32
 					Shininess float32
+					Metallic  float32
+					Roughness float32
 				}
 				b, _ := json.Marshal(raw)
 				json.Unmarshal(b, &m)
@@ -183,6 +350,8 @@ func Load(path string) (*Scene, error) {
 				mat.Diffuse = m.Diffuse
 				mat.Specular = m.Specular
 				mat.Shininess = m.Shininess
+				mat.Metallic = m.Metallic
+				mat.Roughness = m.Roughness
 				e.AddComponent(mat)
 
 			case "DiffuseTexture":
