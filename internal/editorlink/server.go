@@ -96,6 +96,13 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 			}
 
 			log.Printf("editorlink: updated transform for %d", msgST.ID)
+			if EditorConn != nil {
+				snap := buildSceneSnapshot(sc)
+				resp := MsgSceneSnapshot{Snapshot: snap}
+				if err := writeMsg(EditorConn, "SceneSnapshot", resp); err != nil {
+					log.Printf("editorlink: failed to send SceneSnapshot after SetTransform: %v", err)
+				}
+			}
 
 		case "SelectEntity":
 			var sel MsgSelectEntity

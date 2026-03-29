@@ -26,7 +26,7 @@
           ]
         },
         "Name": {
-          "Value": "Main Camera"
+          "value": "Main Camera"
         }
       }
     },
@@ -34,28 +34,45 @@
       "id": 3,
       "components": {
         "ColliderPlane": {
-          "Friction": 0.8,
-          "Layer": 0,
-          "Mask": 4294967295,
-          "Restitution": 0.5,
-          "Y": -2
+          "friction": 0.8,
+          "layer": 0,
+          "mask": 4294967295,
+          "restitution": 0.5,
+          "y": -2
         },
         "Material": {
           "ambient": 0.3,
+          "bRDFLUTTex": 0,
           "baseColor": [
             0.8,
             0.8,
             0.9,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": false,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -66,6 +83,16 @@
           "specular": 0.2,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -73,7 +100,7 @@
           "id": "plane"
         },
         "Name": {
-          "Value": "Ground Floor"
+          "value": "Ground Floor"
         },
         "Transform": {
           "position": [
@@ -99,32 +126,49 @@
       "id": 4,
       "components": {
         "ColliderAABB": {
-          "Friction": 0.8,
-          "HalfExtents": [
+          "friction": 0.8,
+          "halfExtents": [
             0.5,
             0.5,
             0.5
           ],
-          "Layer": 0,
-          "Mask": 4294967295,
-          "Restitution": 0.5
+          "layer": 0,
+          "mask": 4294967295,
+          "restitution": 0.5
         },
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             0,
             0,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": false,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -135,6 +179,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 16,
+          "textureID": 3,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": true,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -142,7 +196,7 @@
           "id": "cube24"
         },
         "Name": {
-          "Value": "First Cube"
+          "value": "First Cube"
         },
         "RigidBody": {
           "Force": [
@@ -181,32 +235,49 @@
       "id": 5,
       "components": {
         "ColliderAABB": {
-          "Friction": 0.8,
-          "HalfExtents": [
+          "friction": 0.8,
+          "halfExtents": [
             0.5,
             0.5,
             0.5
           ],
-          "Layer": 0,
-          "Mask": 4294967295,
-          "Restitution": 0.5
+          "layer": 0,
+          "mask": 4294967295,
+          "restitution": 0.5
         },
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             0.8,
             1,
             0.8,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": false,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -217,6 +288,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 17,
+          "textureID": 4,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": true,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -224,7 +305,7 @@
           "id": "cube24"
         },
         "Name": {
-          "Value": "Second Cube"
+          "value": "Second Cube"
         },
         "RigidBody": {
           "Force": [
@@ -263,28 +344,45 @@
       "id": 6,
       "components": {
         "ColliderSphere": {
-          "Friction": 0.8,
-          "Layer": 0,
-          "Mask": 4294967295,
-          "Radius": 1,
-          "Restitution": 0.5
+          "friction": 0.8,
+          "layer": 0,
+          "mask": 4294967295,
+          "radius": 1,
+          "restitution": 0.5
         },
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             0.8,
             1,
             0.8,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": false,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -295,6 +393,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -302,7 +410,7 @@
           "id": "sphere"
         },
         "Name": {
-          "Value": "Sphere1"
+          "value": "Sphere1"
         },
         "RigidBody": {
           "Force": [
@@ -341,32 +449,49 @@
       "id": 7,
       "components": {
         "ColliderAABB": {
-          "Friction": 0.8,
-          "HalfExtents": [
+          "friction": 0.8,
+          "halfExtents": [
             0.5,
             0.5,
             0.5
           ],
-          "Layer": 0,
-          "Mask": 4294967295,
-          "Restitution": 0.5
+          "layer": 0,
+          "mask": 4294967295,
+          "restitution": 0.5
         },
         "Material": {
           "ambient": 0.05,
+          "bRDFLUTTex": 0,
           "baseColor": [
             0.8,
             0.8,
             0.9,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.5,
           "diffuseTexturePath": "",
+          "dirty": false,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -377,6 +502,16 @@
           "specular": 1,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -384,7 +519,7 @@
           "id": "cube24"
         },
         "Name": {
-          "Value": "Metal Cube"
+          "value": "Metal Cube"
         },
         "RigidBody": {
           "Force": [
@@ -423,32 +558,49 @@
       "id": 8,
       "components": {
         "ColliderAABB": {
-          "Friction": 0.8,
-          "HalfExtents": [
+          "friction": 0.8,
+          "halfExtents": [
             0.5,
             0.5,
             0.5
           ],
-          "Layer": 0,
-          "Mask": 4294967295,
-          "Restitution": 0.5
+          "layer": 0,
+          "mask": 4294967295,
+          "restitution": 0.5
         },
         "Material": {
           "ambient": 0.4,
+          "bRDFLUTTex": 0,
           "baseColor": [
             0.2,
             0.7,
             0.2,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.6,
           "diffuseTexturePath": "",
+          "dirty": false,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -459,6 +611,16 @@
           "specular": 0.02,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -466,7 +628,7 @@
           "id": "cube24"
         },
         "Name": {
-          "Value": "Plastic Cube"
+          "value": "Plastic Cube"
         },
         "RigidBody": {
           "Force": [
@@ -506,20 +668,37 @@
       "components": {
         "Material": {
           "ambient": 0.4,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.6,
           "diffuseTexturePath": "",
+          "dirty": false,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -530,6 +709,16 @@
           "specular": 0.02,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 18,
+          "textureID": 5,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": true,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -537,7 +726,7 @@
           "id": "teapot"
         },
         "Name": {
-          "Value": "Tea Pot"
+          "value": "Tea Pot"
         },
         "Transform": {
           "position": [
@@ -566,7 +755,7 @@
           "id": "sphere"
         },
         "Name": {
-          "Value": "Light Gizmo"
+          "value": "Light Gizmo"
         },
         "Transform": {
           "position": [
@@ -595,7 +784,7 @@
           "id": "line"
         },
         "Name": {
-          "Value": "Light Arrow"
+          "value": "Light Arrow"
         },
         "Transform": {
           "position": [
@@ -622,20 +811,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": false,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -646,6 +852,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -653,7 +869,7 @@
           "id": "billboardQuad"
         },
         "Name": {
-          "Value": "Billboard"
+          "value": "Billboard"
         },
         "Transform": {
           "position": [
@@ -679,7 +895,7 @@
       "id": 13,
       "components": {
         "MultiMesh": {
-          "Meshes": [
+          "meshes": [
             "Fringe/0",
             "Frame/0",
             "Frame_Fabric/0",
@@ -689,7 +905,7 @@
           ]
         },
         "Name": {
-          "Value": "sofa"
+          "value": "sofa"
         },
         "Transform": {
           "position": [
@@ -717,20 +933,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "assets\\models\\sofa\\Image_7.webp",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 33,
+          "normalID": 13,
           "normalScale": 0,
           "normalTexturePath": "assets\\models\\sofa\\Image_8.webp",
+          "occlusionAsset": 34,
+          "occlusionID": 14,
           "occlusionTexturePath": "assets\\models\\sofa\\Image_9.webp",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0.3921569,
             0.2901961,
@@ -745,6 +978,16 @@
             "normal": 0,
             "occlusion": 1
           },
+          "textureAsset": 32,
+          "textureID": 12,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": true,
+          "useTexture": true,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -752,7 +995,7 @@
           "id": "Fringe/0"
         },
         "Name": {
-          "Value": "Fringe/0"
+          "value": "Fringe/0"
         },
         "Transform": {
           "position": [
@@ -780,20 +1023,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "assets\\models\\sofa\\Image_10.webp",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 37,
+          "metallicRoughnessID": 17,
           "metallicRoughnessTexturePath": "assets\\models\\sofa\\Image_12.webp",
+          "normalAsset": 36,
+          "normalID": 16,
           "normalScale": 0,
           "normalTexturePath": "assets\\models\\sofa\\Image_11.webp",
+          "occlusionAsset": 37,
+          "occlusionID": 17,
           "occlusionTexturePath": "assets\\models\\sofa\\Image_12.webp",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -809,6 +1069,16 @@
             "normal": 0,
             "occlusion": 0
           },
+          "textureAsset": 35,
+          "textureID": 15,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": true,
+          "useTexture": true,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -816,7 +1086,7 @@
           "id": "Frame/0"
         },
         "Name": {
-          "Value": "Frame/0"
+          "value": "Frame/0"
         },
         "Transform": {
           "position": [
@@ -844,20 +1114,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "assets\\models\\sofa\\Image_0.webp",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 37,
+          "metallicRoughnessID": 17,
           "metallicRoughnessTexturePath": "assets\\models\\sofa\\Image_12.webp",
+          "normalAsset": 39,
+          "normalID": 19,
           "normalScale": 1.5,
           "normalTexturePath": "assets\\models\\sofa\\Image_1.webp",
+          "occlusionAsset": 37,
+          "occlusionID": 17,
           "occlusionTexturePath": "assets\\models\\sofa\\Image_12.webp",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0.3921569,
             0.2901961,
@@ -873,6 +1160,16 @@
             "normal": 0,
             "occlusion": 0
           },
+          "textureAsset": 38,
+          "textureID": 18,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": true,
+          "useTexture": true,
+          "useTransmission": false,
           "uvOffset": {
             "baseColor": [
               0,
@@ -898,7 +1195,7 @@
           "id": "Frame_Fabric/0"
         },
         "Name": {
-          "Value": "Frame_Fabric/0"
+          "value": "Frame_Fabric/0"
         },
         "Transform": {
           "position": [
@@ -926,20 +1223,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "assets\\models\\sofa\\Image_3.webp",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 42,
+          "metallicRoughnessID": 22,
           "metallicRoughnessTexturePath": "assets\\models\\sofa\\Image_2.webp",
+          "normalAsset": 41,
+          "normalID": 21,
           "normalScale": 1.5,
           "normalTexturePath": "assets\\models\\sofa\\Image_4.webp",
+          "occlusionAsset": 42,
+          "occlusionID": 22,
           "occlusionTexturePath": "assets\\models\\sofa\\Image_2.webp",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0.3921569,
             0.2901961,
@@ -955,6 +1269,16 @@
             "normal": 0,
             "occlusion": 0
           },
+          "textureAsset": 40,
+          "textureID": 20,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": true,
+          "useTexture": true,
+          "useTransmission": false,
           "uvOffset": {
             "baseColor": [
               0,
@@ -980,7 +1304,7 @@
           "id": "Paisley/0"
         },
         "Name": {
-          "Value": "Paisley/0"
+          "value": "Paisley/0"
         },
         "Transform": {
           "position": [
@@ -1008,20 +1332,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "assets\\models\\sofa\\Image_5.webp",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 42,
+          "metallicRoughnessID": 22,
           "metallicRoughnessTexturePath": "assets\\models\\sofa\\Image_2.webp",
+          "normalAsset": 44,
+          "normalID": 24,
           "normalScale": 2,
           "normalTexturePath": "assets\\models\\sofa\\Image_6.webp",
+          "occlusionAsset": 42,
+          "occlusionID": 22,
           "occlusionTexturePath": "assets\\models\\sofa\\Image_2.webp",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0.3921569,
             0.2901961,
@@ -1037,6 +1378,16 @@
             "normal": 0,
             "occlusion": 0
           },
+          "textureAsset": 43,
+          "textureID": 23,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": true,
+          "useTexture": true,
+          "useTransmission": false,
           "uvOffset": {
             "baseColor": [
               0,
@@ -1062,7 +1413,7 @@
           "id": "Stripes/0"
         },
         "Name": {
-          "Value": "Stripes/0"
+          "value": "Stripes/0"
         },
         "Transform": {
           "position": [
@@ -1090,20 +1441,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "assets\\models\\sofa\\Image_0.webp",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 42,
+          "metallicRoughnessID": 22,
           "metallicRoughnessTexturePath": "assets\\models\\sofa\\Image_2.webp",
+          "normalAsset": 39,
+          "normalID": 19,
           "normalScale": 1.5,
           "normalTexturePath": "assets\\models\\sofa\\Image_1.webp",
+          "occlusionAsset": 42,
+          "occlusionID": 22,
           "occlusionTexturePath": "assets\\models\\sofa\\Image_2.webp",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0.3921569,
             0.2901961,
@@ -1119,6 +1487,16 @@
             "normal": 0,
             "occlusion": 0
           },
+          "textureAsset": 38,
+          "textureID": 18,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": true,
+          "useTexture": true,
+          "useTransmission": false,
           "uvOffset": {
             "baseColor": [
               0,
@@ -1144,7 +1522,7 @@
           "id": "Brown/0"
         },
         "Name": {
-          "Value": "Brown/0"
+          "value": "Brown/0"
         },
         "Transform": {
           "position": [
@@ -1170,7 +1548,7 @@
       "id": 20,
       "components": {
         "MultiMesh": {
-          "Meshes": [
+          "meshes": [
             "window_roof/0",
             "window_roof/1",
             "ridge/0",
@@ -1203,7 +1581,7 @@
           ]
         },
         "Name": {
-          "Value": "Bambo_House"
+          "value": "Bambo_House"
         },
         "Transform": {
           "position": [
@@ -1231,20 +1609,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -1255,6 +1650,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -1262,7 +1667,7 @@
           "id": "window_roof/0"
         },
         "Name": {
-          "Value": "window_roof/0"
+          "value": "window_roof/0"
         },
         "Transform": {
           "position": [
@@ -1290,20 +1695,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -1314,6 +1736,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -1321,7 +1753,7 @@
           "id": "window_roof/1"
         },
         "Name": {
-          "Value": "window_roof/1"
+          "value": "window_roof/1"
         },
         "Transform": {
           "position": [
@@ -1349,20 +1781,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -1373,6 +1822,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -1380,7 +1839,7 @@
           "id": "ridge/0"
         },
         "Name": {
-          "Value": "ridge/0"
+          "value": "ridge/0"
         },
         "Transform": {
           "position": [
@@ -1408,20 +1867,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -1432,6 +1908,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -1439,7 +1925,7 @@
           "id": "roof/0"
         },
         "Name": {
-          "Value": "roof/0"
+          "value": "roof/0"
         },
         "Transform": {
           "position": [
@@ -1467,20 +1953,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -1491,6 +1994,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -1498,7 +2011,7 @@
           "id": "roof/1"
         },
         "Name": {
-          "Value": "roof/1"
+          "value": "roof/1"
         },
         "Transform": {
           "position": [
@@ -1526,20 +2039,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -1550,6 +2080,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -1557,7 +2097,7 @@
           "id": "stairs/0"
         },
         "Name": {
-          "Value": "stairs/0"
+          "value": "stairs/0"
         },
         "Transform": {
           "position": [
@@ -1585,20 +2125,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -1609,6 +2166,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -1616,7 +2183,7 @@
           "id": "lamp_exterior/0"
         },
         "Name": {
-          "Value": "lamp_exterior/0"
+          "value": "lamp_exterior/0"
         },
         "Transform": {
           "position": [
@@ -1644,20 +2211,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -1668,6 +2252,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -1675,7 +2269,7 @@
           "id": "lamp_exterior/1"
         },
         "Name": {
-          "Value": "lamp_exterior/1"
+          "value": "lamp_exterior/1"
         },
         "Transform": {
           "position": [
@@ -1703,20 +2297,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -1727,6 +2338,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -1734,7 +2355,7 @@
           "id": "parapet/0"
         },
         "Name": {
-          "Value": "parapet/0"
+          "value": "parapet/0"
         },
         "Transform": {
           "position": [
@@ -1762,20 +2383,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -1786,6 +2424,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -1793,7 +2441,7 @@
           "id": "garage/0"
         },
         "Name": {
-          "Value": "garage/0"
+          "value": "garage/0"
         },
         "Transform": {
           "position": [
@@ -1821,20 +2469,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -1845,6 +2510,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -1852,7 +2527,7 @@
           "id": "door/0"
         },
         "Name": {
-          "Value": "door/0"
+          "value": "door/0"
         },
         "Transform": {
           "position": [
@@ -1880,20 +2555,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -1904,6 +2596,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -1911,7 +2613,7 @@
           "id": "door/1"
         },
         "Name": {
-          "Value": "door/1"
+          "value": "door/1"
         },
         "Transform": {
           "position": [
@@ -1939,20 +2641,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -1963,6 +2682,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -1970,7 +2699,7 @@
           "id": "door/2"
         },
         "Name": {
-          "Value": "door/2"
+          "value": "door/2"
         },
         "Transform": {
           "position": [
@@ -1998,20 +2727,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -2022,6 +2768,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -2029,7 +2785,7 @@
           "id": "windows/0"
         },
         "Name": {
-          "Value": "windows/0"
+          "value": "windows/0"
         },
         "Transform": {
           "position": [
@@ -2057,20 +2813,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -2081,6 +2854,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -2088,7 +2871,7 @@
           "id": "windows/1"
         },
         "Name": {
-          "Value": "windows/1"
+          "value": "windows/1"
         },
         "Transform": {
           "position": [
@@ -2116,20 +2899,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -2140,6 +2940,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -2147,7 +2957,7 @@
           "id": "windows/2"
         },
         "Name": {
-          "Value": "windows/2"
+          "value": "windows/2"
         },
         "Transform": {
           "position": [
@@ -2175,20 +2985,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -2199,6 +3026,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -2206,7 +3043,7 @@
           "id": "gutters/0"
         },
         "Name": {
-          "Value": "gutters/0"
+          "value": "gutters/0"
         },
         "Transform": {
           "position": [
@@ -2234,20 +3071,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -2258,6 +3112,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -2265,7 +3129,7 @@
           "id": "chimneys/0"
         },
         "Name": {
-          "Value": "chimneys/0"
+          "value": "chimneys/0"
         },
         "Transform": {
           "position": [
@@ -2293,20 +3157,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -2317,6 +3198,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -2324,7 +3215,7 @@
           "id": "chimneys/1"
         },
         "Name": {
-          "Value": "chimneys/1"
+          "value": "chimneys/1"
         },
         "Transform": {
           "position": [
@@ -2352,20 +3243,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -2376,6 +3284,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -2383,7 +3301,7 @@
           "id": "chimneys/2"
         },
         "Name": {
-          "Value": "chimneys/2"
+          "value": "chimneys/2"
         },
         "Transform": {
           "position": [
@@ -2411,20 +3329,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -2435,6 +3370,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -2442,7 +3387,7 @@
           "id": "chimneys/3"
         },
         "Name": {
-          "Value": "chimneys/3"
+          "value": "chimneys/3"
         },
         "Transform": {
           "position": [
@@ -2470,20 +3415,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -2494,6 +3456,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -2501,7 +3473,7 @@
           "id": "barrels/0"
         },
         "Name": {
-          "Value": "barrels/0"
+          "value": "barrels/0"
         },
         "Transform": {
           "position": [
@@ -2529,20 +3501,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -2553,6 +3542,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -2560,7 +3559,7 @@
           "id": "boards/0"
         },
         "Name": {
-          "Value": "boards/0"
+          "value": "boards/0"
         },
         "Transform": {
           "position": [
@@ -2588,20 +3587,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -2612,6 +3628,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -2619,7 +3645,7 @@
           "id": "wall_barrels/0"
         },
         "Name": {
-          "Value": "wall_barrels/0"
+          "value": "wall_barrels/0"
         },
         "Transform": {
           "position": [
@@ -2647,20 +3673,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -2671,6 +3714,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -2678,7 +3731,7 @@
           "id": "wall_barrels/1"
         },
         "Name": {
-          "Value": "wall_barrels/1"
+          "value": "wall_barrels/1"
         },
         "Transform": {
           "position": [
@@ -2706,20 +3759,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -2730,6 +3800,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -2737,7 +3817,7 @@
           "id": "fundametnts/0"
         },
         "Name": {
-          "Value": "fundametnts/0"
+          "value": "fundametnts/0"
         },
         "Transform": {
           "position": [
@@ -2765,20 +3845,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -2789,6 +3886,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -2796,7 +3903,7 @@
           "id": "fundametnts/1"
         },
         "Name": {
-          "Value": "fundametnts/1"
+          "value": "fundametnts/1"
         },
         "Transform": {
           "position": [
@@ -2824,20 +3931,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -2848,6 +3972,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -2855,7 +3989,7 @@
           "id": "body_house/0"
         },
         "Name": {
-          "Value": "body_house/0"
+          "value": "body_house/0"
         },
         "Transform": {
           "position": [
@@ -2883,20 +4017,37 @@
       "components": {
         "Material": {
           "ambient": 0.2,
+          "bRDFLUTTex": 0,
           "baseColor": [
             1,
             1,
             1,
             1
           ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
           "diffuse": 0.8,
           "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
           "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
           "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
           "normalScale": 0,
           "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
           "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
           "roughness": 0,
+          "shader": null,
+          "shaderName": "",
           "sheenColor": [
             0,
             0,
@@ -2907,6 +4058,16 @@
           "specular": 0.5,
           "specularFactor": 0,
           "texCoordMap": null,
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
           "uvOffset": null,
           "uvScale": null
         },
@@ -2914,7 +4075,7 @@
           "id": "body_house/1"
         },
         "Name": {
-          "Value": "body_house/1"
+          "value": "body_house/1"
         },
         "Transform": {
           "position": [

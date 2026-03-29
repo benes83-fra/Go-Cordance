@@ -2,7 +2,9 @@ package scene
 
 import (
 	"encoding/json"
+	"go-engine/Go-Cordance/internal/assets"
 	"go-engine/Go-Cordance/internal/ecs"
+	"go-engine/Go-Cordance/internal/engine"
 	"os"
 )
 
@@ -32,6 +34,15 @@ func serializeMaterial(m *ecs.Material) map[string]interface{} {
 		"roughness": m.Roughness,
 	}
 	// optional fields
+	out["type"] = m.Type
+	out["useTexture"] = m.UseTexture
+	out["textureID"] = m.TextureID
+	out["useNormal"] = m.UseNormal
+	out["normalID"] = m.NormalID
+	out["textureAsset"] = m.TextureAsset
+	out["normalAsset"] = m.NormalAsset
+	out["shaderName"] = m.ShaderName
+	out["shader"] = m.Shader
 	out["diffuseTexturePath"] = m.DiffuseTexturePath
 	out["normalTexturePath"] = m.NormalTexturePath
 	out["occlusionTexturePath"] = m.OcclusionTexturePath
@@ -45,6 +56,25 @@ func serializeMaterial(m *ecs.Material) map[string]interface{} {
 	out["sheenColor"] = m.SheenColor
 	out["sheenRoughness"] = m.SheenRoughness
 	out["specularFactor"] = m.SpecularFactor
+	out["occlusionAsset"] = m.OcclusionAsset
+	out["occlusionID"] = m.OcclusionID
+
+	out["metallicRoughnessAsset"] = m.MetallicRoughnessAsset
+	out["metallicRoughnessID"] = m.MetallicRoughnessID
+	out["useIBL"] = m.UseIBL
+	out["irradianceTex"] = m.IrradianceTex
+	out["prefilteredEnvTex"] = m.PrefilteredEnvTex
+	out["bRDFLUTTex"] = m.BRDFLUTTex
+	out["clearcoatFactor"] = m.ClearcoatFactor
+	out["clearcoatRoughness"] = m.ClearcoatRoughTex
+	out["clearcoatTexture"] = m.ClearcoatTexture
+	out["clearcoatRoughTex"] = m.ClearcoatRoughTex
+	out["clearcoatNormalTex"] = m.ClearcoatNormalTex
+	out["useClearcoat"] = m.UseClearcoat
+	out["transmissionFactor"] = m.TransmissionFactor
+	out["useTransmission"] = m.UseTransmission
+	out["transMissionTex"] = m.TransmissionTex
+	out["dirty"] = m.Dirty
 
 	return out
 }
@@ -94,15 +124,10 @@ func (s *Scene) Save(path string) error {
 		}
 		if mm := e.GetComponent((*ecs.MultiMesh)(nil)); mm != nil {
 			se.Components["MultiMesh"] = map[string]any{
-				"Meshes": mm.(*ecs.MultiMesh).Meshes,
+				"meshes": mm.(*ecs.MultiMesh).Meshes,
 			}
 		}
 
-		type RigidBody struct {
-			Mass  float32
-			Vel   [3]float32
-			Force [3]float32
-		}
 		if rb := e.GetComponent((*ecs.RigidBody)(nil)); rb != nil {
 			se.Components["RigidBody"] = map[string]any{
 				"Mass":  rb.(*ecs.RigidBody).Mass,
@@ -110,36 +135,37 @@ func (s *Scene) Save(path string) error {
 				"Force": rb.(*ecs.RigidBody).Force,
 			}
 		}
+
 		if c := e.GetComponent((*ecs.ColliderSphere)(nil)); c != nil {
 			cs := c.(*ecs.ColliderSphere)
 			se.Components["ColliderSphere"] = map[string]any{
-				"Radius":      cs.Radius,
-				"Layer":       cs.Layer,
-				"Mask":        cs.Mask,
-				"Restitution": cs.Restitution,
-				"Friction":    cs.Friction,
+				"radius":      cs.Radius,
+				"layer":       cs.Layer,
+				"mask":        cs.Mask,
+				"restitution": cs.Restitution,
+				"friction":    cs.Friction,
 			}
 		}
 
 		if c := e.GetComponent((*ecs.ColliderAABB)(nil)); c != nil {
 			ca := c.(*ecs.ColliderAABB)
 			se.Components["ColliderAABB"] = map[string]any{
-				"HalfExtents": ca.HalfExtents,
-				"Layer":       ca.Layer,
-				"Mask":        ca.Mask,
-				"Restitution": ca.Restitution,
-				"Friction":    ca.Friction,
+				"halfExtents": ca.HalfExtents,
+				"layer":       ca.Layer,
+				"mask":        ca.Mask,
+				"restitution": ca.Restitution,
+				"friction":    ca.Friction,
 			}
 		}
 
 		if c := e.GetComponent((*ecs.ColliderPlane)(nil)); c != nil {
 			cp := c.(*ecs.ColliderPlane)
 			se.Components["ColliderPlane"] = map[string]any{
-				"Y":           cp.Y,
-				"Layer":       cp.Layer,
-				"Mask":        cp.Mask,
-				"Restitution": cp.Restitution,
-				"Friction":    cp.Friction,
+				"y":           cp.Y,
+				"layer":       cp.Layer,
+				"mask":        cp.Mask,
+				"restitution": cp.Restitution,
+				"friction":    cp.Friction,
 			}
 		}
 
@@ -154,7 +180,7 @@ func (s *Scene) Save(path string) error {
 		}
 		if n := e.GetComponent((*ecs.Name)(nil)); n != nil {
 			se.Components["Name"] = map[string]interface{}{
-				"Value": n.(*ecs.Name).Value,
+				"value": n.(*ecs.Name).Value,
 			}
 		}
 		// example Camera component
@@ -348,18 +374,70 @@ func Load(path string) (*Scene, error) {
 				json.Unmarshal(b, &n)
 				e.AddComponent(ecs.NewName(n.Value))
 
+				// in Load, inside case "Material":
 			case "Material":
 				var m struct {
-					BaseColor [4]float32
+					BaseColor [4]float32 // RGBA
 					Ambient   float32
 					Diffuse   float32
 					Specular  float32
 					Shininess float32
 					Metallic  float32
 					Roughness float32
+
+					Type int
+
+					// --- Existing inspector workflow (kept intact) ---
+					UseTexture bool
+					TextureID  uint32 // raw GL texture ID (inspector uses this)
+					UseNormal  bool
+					NormalID   uint32 // raw GL normal map ID
+
+					// --- New asset pipeline fields (optional, non-breaking) ---
+					TextureAsset assets.AssetID // future: replace TextureID
+					NormalAsset  assets.AssetID // future: replace NormalID
+					ShaderName   string
+					Shader       *engine.ShaderProgram
+
+					DiffuseTexturePath           string
+					NormalTexturePath            string
+					OcclusionTexturePath         string
+					MetallicRoughnessTexturePath string
+
+					TexCoordMap map[string]int        // e.g. "baseColor":0, "occlusion":1
+					UVScale     map[string][2]float32 // per-texture uv scale
+					UVOffset    map[string][2]float32 // per-texture uv offset
+
+					NormalScale    float32
+					SheenColor     [3]float32
+					SheenRoughness float32
+					SpecularFactor float32
+					OcclusionAsset assets.AssetID
+					OcclusionID    uint32
+
+					MetallicRoughnessAsset assets.AssetID
+					MetallicRoughnessID    uint32
+					UseIBL                 bool
+					IrradianceTex          uint32
+					PrefilteredEnvTex      uint32
+					BRDFLUTTex             uint32
+					ClearcoatFactor        float32
+					ClearcoatRoughness     float32
+					ClearcoatTexture       uint32
+					ClearcoatRoughTex      uint32
+					ClearcoatNormalTex     uint32
+					UseClearcoat           bool
+					TransmissionFactor     float32
+					UseTransmission        bool
+					TransmissionTex        uint32 // optional
+
+					// (optional) OcclusionID/MetallicRoughnessID can be zero if not present
+
+					Dirty bool
 				}
 				b, _ := json.Marshal(raw)
 				json.Unmarshal(b, &m)
+
 				mat := ecs.NewMaterial(m.BaseColor)
 				mat.Ambient = m.Ambient
 				mat.Diffuse = m.Diffuse
@@ -367,6 +445,50 @@ func Load(path string) (*Scene, error) {
 				mat.Shininess = m.Shininess
 				mat.Metallic = m.Metallic
 				mat.Roughness = m.Roughness
+				mat.Type = m.Type
+				mat.UseTexture = m.UseTexture
+				mat.TextureID = m.TextureID
+				mat.UseNormal = m.UseNormal
+				mat.NormalID = m.NormalID
+				mat.TextureAsset = m.TextureAsset
+				mat.NormalAsset = m.NormalAsset
+				mat.ShaderName = m.ShaderName
+				mat.Shader = m.Shader
+
+				// NEW: restore extended fields
+				mat.DiffuseTexturePath = m.DiffuseTexturePath
+				mat.NormalTexturePath = m.NormalTexturePath
+				mat.OcclusionTexturePath = m.OcclusionTexturePath
+				mat.MetallicRoughnessTexturePath = m.MetallicRoughnessTexturePath
+
+				mat.TexCoordMap = m.TexCoordMap
+				mat.UVScale = m.UVScale
+				mat.UVOffset = m.UVOffset
+
+				mat.NormalScale = m.NormalScale
+				mat.SheenColor = m.SheenColor
+				mat.SheenRoughness = m.SheenRoughness
+				mat.SpecularFactor = m.SpecularFactor
+				mat.OcclusionAsset = m.OcclusionAsset
+				mat.OcclusionID = m.OcclusionID
+
+				mat.MetallicRoughnessAsset = m.MetallicRoughnessAsset
+				mat.MetallicRoughnessID = m.MetallicRoughnessID
+				mat.UseIBL = m.UseIBL
+				mat.IrradianceTex = m.IrradianceTex
+				mat.PrefilteredEnvTex = m.PrefilteredEnvTex
+				mat.BRDFLUTTex = m.BRDFLUTTex
+				mat.ClearcoatFactor = m.ClearcoatFactor
+				mat.ClearcoatRoughness = m.ClearcoatRoughness
+				mat.ClearcoatRoughTex = m.ClearcoatRoughTex
+				mat.ClearcoatTexture = m.ClearcoatTexture
+				mat.ClearcoatNormalTex = m.ClearcoatNormalTex
+				mat.UseClearcoat = m.UseClearcoat
+				mat.TransmissionFactor = m.TransmissionFactor
+				mat.UseTransmission = m.UseTransmission
+				mat.TransmissionTex = m.TransmissionTex
+				mat.Dirty = m.Dirty
+
 				e.AddComponent(mat)
 
 			case "DiffuseTexture":
