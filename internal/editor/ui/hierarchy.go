@@ -107,7 +107,7 @@ func NewHierarchyPanel(st *state.EditorState, win fyne.Window, onSelect func(int
 			btn := item.btn
 			entry := item.entry
 			item.entityID = row.ID
-
+			ent := st.Entities[i]
 			indent := strings.Repeat("  ", row.Depth)
 			btn.SetText(indent + row.Name)
 
@@ -184,6 +184,10 @@ func NewHierarchyPanel(st *state.EditorState, win fyne.Window, onSelect func(int
 				if lastClickIndex == i && now.Sub(lastClickTime) < 300*time.Millisecond {
 					state.Global.RenameIndex = i
 					list.Refresh()
+					if editorlink.EditorConn != nil {
+						go editorlink.WriteFocusEntity(editorlink.EditorConn, ent.ID)
+					}
+
 					return
 				}
 
