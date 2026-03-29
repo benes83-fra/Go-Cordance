@@ -99,6 +99,18 @@ func (s *Scene) contains(e *ecs.Entity) bool {
 	}
 	return false
 }
+
+// in package scene
+func (s *Scene) ReplaceWith(other *Scene) {
+	// keep same world pointer, but replace its entities
+	s.world = other.world
+	s.entities = other.entities
+	s.nextID = other.nextID
+	s.camera = other.camera
+	s.Selected = other.Selected
+	s.SelectedEntity = other.SelectedEntity
+}
+
 func (s *Scene) DuplicateEntity(src *ecs.Entity) *ecs.Entity {
 	// 1. Create a new entity with a new ID
 	dup := s.AddEntity()

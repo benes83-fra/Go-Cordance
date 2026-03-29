@@ -296,7 +296,7 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 				log.Printf("load failed: %v", err)
 				return
 			}
-			*sc = *newScene
+			sc.ReplaceWith(newScene)
 			SendFullSnapshot(sc)
 
 		default:
@@ -360,6 +360,13 @@ func buildSceneSnapshot(sc *scene.Scene) SceneSnapshot {
 	for _, ent := range sc.World().Entities {
 		view := EntityView{
 			ID: uint64(ent.ID),
+		}
+		if c := ent.GetComponent((*ecs.Camera)(nil)); c != nil {
+			cam := c.(*ecs.Camera)
+			view.Position = Vec3(cam.Position)
+
+			view.Components = append(view.Components, "Camera")
+			// optionally include camera fields if needed
 		}
 
 		if c := ent.GetComponent((*ecs.Name)(nil)); c != nil {

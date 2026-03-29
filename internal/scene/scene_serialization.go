@@ -189,13 +189,22 @@ func Load(path string) (*Scene, error) {
 	if err != nil {
 		return nil, err
 	}
+	// at top of Load, before second pass:
+	var firstCam *ecs.Camera
+	var activeCam *ecs.Camera
 
 	var ss SerializedScene
 	if err := json.Unmarshal(data, &ss); err != nil {
 		return nil, err
 	}
 
-	scene := New()
+	scene := &Scene{
+		entities: make([]*ecs.Entity, 0, 16),
+		world:    ecs.NewWorld(),
+		nextID:   1,
+		sysMgr:   ecs.NewSystemManager(),
+	}
+	scene.sysMgr.AddSystem(ecs.NewTransformSystem())
 
 	entityByID := make(map[int64]*ecs.Entity)
 
@@ -316,6 +325,12 @@ func Load(path string) (*Scene, error) {
 				cam.Active = c.Active
 
 				e.AddComponent(cam)
+				if firstCam == nil {
+					firstCam = cam
+				}
+				if cam.Active {
+					activeCam = cam
+				}
 			case "MultiMesh":
 				var mm struct{ Meshes []string }
 				b, _ := json.Marshal(raw)
@@ -367,6 +382,22 @@ func Load(path string) (*Scene, error) {
 				e.AddComponent(ecs.NewNormalMap(t.ID))
 			}
 		}
+	}
+	// choose a camera for scene.camera
+	if activeCam != nil {
+		scene.camera.Position = activeCam.Position
+		scene.camera.Target = activeCam.Target
+		scene.camera.Up = activeCam.Up
+		scene.camera.Fov = activeCam.Fov
+		scene.camera.Near = activeCam.Near
+		scene.camera.Far = activeCam.Far
+	} else if firstCam != nil {
+		scene.camera.Position = firstCam.Position
+		scene.camera.Target = firstCam.Target
+		scene.camera.Up = firstCam.Up
+		scene.camera.Fov = firstCam.Fov
+		scene.camera.Near = firstCam.Near
+		scene.camera.Far = firstCam.Far
 	}
 
 	// Third pass: restore hierarchy

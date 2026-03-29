@@ -26,7 +26,7 @@
           ]
         },
         "Name": {
-          "value": "Main Camera"
+          "Value": "Main Camera"
         }
       }
     },
@@ -34,11 +34,11 @@
       "id": 3,
       "components": {
         "ColliderPlane": {
-          "friction": 0.8,
-          "layer": 0,
-          "mask": 4294967295,
-          "restitution": 0.5,
-          "y": -2
+          "Friction": 0.8,
+          "Layer": 0,
+          "Mask": 4294967295,
+          "Restitution": 0.5,
+          "Y": -2
         },
         "Material": {
           "ambient": 0.3,
@@ -73,7 +73,7 @@
           "id": "plane"
         },
         "Name": {
-          "value": "Ground Floor"
+          "Value": "Ground Floor"
         },
         "Transform": {
           "position": [
@@ -99,15 +99,15 @@
       "id": 4,
       "components": {
         "ColliderAABB": {
-          "friction": 0.8,
-          "halfExtents": [
+          "Friction": 0.8,
+          "HalfExtents": [
             0.5,
             0.5,
             0.5
           ],
-          "layer": 0,
-          "mask": 4294967295,
-          "restitution": 0.5
+          "Layer": 0,
+          "Mask": 4294967295,
+          "Restitution": 0.5
         },
         "Material": {
           "ambient": 0.2,
@@ -142,10 +142,20 @@
           "id": "cube24"
         },
         "Name": {
-          "value": "First Cube"
+          "Value": "First Cube"
         },
         "RigidBody": {
-          "mass": 1
+          "Force": [
+            0,
+            0,
+            0
+          ],
+          "Mass": 1,
+          "Vel": [
+            0,
+            0,
+            0
+          ]
         },
         "Transform": {
           "position": [
@@ -171,15 +181,15 @@
       "id": 5,
       "components": {
         "ColliderAABB": {
-          "friction": 0.8,
-          "halfExtents": [
+          "Friction": 0.8,
+          "HalfExtents": [
             0.5,
             0.5,
             0.5
           ],
-          "layer": 0,
-          "mask": 4294967295,
-          "restitution": 0.5
+          "Layer": 0,
+          "Mask": 4294967295,
+          "Restitution": 0.5
         },
         "Material": {
           "ambient": 0.2,
@@ -214,10 +224,20 @@
           "id": "cube24"
         },
         "Name": {
-          "value": "Second Cube"
+          "Value": "Second Cube"
         },
         "RigidBody": {
-          "mass": 1
+          "Force": [
+            0,
+            0,
+            0
+          ],
+          "Mass": 1,
+          "Vel": [
+            0,
+            0,
+            0
+          ]
         },
         "Transform": {
           "position": [
@@ -243,11 +263,11 @@
       "id": 6,
       "components": {
         "ColliderSphere": {
-          "friction": 0.8,
-          "layer": 0,
-          "mask": 4294967295,
-          "radius": 1,
-          "restitution": 0.5
+          "Friction": 0.8,
+          "Layer": 0,
+          "Mask": 4294967295,
+          "Radius": 1,
+          "Restitution": 0.5
         },
         "Material": {
           "ambient": 0.2,
@@ -282,10 +302,20 @@
           "id": "sphere"
         },
         "Name": {
-          "value": "Sphere1"
+          "Value": "Sphere1"
         },
         "RigidBody": {
-          "mass": 1
+          "Force": [
+            0,
+            0,
+            0
+          ],
+          "Mass": 1,
+          "Vel": [
+            0,
+            0,
+            0
+          ]
         },
         "Transform": {
           "position": [
@@ -311,15 +341,15 @@
       "id": 7,
       "components": {
         "ColliderAABB": {
-          "friction": 0.8,
-          "halfExtents": [
+          "Friction": 0.8,
+          "HalfExtents": [
             0.5,
             0.5,
             0.5
           ],
-          "layer": 0,
-          "mask": 4294967295,
-          "restitution": 0.5
+          "Layer": 0,
+          "Mask": 4294967295,
+          "Restitution": 0.5
         },
         "Material": {
           "ambient": 0.05,
@@ -354,10 +384,20 @@
           "id": "cube24"
         },
         "Name": {
-          "value": "Metal Cube"
+          "Value": "Metal Cube"
         },
         "RigidBody": {
-          "mass": 1
+          "Force": [
+            0,
+            0,
+            0
+          ],
+          "Mass": 1,
+          "Vel": [
+            0,
+            0,
+            0
+          ]
         },
         "Transform": {
           "position": [
@@ -383,15 +423,15 @@
       "id": 8,
       "components": {
         "ColliderAABB": {
-          "friction": 0.8,
-          "halfExtents": [
+          "Friction": 0.8,
+          "HalfExtents": [
             0.5,
             0.5,
             0.5
           ],
-          "layer": 0,
-          "mask": 4294967295,
-          "restitution": 0.5
+          "Layer": 0,
+          "Mask": 4294967295,
+          "Restitution": 0.5
         },
         "Material": {
           "ambient": 0.4,
@@ -426,10 +466,20 @@
           "id": "cube24"
         },
         "Name": {
-          "value": "Plastic Cube"
+          "Value": "Plastic Cube"
         },
         "RigidBody": {
-          "mass": 1
+          "Force": [
+            0,
+            0,
+            0
+          ],
+          "Mass": 1,
+          "Vel": [
+            0,
+            0,
+            0
+          ]
         },
         "Transform": {
           "position": [
@@ -487,7 +537,7 @@
           "id": "teapot"
         },
         "Name": {
-          "value": "Tea Pot"
+          "Value": "Tea Pot"
         },
         "Transform": {
           "position": [
@@ -516,7 +566,7 @@
           "id": "sphere"
         },
         "Name": {
-          "value": "Light Gizmo"
+          "Value": "Light Gizmo"
         },
         "Transform": {
           "position": [
@@ -545,7 +595,7 @@
           "id": "line"
         },
         "Name": {
-          "value": "Light Arrow"
+          "Value": "Light Arrow"
         },
         "Transform": {
           "position": [
@@ -603,7 +653,7 @@
           "id": "billboardQuad"
         },
         "Name": {
-          "value": "Billboard"
+          "Value": "Billboard"
         },
         "Transform": {
           "position": [
@@ -639,7 +689,7 @@
           ]
         },
         "Name": {
-          "value": "sofa"
+          "Value": "sofa"
         },
         "Transform": {
           "position": [
@@ -702,7 +752,7 @@
           "id": "Fringe/0"
         },
         "Name": {
-          "value": "Fringe/0"
+          "Value": "Fringe/0"
         },
         "Transform": {
           "position": [
@@ -766,7 +816,7 @@
           "id": "Frame/0"
         },
         "Name": {
-          "value": "Frame/0"
+          "Value": "Frame/0"
         },
         "Transform": {
           "position": [
@@ -848,7 +898,7 @@
           "id": "Frame_Fabric/0"
         },
         "Name": {
-          "value": "Frame_Fabric/0"
+          "Value": "Frame_Fabric/0"
         },
         "Transform": {
           "position": [
@@ -930,7 +980,7 @@
           "id": "Paisley/0"
         },
         "Name": {
-          "value": "Paisley/0"
+          "Value": "Paisley/0"
         },
         "Transform": {
           "position": [
@@ -1012,7 +1062,7 @@
           "id": "Stripes/0"
         },
         "Name": {
-          "value": "Stripes/0"
+          "Value": "Stripes/0"
         },
         "Transform": {
           "position": [
@@ -1094,7 +1144,7 @@
           "id": "Brown/0"
         },
         "Name": {
-          "value": "Brown/0"
+          "Value": "Brown/0"
         },
         "Transform": {
           "position": [
@@ -1153,7 +1203,7 @@
           ]
         },
         "Name": {
-          "value": "Bambo_House"
+          "Value": "Bambo_House"
         },
         "Transform": {
           "position": [
@@ -1212,7 +1262,7 @@
           "id": "window_roof/0"
         },
         "Name": {
-          "value": "window_roof/0"
+          "Value": "window_roof/0"
         },
         "Transform": {
           "position": [
@@ -1271,7 +1321,7 @@
           "id": "window_roof/1"
         },
         "Name": {
-          "value": "window_roof/1"
+          "Value": "window_roof/1"
         },
         "Transform": {
           "position": [
@@ -1330,7 +1380,7 @@
           "id": "ridge/0"
         },
         "Name": {
-          "value": "ridge/0"
+          "Value": "ridge/0"
         },
         "Transform": {
           "position": [
@@ -1389,7 +1439,7 @@
           "id": "roof/0"
         },
         "Name": {
-          "value": "roof/0"
+          "Value": "roof/0"
         },
         "Transform": {
           "position": [
@@ -1448,7 +1498,7 @@
           "id": "roof/1"
         },
         "Name": {
-          "value": "roof/1"
+          "Value": "roof/1"
         },
         "Transform": {
           "position": [
@@ -1507,7 +1557,7 @@
           "id": "stairs/0"
         },
         "Name": {
-          "value": "stairs/0"
+          "Value": "stairs/0"
         },
         "Transform": {
           "position": [
@@ -1566,7 +1616,7 @@
           "id": "lamp_exterior/0"
         },
         "Name": {
-          "value": "lamp_exterior/0"
+          "Value": "lamp_exterior/0"
         },
         "Transform": {
           "position": [
@@ -1625,7 +1675,7 @@
           "id": "lamp_exterior/1"
         },
         "Name": {
-          "value": "lamp_exterior/1"
+          "Value": "lamp_exterior/1"
         },
         "Transform": {
           "position": [
@@ -1684,7 +1734,7 @@
           "id": "parapet/0"
         },
         "Name": {
-          "value": "parapet/0"
+          "Value": "parapet/0"
         },
         "Transform": {
           "position": [
@@ -1743,7 +1793,7 @@
           "id": "garage/0"
         },
         "Name": {
-          "value": "garage/0"
+          "Value": "garage/0"
         },
         "Transform": {
           "position": [
@@ -1802,7 +1852,7 @@
           "id": "door/0"
         },
         "Name": {
-          "value": "door/0"
+          "Value": "door/0"
         },
         "Transform": {
           "position": [
@@ -1861,7 +1911,7 @@
           "id": "door/1"
         },
         "Name": {
-          "value": "door/1"
+          "Value": "door/1"
         },
         "Transform": {
           "position": [
@@ -1920,7 +1970,7 @@
           "id": "door/2"
         },
         "Name": {
-          "value": "door/2"
+          "Value": "door/2"
         },
         "Transform": {
           "position": [
@@ -1979,7 +2029,7 @@
           "id": "windows/0"
         },
         "Name": {
-          "value": "windows/0"
+          "Value": "windows/0"
         },
         "Transform": {
           "position": [
@@ -2038,7 +2088,7 @@
           "id": "windows/1"
         },
         "Name": {
-          "value": "windows/1"
+          "Value": "windows/1"
         },
         "Transform": {
           "position": [
@@ -2097,7 +2147,7 @@
           "id": "windows/2"
         },
         "Name": {
-          "value": "windows/2"
+          "Value": "windows/2"
         },
         "Transform": {
           "position": [
@@ -2156,7 +2206,7 @@
           "id": "gutters/0"
         },
         "Name": {
-          "value": "gutters/0"
+          "Value": "gutters/0"
         },
         "Transform": {
           "position": [
@@ -2215,7 +2265,7 @@
           "id": "chimneys/0"
         },
         "Name": {
-          "value": "chimneys/0"
+          "Value": "chimneys/0"
         },
         "Transform": {
           "position": [
@@ -2274,7 +2324,7 @@
           "id": "chimneys/1"
         },
         "Name": {
-          "value": "chimneys/1"
+          "Value": "chimneys/1"
         },
         "Transform": {
           "position": [
@@ -2333,7 +2383,7 @@
           "id": "chimneys/2"
         },
         "Name": {
-          "value": "chimneys/2"
+          "Value": "chimneys/2"
         },
         "Transform": {
           "position": [
@@ -2392,7 +2442,7 @@
           "id": "chimneys/3"
         },
         "Name": {
-          "value": "chimneys/3"
+          "Value": "chimneys/3"
         },
         "Transform": {
           "position": [
@@ -2451,7 +2501,7 @@
           "id": "barrels/0"
         },
         "Name": {
-          "value": "barrels/0"
+          "Value": "barrels/0"
         },
         "Transform": {
           "position": [
@@ -2510,7 +2560,7 @@
           "id": "boards/0"
         },
         "Name": {
-          "value": "boards/0"
+          "Value": "boards/0"
         },
         "Transform": {
           "position": [
@@ -2569,7 +2619,7 @@
           "id": "wall_barrels/0"
         },
         "Name": {
-          "value": "wall_barrels/0"
+          "Value": "wall_barrels/0"
         },
         "Transform": {
           "position": [
@@ -2628,7 +2678,7 @@
           "id": "wall_barrels/1"
         },
         "Name": {
-          "value": "wall_barrels/1"
+          "Value": "wall_barrels/1"
         },
         "Transform": {
           "position": [
@@ -2687,7 +2737,7 @@
           "id": "fundametnts/0"
         },
         "Name": {
-          "value": "fundametnts/0"
+          "Value": "fundametnts/0"
         },
         "Transform": {
           "position": [
@@ -2746,7 +2796,7 @@
           "id": "fundametnts/1"
         },
         "Name": {
-          "value": "fundametnts/1"
+          "Value": "fundametnts/1"
         },
         "Transform": {
           "position": [
@@ -2805,7 +2855,7 @@
           "id": "body_house/0"
         },
         "Name": {
-          "value": "body_house/0"
+          "Value": "body_house/0"
         },
         "Transform": {
           "position": [
@@ -2864,7 +2914,7 @@
           "id": "body_house/1"
         },
         "Name": {
-          "value": "body_house/1"
+          "Value": "body_house/1"
         },
         "Transform": {
           "position": [
