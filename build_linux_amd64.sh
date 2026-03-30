@@ -1,7 +1,6 @@
 echo "building for linux amd64" 
 
-export  GOOS="linux"
-export GOARCH="amd64"
+
 go clean modcache
 go get
 go mod tidy

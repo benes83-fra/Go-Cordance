@@ -1,7 +1,5 @@
 echo "building for darwin arm64" 
 
-export  GOOS="darwin"
-export GOARCH="arm64"
 go clean modcache
 go get
 go mod tidy
