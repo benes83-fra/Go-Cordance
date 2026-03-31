@@ -118,7 +118,31 @@ func UpdateEntities(world *ecs.World, ents []bridge.EntityInfo) {
 	for i, e := range ents {
 		log.Printf(" Entity %d: ID=%d, Name=%s, Components=%v", i, e.ID, e.Name, e.Components)
 	}
+	// preserve selected entity ID so selection survives reimport/reorder
+	var prevSelectedID int64 = 0
+	if state.Global.SelectedIndex >= 0 && state.Global.SelectedIndex < len(state.Global.Entities) {
+		prevSelectedID = state.Global.Entities[state.Global.SelectedIndex].ID
+	}
+
+	// replace snapshot
 	state.Global.Entities = ents
+
+	// restore SelectedIndex to point to the same entity ID (if still present)
+	if prevSelectedID != 0 {
+		state.Global.SelectedIndex = -1
+		for i, e := range state.Global.Entities {
+			if e.ID == prevSelectedID {
+				state.Global.SelectedIndex = i
+				break
+			}
+		}
+		// also keep Selection.ActiveID consistent
+		if state.Global.SelectedIndex >= 0 {
+			state.Global.Selection.ActiveID = state.Global.Entities[state.Global.SelectedIndex].ID
+		} else {
+			state.Global.Selection.ActiveID = 0
+		}
+	}
 
 	structuralChange := false
 	// prune selection IDs that no longer exist
@@ -201,16 +225,37 @@ func UpdateEntities(world *ecs.World, ents []bridge.EntityInfo) {
 	}
 }
 
-func UpdateEntityTransform(id int64, pos bridge.Vec3, rot bridge.Vec4, scale bridge.Vec3) {
+// editor.go
+
+func UpdateEntityTransform(world *ecs.World, id int64, pos bridge.Vec3, rot bridge.Vec4, scale bridge.Vec3) {
+	// Update editor snapshot (so inspector transform fields update)
 	for i := range state.Global.Entities {
 		if state.Global.Entities[i].ID == id {
 			state.Global.Entities[i].Position = pos
 			state.Global.Entities[i].Rotation = rot
 			state.Global.Entities[i].Scale = scale
-			log.Printf("editor: UpdateEntityTransform id=%d pos=%v", id, pos)
-			return
+
+			break
 		}
 	}
+
+	// Also update the ECS world entity's Transform component so component UIs read the new values
+	if world == nil {
+		return
+	}
+	ecsEnt := world.FindByID(id)
+	if ecsEnt == nil {
+		return
+	}
+	tr := ecsEnt.GetTransform()
+	if tr == nil {
+		// create and attach a Transform if missing
+		tr = &ecs.Transform{}
+		ecsEnt.AddComponent(tr)
+	}
+	tr.Position = pos
+	tr.Rotation = rot
+	tr.Scale = scale
 }
 
 func startEditorLinkClient(world *ecs.World) {
@@ -243,7 +288,7 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 				log.Printf("editor: bad SetTransformGizmo: %v", err)
 				continue
 			}
-			UpdateEntityTransform(int64(m.ID), m.Position, m.Rotation, m.Scale)
+			UpdateEntityTransform(world, int64(m.ID), m.Position, m.Rotation, m.Scale)
 
 		case "SetTransformGizmoFinal":
 			var m editorlink.MsgSetTransform
@@ -253,7 +298,7 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 			}
 
 			fyne.DoAndWait(func() {
-				UpdateEntityTransform(int64(m.ID), m.Position, m.Rotation, m.Scale)
+				UpdateEntityTransform(world, int64(m.ID), m.Position, m.Rotation, m.Scale)
 				if state.Global.RefreshUI != nil {
 					state.Global.RefreshUI() // rebuild inspector ONCE
 				}
