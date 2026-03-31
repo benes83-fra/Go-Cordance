@@ -207,6 +207,7 @@ func UpdateEntityTransform(id int64, pos bridge.Vec3, rot bridge.Vec4, scale bri
 			state.Global.Entities[i].Position = pos
 			state.Global.Entities[i].Rotation = rot
 			state.Global.Entities[i].Scale = scale
+			log.Printf("editor: UpdateEntityTransform id=%d pos=%v", id, pos)
 			return
 		}
 	}
@@ -390,59 +391,136 @@ func equalStringSlices(a, b []string) bool {
 // SyncEditorWorld rebuilds the editor's ECS world to match the snapshot,
 // but reuses existing component instances when possible to avoid losing
 // transient editor-side state.
+// --- Replace SyncEditorWorld body with this approach ---
+
 func SyncEditorWorld(world *ecs.World, ents []bridge.EntityInfo) {
-	// Build map of old entities by ID for reuse
+	// Map existing entities by ID
 	oldByID := make(map[int64]*ecs.Entity)
 	for _, e := range world.Entities {
 		oldByID[e.ID] = e
 	}
 
-	// New list
+	// New ordered slice we will assign back to world.Entities
 	newEntities := make([]*ecs.Entity, 0, len(ents))
 
-	for _, e := range ents {
-		// Create a fresh entity object (we will reuse components where possible)
-		ent := ecs.NewEntity(e.ID)
-
-		// If we have an old entity, try to reuse its components
-		var oldEnt *ecs.Entity
-		if oe, ok := oldByID[e.ID]; ok {
-			oldEnt = oe
+	for _, einfo := range ents {
+		// Try to reuse the existing entity pointer
+		var ent *ecs.Entity
+		if oe, ok := oldByID[einfo.ID]; ok {
+			ent = oe
+			// Clear components that are no longer present in snapshot
+			// Build a set of desired component names
+			desired := map[string]bool{}
+			for _, cname := range einfo.Components {
+				desired[cname] = true
+			}
+			// Remove components that are not desired
+			for _, comp := range ent.Components {
+				// assume compTypeName(comp) returns the registry name for the component
+				if !desired[ecs.ComponentTypeName(comp)] {
+					ent.RemoveComponent(comp)
+				}
+			}
+		} else {
+			// create a new entity pointer with same ID (only when not present)
+			ent = ecs.NewEntity(einfo.ID)
 		}
 
-		for _, cname := range e.Components {
+		// Ensure each component in snapshot exists on ent, reusing instances where possible
+		for _, cname := range einfo.Components {
 			constructor, ok := ecs.ComponentRegistry[cname]
 			if !ok {
-				if cname != "Transform" {
-					log.Printf("editor: no constructor for component %q in registry", cname)
-				}
 				continue
 			}
-
-			// Try to reuse existing component instance from old entity
-			var comp ecs.Component // replace with your component interface type
-			if oldEnt != nil {
-				// ask old entity for a component instance of the same type
-				oldComp := oldEnt.GetComponent(constructor())
-				if oldComp != nil {
-					comp = oldComp
+			// If entity already has that component, reuse it
+			comp := ent.GetComponent(constructor())
+			if comp == nil {
+				// create and add
+				comp = constructor()
+				ent.AddComponent(comp)
+			}
+			// If it's a Transform, update values in-place
+			if cname == "Transform" {
+				if tr, ok := comp.(*ecs.Transform); ok {
+					tr.Position = einfo.Position
+					tr.Rotation = einfo.Rotation
+					tr.Scale = einfo.Scale
 				}
 			}
-
-			// If not found, construct a new one
-			if comp == nil {
-				comp = constructor()
-			}
-
-			ent.AddComponent(comp)
+			// For other components you may want to update cached fields if snapshot carries them
 		}
 
 		newEntities = append(newEntities, ent)
 	}
 
-	// Replace world.Entities with the rebuilt list
+	// Replace world.Entities with the new ordered slice (same pointers reused)
 	world.Entities = newEntities
 }
+
+// func SyncEditorWorld(world *ecs.World, ents []bridge.EntityInfo) {
+
+// 	// Build map of old entities by ID for reuse
+// 	oldByID := make(map[int64]*ecs.Entity)
+// 	for _, e := range world.Entities {
+// 		oldByID[e.ID] = e
+// 	}
+
+// 	// New list
+// 	newEntities := make([]*ecs.Entity, 0, len(ents))
+
+// 	for _, e := range ents {
+// 		// Create a fresh entity object (we will reuse components where possible)
+// 		ent := ecs.NewEntity(e.ID)
+
+// 		// If we have an old entity, try to reuse its components
+// 		var oldEnt *ecs.Entity
+// 		if oe, ok := oldByID[e.ID]; ok {
+// 			oldEnt = oe
+// 		}
+
+// 		for _, cname := range e.Components {
+// 			constructor, ok := ecs.ComponentRegistry[cname]
+// 			if !ok {
+// 				if cname != "Transform" {
+// 					log.Printf("editor: no constructor for component %q in registry", cname)
+// 				}
+// 				continue
+// 			}
+
+// 			// Try to reuse existing component instance from old entity
+// 			var comp ecs.Component // replace with your component interface type
+// 			if oldEnt != nil {
+// 				// ask old entity for a component instance of the same type
+// 				oldComp := oldEnt.GetComponent(constructor())
+// 				if oldComp != nil {
+// 					comp = oldComp
+// 				}
+// 			}
+
+// 			// If not found, construct a new one
+// 			if comp == nil {
+// 				comp = constructor()
+// 			}
+// 			if cname == "Transform" {
+// 				if tr, ok := comp.(*ecs.Transform); ok {
+// 					// e.Position/Rotation/Scale are bridge.Vec3/Vec4 types; convert as needed
+// 					tr.Position = e.Position
+// 					tr.Rotation = e.Rotation
+// 					tr.Scale = e.Scale
+// 				} else {
+// 					// defensive: if constructor returned a different concrete type, try to set via interface
+// 					log.Printf("editor: Transform component type mismatch for entity %d", e.ID)
+// 				}
+// 			}
+// 			ent.AddComponent(comp)
+// 		}
+
+// 		newEntities = append(newEntities, ent)
+// 	}
+
+// 	// Replace world.Entities with the rebuilt list
+// 	world.Entities = newEntities
+// }
 
 // userCacheDir returns a writable cache directory for the current user.
 // Falls back to the current working directory if os.UserCacheDir fails.

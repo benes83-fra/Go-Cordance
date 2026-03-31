@@ -1,5 +1,7 @@
 package ecs
 
+import "reflect"
+
 var ComponentRegistry = map[string]func() Component{
 
 	"Mesh":           func() Component { return NewMesh("") },
@@ -15,4 +17,27 @@ var ComponentRegistry = map[string]func() Component{
 	"Children":       func() Component { return NewChildren() },
 	"Name":           func() Component { return NewName("") },
 	"Camera":         func() Component { return NewCamera() },
+}
+
+// ComponentNameRegistry maps concrete component types to their registry name.
+var ComponentNameRegistry map[reflect.Type]string
+
+func init() {
+	ComponentNameRegistry = make(map[reflect.Type]string)
+	for name, ctor := range ComponentRegistry {
+		// ctor() returns a Component instance; use its concrete type
+		ComponentNameRegistry[reflect.TypeOf(ctor())] = name
+	}
+}
+
+// ComponentTypeName returns the registry name for a concrete component instance.
+// Returns empty string if unknown.
+func ComponentTypeName(c Component) string {
+	if c == nil {
+		return ""
+	}
+	if name, ok := ComponentNameRegistry[reflect.TypeOf(c)]; ok {
+		return name
+	}
+	return ""
 }

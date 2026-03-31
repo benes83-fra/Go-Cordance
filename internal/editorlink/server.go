@@ -9,9 +9,11 @@ import (
 	"go-engine/Go-Cordance/internal/assets"
 	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/ecs/gizmo"
+	bridge2 "go-engine/Go-Cordance/internal/ecs/gizmo/bridge"
 	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editor/undo"
+	"go-engine/Go-Cordance/internal/engine"
 	"go-engine/Go-Cordance/internal/shaderlang"
 	"go-engine/Go-Cordance/internal/thumbnails"
 
@@ -304,7 +306,25 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 				return
 			}
 			sc.ReplaceWith(newScene)
+			RebindTransformCallbacks()
+
+			// Also rebind camera + render system world
+			if RenderSystem != nil {
+				RenderSystem.CameraSystem.SetWorld(sc.World())
+				RenderSystem.MeshManager = engine.GlobalMeshManager
+			}
 			SendFullSnapshot(sc)
+			// after sc.ReplaceWith(newScene) and RebindTransformCallbacks()
+			if EditorConn != nil {
+				// send authoritative transforms for all entities once
+				for _, ent := range sc.World().Entities {
+					if trComp := ent.GetComponent((*ecs.Transform)(nil)); trComp != nil {
+						tr := trComp.(*ecs.Transform)
+						// use the bridge/gizmo bridge functions you rebind (bridge2)
+						bridge2.SendTransformToEditorFinal(int64(ent.ID), tr.Position, tr.Rotation, tr.Scale)
+					}
+				}
+			}
 
 		default:
 			log.Printf("editorlink: unknown msg type %q", msg.Type)
@@ -618,5 +638,25 @@ func SendAssetList(conn net.Conn) {
 	resp := buildAssetList()
 	if err := writeMsg(conn, "AssetList", resp); err != nil {
 		log.Printf("editorlink: failed to send AssetList: %v", err)
+	}
+}
+
+func RebindTransformCallbacks() {
+	bridge2.SendTransformToEditor = func(id int64, pos [3]float32, rot [4]float32, scale [3]float32) {
+		if EditorConn != nil {
+			go WriteTransformFromGame(EditorConn, id, pos, rot, scale)
+		}
+	}
+
+	bridge2.SendTransformToEditorFinal = func(id int64, pos [3]float32, rot [4]float32, scale [3]float32) {
+		if EditorConn != nil {
+			msg := MsgSetTransform{
+				ID:       uint64(id),
+				Position: pos,
+				Rotation: rot,
+				Scale:    scale,
+			}
+			go WriteSetTransformFinal(EditorConn, msg)
+		}
 	}
 }
