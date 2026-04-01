@@ -171,6 +171,29 @@ func UpdateEntities(world *ecs.World, ents []bridge.EntityInfo) {
 			state.Global.LastComponents[e.ID] = append([]string{}, e.Components...)
 		}
 	}
+	// Apply snapshot transforms into the ECS world so inspector component UIs read fresh values.
+	// This must run even when there is no structural change (reorder/reimport only).
+	if world != nil {
+		for _, e := range ents {
+			ecsEnt := world.FindByID(e.ID)
+			if ecsEnt == nil {
+				continue
+			}
+			tr := ecsEnt.GetTransform()
+			if tr == nil {
+				// create and attach a Transform if missing
+				tr = &ecs.Transform{}
+				ecsEnt.AddComponent(tr)
+			}
+			tr.Position = e.Position
+			tr.Rotation = e.Rotation
+			tr.Scale = e.Scale
+
+			// Clear Euler cache so inspector recomputes Euler angles from the new quaternion
+			delete(state.Global.EulerCache, uint64(e.ID))
+		}
+	}
+
 	if structuralChange {
 		SyncEditorWorld(world, ents)
 	}
@@ -234,7 +257,7 @@ func UpdateEntityTransform(world *ecs.World, id int64, pos bridge.Vec3, rot brid
 			state.Global.Entities[i].Position = pos
 			state.Global.Entities[i].Rotation = rot
 			state.Global.Entities[i].Scale = scale
-
+			delete(state.Global.EulerCache, uint64(id))
 			break
 		}
 	}
