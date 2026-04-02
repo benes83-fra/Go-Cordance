@@ -10,6 +10,9 @@ import (
 	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editor/ui"
+	"math"
+	"sync"
+	"time"
 
 	"go-engine/Go-Cordance/internal/editorlink"
 	"net"
@@ -25,6 +28,14 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+)
+
+// editor: pending transform applier
+var (
+	pendingTransformsMu  sync.Mutex
+	pendingTransforms    = map[int64]editorlink.MsgSetTransform{} // store last msg per entity
+	transformApplierOnce sync.Once
+	editorDebug          bool = false // set true for verbose logs
 )
 
 // Run starts the editor UI for the provided world.
@@ -288,6 +299,7 @@ func startEditorLinkClient(world *ecs.World) {
 	}
 
 	editorlink.EditorConn = conn
+	startTransformApplier(world)
 
 	// Request initial snapshot
 	go editorlink.WriteRequestSceneSnapshot(conn)
@@ -311,7 +323,10 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 				log.Printf("editor: bad SetTransformGizmo: %v", err)
 				continue
 			}
-			UpdateEntityTransform(world, int64(m.ID), m.Position, m.Rotation, m.Scale)
+			pendingTransformsMu.Lock()
+			pendingTransforms[int64(m.ID)] = m
+			pendingTransformsMu.Unlock()
+			// UpdateEntityTransform(world, int64(m.ID), m.Position, m.Rotation, m.Scale)
 
 		case "SetTransformGizmoFinal":
 			var m editorlink.MsgSetTransform
@@ -319,13 +334,15 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 				log.Printf("editor: bad SetTransformGizmoFinal: %v", err)
 				continue
 			}
-
-			fyne.DoAndWait(func() {
-				UpdateEntityTransform(world, int64(m.ID), m.Position, m.Rotation, m.Scale)
-				if state.Global.RefreshUI != nil {
-					state.Global.RefreshUI() // rebuild inspector ONCE
-				}
-			})
+			pendingTransformsMu.Lock()
+			pendingTransforms[int64(m.ID)] = m
+			pendingTransformsMu.Unlock()
+			// fyne.DoAndWait(func() {
+			// 	UpdateEntityTransform(world, int64(m.ID), m.Position, m.Rotation, m.Scale)
+			// 	if state.Global.RefreshUI != nil {
+			// 		state.Global.RefreshUI() // rebuild inspector ONCE
+			// 	}
+			// })
 
 		case "SceneSnapshot":
 			var snap editorlink.MsgSceneSnapshot
@@ -793,4 +810,83 @@ func safeName(s string) string {
 	s = strings.ReplaceAll(s, "/", "_")
 	s = strings.ReplaceAll(s, "\\", "_")
 	return s
+}
+
+func transformDifferent(pos bridge.Vec3, newPos [3]float32, rot bridge.Vec4, newRot [4]float32, scale bridge.Vec3, newScale [3]float32) bool {
+	const eps = 1e-4
+	// positions
+	for i := 0; i < 3; i++ {
+		if math.Abs(float64(pos[i]-newPos[i])) > eps {
+			return true
+		}
+	}
+	// rotation quaternion
+	for i := 0; i < 4; i++ {
+		if math.Abs(float64(rot[i]-newRot[i])) > eps {
+			return true
+		}
+	}
+	// scale
+	for i := 0; i < 3; i++ {
+		if math.Abs(float64(scale[i]-newScale[i])) > eps {
+			return true
+		}
+	}
+	return false
+}
+
+func startTransformApplier(world *ecs.World) {
+	transformApplierOnce.Do(func() {
+		go func() {
+			ticker := time.NewTicker(33 * time.Millisecond) // ~30Hz
+			defer ticker.Stop()
+			for range ticker.C {
+				// drain pending map
+				pendingTransformsMu.Lock()
+				if len(pendingTransforms) == 0 {
+					pendingTransformsMu.Unlock()
+					continue
+				}
+				// copy and clear
+				copyMap := make(map[int64]editorlink.MsgSetTransform, len(pendingTransforms))
+				for id, m := range pendingTransforms {
+					copyMap[id] = m
+				}
+				pendingTransforms = map[int64]editorlink.MsgSetTransform{}
+				pendingTransformsMu.Unlock()
+
+				// Determine which entities actually changed (epsilon compare)
+				changedIDs := make([]int64, 0, len(copyMap))
+				for id, m := range copyMap {
+					// find snapshot entity and compare
+					for _, ent := range state.Global.Entities {
+						if ent.ID == id {
+							// cheap epsilon compare for position/rotation/scale
+							if transformDifferent(ent.Position, m.Position, ent.Rotation, m.Rotation, ent.Scale, m.Scale) {
+								changedIDs = append(changedIDs, id)
+							}
+							break
+						}
+					}
+				}
+				if len(changedIDs) == 0 {
+					continue
+				}
+
+				// Apply all changes on UI thread in one shot
+				fyne.DoAndWait(func() {
+					// apply to editor snapshot and ECS world
+					for _, id := range changedIDs {
+						m := copyMap[id]
+						UpdateEntityTransform(world, int64(m.ID), m.Position, m.Rotation, m.Scale)
+					}
+					// clear Euler cache for changed IDs (UpdateEntityTransform already deletes per-id)
+					// single RefreshUI call
+					if state.Global.RefreshUI != nil {
+						state.Global.RefreshUI()
+					}
+				})
+			}
+		}()
+	})
 }
