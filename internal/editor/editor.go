@@ -10,6 +10,7 @@ import (
 	"go-engine/Go-Cordance/internal/editor/bridge"
 	state "go-engine/Go-Cordance/internal/editor/state"
 	"go-engine/Go-Cordance/internal/editor/ui"
+	"io"
 	"math"
 	"sync"
 	"time"
@@ -29,6 +30,20 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
+
+type ConsoleWriter struct{}
+
+var consoleChan = make(chan string, 200)
+var consoleScroll *container.Scroll
+
+func (ConsoleWriter) Write(p []byte) (n int, err error) {
+	select {
+	case consoleChan <- string(p):
+	default:
+		// drop if full to avoid blocking
+	}
+	return len(p), nil
+}
 
 // editor: pending transform applier
 var (
@@ -77,8 +92,17 @@ func Run(world *ecs.World) {
 	})
 
 	// viewport placeholder
-	viewport := widget.NewLabel("Viewport Placeholder")
+	console := widget.NewMultiLineEntry()
+	console.Wrapping = fyne.TextWrapWord
+	console.Disable() // read‑only
+	console.Wrapping = fyne.TextWrapOff
+	console.MultiLine = true
 
+	consoleScroll := container.NewVScroll(console)
+
+	consoleScroll.SetMinSize(fyne.NewSize(0, 200))
+
+	st.Console = console
 	// toolbar / settings row
 	showGizmosCheck := widget.NewCheck("Show Light Gizmos", func(v bool) {
 		st.ShowLightGizmos = v
@@ -96,7 +120,8 @@ func Run(world *ecs.World) {
 
 	viewportColumn := container.NewVBox(
 		container.NewHBox(showGizmosCheck, layout.NewSpacer()),
-		viewport,
+
+		consoleScroll,
 	)
 
 	left := container.NewMax(hierarchyWidget)
@@ -113,6 +138,14 @@ func Run(world *ecs.World) {
 	win.SetContent(split)
 	win.Show()
 	go startEditorLinkClient(world)
+	log.SetOutput(io.MultiWriter(os.Stdout, &ConsoleWriter{}))
+	// NOW the UI loop is alive → safe to install console writer
+	go func() {
+		for msg := range consoleChan {
+			appendToConsole(msg)
+		}
+	}()
+
 	// initial build (no selection)
 	inspectorRebuild(world, st, hierarchyList)
 
@@ -888,5 +921,21 @@ func startTransformApplier(world *ecs.World) {
 				})
 			}
 		}()
+	})
+}
+func appendToConsole(text string) {
+	fyne.DoAndWait(func() {
+		c := state.Global.Console
+		if c == nil {
+			return
+		}
+
+		// Append text
+		c.SetText(c.Text + text)
+
+		// Auto-scroll
+		if consoleScroll != nil {
+			consoleScroll.ScrollToBottom()
+		}
 	})
 }

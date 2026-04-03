@@ -2,6 +2,8 @@ package state
 
 import (
 	"go-engine/Go-Cordance/internal/editor/bridge"
+
+	"fyne.io/fyne/v2/widget"
 )
 
 type AssetView struct {
@@ -34,6 +36,7 @@ type EditorState struct {
 	ParentMap           map[int64]int64
 	ChildrenMap         map[int64][]int64
 	RenameIndex         int
+	Console             *widget.Entry
 
 	// in EditorState
 
