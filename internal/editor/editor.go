@@ -98,7 +98,7 @@ func Run(world *ecs.World) {
 	console.Wrapping = fyne.TextWrapOff
 	console.MultiLine = true
 
-	consoleScroll := container.NewVScroll(console)
+	consoleScroll = container.NewVScroll(console)
 
 	consoleScroll.SetMinSize(fyne.NewSize(0, 200))
 
@@ -930,12 +930,20 @@ func appendToConsole(text string) {
 			return
 		}
 
-		// Append text
-		c.SetText(c.Text + text)
+		newText := c.Text + text
+		c.SetText(newText)
 
-		// Auto-scroll
-		if consoleScroll != nil {
-			consoleScroll.ScrollToBottom()
+		// Move cursor to end to force internal scroll
+		lines := strings.Split(newText, "\n")
+		if len(lines) == 0 {
+			c.CursorRow = 0
+			c.CursorColumn = 0
+		} else {
+			lastRow := len(lines) - 1
+			c.CursorRow = lastRow
+			c.CursorColumn = len(lines[lastRow])
 		}
+
+		c.Refresh()
 	})
 }
