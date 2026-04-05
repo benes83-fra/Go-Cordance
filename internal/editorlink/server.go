@@ -2,8 +2,10 @@ package editorlink
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 	"net"
+	"os"
 
 	"go-engine/Go-Cordance/cmd/game/loader"
 	"go-engine/Go-Cordance/internal/assets"
@@ -25,6 +27,10 @@ var lastLightVersion = map[uint64]uint64{} // entityID -> version
 var Mgr *thumbnails.Manager
 var RenderSystem *ecs.RenderSystem
 var RequestedShader string
+
+type gameLogWriter struct {
+	conn net.Conn
+}
 
 // StartServer exposes the given Scene to a single editor client.
 func StartServer(addr string, sc *scene.Scene, camSys *ecs.CameraSystem) {
@@ -48,6 +54,8 @@ func StartServer(addr string, sc *scene.Scene, camSys *ecs.CameraSystem) {
 		}
 		EditorConn = conn
 		log.Printf("editorlink: editor connected from %s", conn.RemoteAddr())
+		log.SetOutput(io.MultiWriter(os.Stdout, &gameLogWriter{conn}))
+
 		go handleConn(conn, sc, camSys)
 		// After EditorConn = conn
 		//go WriteTextureList(conn, ecs.TextureNames, ecs.TextureIDs) Legacy Texture communication
@@ -659,4 +667,12 @@ func RebindTransformCallbacks() {
 			go WriteSetTransformFinal(EditorConn, msg)
 		}
 	}
+}
+
+func (w *gameLogWriter) Write(p []byte) (int, error) {
+	text := string(p)
+	if w.conn != nil {
+		WriteGameLog(w.conn, text)
+	}
+	return len(p), nil
 }

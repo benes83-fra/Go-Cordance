@@ -122,6 +122,9 @@ type MsgAssetMeshThumbnail struct {
 	DataB64 string `json:"data_b64"`
 	Hash    string `json:"hash"`
 }
+type MsgGameLog struct {
+	Text string `json:"text"`
+}
 
 const (
 	MsgTypeRequestAssetReload = "RequestAssetReload"
@@ -397,4 +400,8 @@ func WriteSaveScene(conn net.Conn, path string) error {
 func WriteLoadScene(conn net.Conn, path string) error {
 	msg := MsgLoadScene{Path: path}
 	return writeMsg(conn, "LoadScene", msg)
+}
+
+func WriteGameLog(conn net.Conn, text string) error {
+	return writeMsg(conn, "GameLog", MsgGameLog{Text: text})
 }

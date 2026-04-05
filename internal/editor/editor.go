@@ -36,6 +36,9 @@ type ConsoleWriter struct{}
 var consoleChan = make(chan string, 200)
 var consoleScroll *container.Scroll
 
+var gameConsoleChan = make(chan string, 200)
+var gameConsoleScroll *container.Scroll
+
 func (ConsoleWriter) Write(p []byte) (n int, err error) {
 	select {
 	case consoleChan <- string(p):
@@ -104,17 +107,25 @@ func Run(world *ecs.World) {
 
 	// st.Console = console
 	// viewport placeholder
-	console := widget.NewRichText()
-	console.Wrapping = fyne.TextWrapWord // keep wrapping ON to avoid infinite width
 
-	consoleScroll = container.NewVScroll(console)
-	consoleScroll.SetMinSize(fyne.NewSize(0, 250))
-	//console.Scroll = container.ScrollVerticalOnly
-	st.Console = console
 	clearBtn := widget.NewButton("Clear Console", func() {
 		state.Global.Console.Segments = nil
 		state.Global.Console.Refresh()
 	})
+	editorConsole := widget.NewRichText()
+	editorConsole.Wrapping = fyne.TextWrapWord
+
+	gameConsole := widget.NewRichText()
+	gameConsole.Wrapping = fyne.TextWrapWord
+
+	consoleScroll = container.NewVScroll(editorConsole)
+	consoleScroll.SetMinSize(fyne.NewSize(0, 150))
+
+	gameConsoleScroll = container.NewVScroll(gameConsole)
+	gameConsoleScroll.SetMinSize(fyne.NewSize(0, 150))
+
+	st.Console = editorConsole
+	st.GameConsole = gameConsole
 
 	// toolbar / settings row
 	showGizmosCheck := widget.NewCheck("Show Light Gizmos", func(v bool) {
@@ -133,7 +144,11 @@ func Run(world *ecs.World) {
 
 	viewportColumn := container.NewVBox(
 		container.NewHBox(showGizmosCheck, clearBtn, layout.NewSpacer()),
+		widget.NewLabel("Editor Log"),
 		consoleScroll,
+		widget.NewSeparator(),
+		widget.NewLabel("Game Log"),
+		gameConsoleScroll,
 	)
 
 	left := container.NewMax(hierarchyWidget)
@@ -155,6 +170,11 @@ func Run(world *ecs.World) {
 	go func() {
 		for msg := range consoleChan {
 			appendToConsole(msg)
+		}
+	}()
+	go func() {
+		for msg := range gameConsoleChan {
+			appendToGameConsole(msg)
 		}
 	}()
 
@@ -362,6 +382,9 @@ func editorReadLoop(conn net.Conn, world *ecs.World) {
 		}
 
 		switch msg.Type {
+		case "GameLog":
+			gameConsoleChan <- string(msg.Data)
+
 		case "SetTransformGizmo":
 			var m editorlink.MsgSetTransform
 			if err := json.Unmarshal(msg.Data, &m); err != nil {
@@ -967,7 +990,8 @@ func appendToConsole(text string) {
 		prefixSeg := &widget.TextSegment{
 			Text: prefix,
 			Style: widget.RichTextStyle{
-				ColorName: theme.ColorNameDisabled, // subtle gray
+				ColorName: theme.ColorNameDisabled,
+				SizeName:  theme.SizeNameCaptionText, // smaller font
 			},
 		}
 
@@ -976,6 +1000,7 @@ func appendToConsole(text string) {
 			Text: text,
 			Style: widget.RichTextStyle{
 				ColorName: colorName,
+				SizeName:  theme.SizeNameCaptionText, // smaller font
 			},
 		}
 
@@ -988,5 +1013,29 @@ func appendToConsole(text string) {
 			consoleScroll.ScrollToBottom()
 		}
 
+	})
+}
+
+func appendToGameConsole(text string) {
+	fyne.DoAndWait(func() {
+		rt := state.Global.GameConsole
+		if rt == nil {
+			return
+		}
+
+		seg := &widget.TextSegment{
+			Text: text,
+			Style: widget.RichTextStyle{
+				ColorName: theme.ColorNameForeground,
+				SizeName:  theme.SizeNameCaptionText, // smaller font
+			},
+		}
+
+		rt.Segments = append(rt.Segments, seg)
+		rt.Refresh()
+
+		if gameConsoleScroll != nil {
+			gameConsoleScroll.ScrollToBottom()
+		}
 	})
 }
