@@ -36,7 +36,7 @@ type EditorState struct {
 	ParentMap           map[int64]int64
 	ChildrenMap         map[int64][]int64
 	RenameIndex         int
-	Console             *widget.Entry
+	Console             *widget.RichText
 
 	// in EditorState
 

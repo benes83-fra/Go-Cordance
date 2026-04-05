@@ -92,17 +92,26 @@ func Run(world *ecs.World) {
 	})
 
 	// viewport placeholder
-	console := widget.NewMultiLineEntry()
-	console.Wrapping = fyne.TextWrapWord
-	console.Disable() // read‑only
-	console.Wrapping = fyne.TextWrapOff
-	console.MultiLine = true
+	// console := widget.NewMultiLineEntry()
+	// console.Wrapping = fyne.TextWrapWord
+	// console.Disable() // read‑only
+	// console.Wrapping = fyne.TextWrapOff
+	// console.MultiLine = true
+
+	// consoleScroll = container.NewVScroll(console)
+
+	// consoleScroll.SetMinSize(fyne.NewSize(0, 200))
+
+	// st.Console = console
+	// viewport placeholder
+	console := widget.NewRichText()
+	console.Wrapping = fyne.TextWrapWord // keep wrapping ON to avoid infinite width
 
 	consoleScroll = container.NewVScroll(console)
-
 	consoleScroll.SetMinSize(fyne.NewSize(0, 200))
 
 	st.Console = console
+
 	// toolbar / settings row
 	showGizmosCheck := widget.NewCheck("Show Light Gizmos", func(v bool) {
 		st.ShowLightGizmos = v
@@ -925,25 +934,37 @@ func startTransformApplier(world *ecs.World) {
 }
 func appendToConsole(text string) {
 	fyne.DoAndWait(func() {
-		c := state.Global.Console
-		if c == nil {
+		rt := state.Global.Console
+		if rt == nil {
 			return
 		}
 
-		newText := c.Text + text
-		c.SetText(newText)
+		// Decide color based on content (case-insensitive)
+		lower := strings.ToLower(text)
+		style := widget.RichTextStyle{}
 
-		// Move cursor to end to force internal scroll
-		lines := strings.Split(newText, "\n")
-		if len(lines) == 0 {
-			c.CursorRow = 0
-			c.CursorColumn = 0
-		} else {
-			lastRow := len(lines) - 1
-			c.CursorRow = lastRow
-			c.CursorColumn = len(lines[lastRow])
+		switch {
+		case strings.Contains(lower, "error"):
+			style.ColorName = theme.ColorNameError
+		case strings.Contains(lower, "warn"):
+			style.ColorName = theme.ColorNameWarning
+		default:
+			style.ColorName = theme.ColorNameForeground
 		}
 
-		c.Refresh()
+		// Concrete segment implementing widget.RichTextSegment
+		seg := &widget.TextSegment{
+			Text:  text,
+			Style: style,
+		}
+
+		// Append segment
+		rt.Segments = append(rt.Segments, seg)
+		rt.Refresh()
+
+		// Auto-scroll
+		if consoleScroll != nil {
+			consoleScroll.ScrollToBottom()
+		}
 	})
 }
