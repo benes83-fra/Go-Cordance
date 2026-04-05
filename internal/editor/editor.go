@@ -108,9 +108,13 @@ func Run(world *ecs.World) {
 	console.Wrapping = fyne.TextWrapWord // keep wrapping ON to avoid infinite width
 
 	consoleScroll = container.NewVScroll(console)
-	consoleScroll.SetMinSize(fyne.NewSize(0, 200))
-
+	consoleScroll.SetMinSize(fyne.NewSize(0, 250))
+	//console.Scroll = container.ScrollVerticalOnly
 	st.Console = console
+	clearBtn := widget.NewButton("Clear Console", func() {
+		state.Global.Console.Segments = nil
+		state.Global.Console.Refresh()
+	})
 
 	// toolbar / settings row
 	showGizmosCheck := widget.NewCheck("Show Light Gizmos", func(v bool) {
@@ -128,8 +132,7 @@ func Run(world *ecs.World) {
 	showGizmosCheck.SetChecked(st.ShowLightGizmos)
 
 	viewportColumn := container.NewVBox(
-		container.NewHBox(showGizmosCheck, layout.NewSpacer()),
-
+		container.NewHBox(showGizmosCheck, clearBtn, layout.NewSpacer()),
 		consoleScroll,
 	)
 
@@ -939,32 +942,51 @@ func appendToConsole(text string) {
 			return
 		}
 
-		// Decide color based on content (case-insensitive)
+		// --- Determine log level ---
 		lower := strings.ToLower(text)
-		style := widget.RichTextStyle{}
+		var level string
+		var colorName fyne.ThemeColorName
 
 		switch {
 		case strings.Contains(lower, "error"):
-			style.ColorName = theme.ColorNameError
+			level = "ERROR"
+			colorName = theme.ColorNameError
 		case strings.Contains(lower, "warn"):
-			style.ColorName = theme.ColorNameWarning
+			level = "WARN"
+			colorName = theme.ColorNameWarning
 		default:
-			style.ColorName = theme.ColorNameForeground
+			level = "INFO"
+			colorName = theme.ColorNameForeground
 		}
 
-		// Concrete segment implementing widget.RichTextSegment
-		seg := &widget.TextSegment{
-			Text:  text,
-			Style: style,
+		// --- Timestamp ---
+		timestamp := time.Now().Format("15:04:05")
+		prefix := fmt.Sprintf("[%s] [%s] ", timestamp, level)
+
+		// --- Prefix segment (dimmed) ---
+		prefixSeg := &widget.TextSegment{
+			Text: prefix,
+			Style: widget.RichTextStyle{
+				ColorName: theme.ColorNameDisabled, // subtle gray
+			},
 		}
 
-		// Append segment
-		rt.Segments = append(rt.Segments, seg)
+		// --- Message segment (colored) ---
+		msgSeg := &widget.TextSegment{
+			Text: text,
+			Style: widget.RichTextStyle{
+				ColorName: colorName,
+			},
+		}
+
+		// Append both
+		rt.Segments = append(rt.Segments, prefixSeg, msgSeg)
+
 		rt.Refresh()
 
-		// Auto-scroll
 		if consoleScroll != nil {
 			consoleScroll.ScrollToBottom()
 		}
+
 	})
 }
