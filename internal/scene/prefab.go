@@ -7,94 +7,49 @@ import (
 	"go-engine/Go-Cordance/internal/ecs"
 )
 
+// -----------------------------------------------------------------------------
+// Modern prefab format: reuse full scene serialization
+// -----------------------------------------------------------------------------
+
 type Prefab struct {
-	Root SerializedEntity   `json:"root"`
-	All  []SerializedEntity `json:"all"`
+	RootID int64           `json:"root"`
+	Scene  SerializedScene `json:"scene"`
 }
 
-func (s *Scene) SavePrefab(path string, root *ecs.Entity) error {
-	// First: collect the entire subtree
-	entities := collectSubtree(root)
+// -----------------------------------------------------------------------------
+// SavePrefab: serialize subtree using the same logic as full scenes
+// -----------------------------------------------------------------------------
 
-	// Convert to serialized form
-	serialized := Prefab{
-		Root: serializeEntity(root),
-		All:  make([]SerializedEntity, 0, len(entities)),
+func (s *Scene) SavePrefab(path string, root *ecs.Entity) error {
+	// Collect subtree
+	ents := collectSubtree(root)
+
+	// Build SerializedScene
+	ser := SerializedScene{
+		Entities: make([]SerializedEntity, 0, len(ents)),
 	}
 
-	for _, e := range entities {
-		serialized.All = append(serialized.All, serializeEntity(e))
+	for _, e := range ents {
+		ser.Entities = append(ser.Entities, serializeEntity(e))
+	}
+
+	// Wrap into Prefab
+	prefab := Prefab{
+		RootID: root.ID,
+		Scene:  ser,
 	}
 
 	// Write JSON
-	data, err := json.MarshalIndent(serialized, "", "  ")
+	data, err := json.MarshalIndent(prefab, "", "  ")
 	if err != nil {
 		return err
 	}
-
 	return os.WriteFile(path, data, 0644)
 }
 
-func collectSubtree(root *ecs.Entity) []*ecs.Entity {
-	var out []*ecs.Entity
-
-	var walk func(e *ecs.Entity)
-	walk = func(e *ecs.Entity) {
-		out = append(out, e)
-
-		if ch := e.GetComponent((*ecs.Children)(nil)); ch != nil {
-			for _, c := range ch.(*ecs.Children).Entities {
-				walk(c)
-			}
-		}
-	}
-
-	walk(root)
-	return out
-}
-func serializeEntity(e *ecs.Entity) SerializedEntity {
-	se := SerializedEntity{
-		ID:         e.ID,
-		Components: make(map[string]interface{}),
-	}
-
-	// Parent
-	if p := e.GetComponent((*ecs.Parent)(nil)); p != nil {
-		se.ParentID = p.(*ecs.Parent).Entity.ID
-	}
-
-	// Transform
-	if t := e.GetTransform(); t != nil {
-		se.Components["Transform"] = serializeTransform(t)
-	}
-
-	// Mesh
-	if m := e.GetComponent((*ecs.Mesh)(nil)); m != nil {
-		se.Components["Mesh"] = serializeMesh(m.(*ecs.Mesh))
-	}
-
-	// Material
-	if m := e.GetComponent((*ecs.Material)(nil)); m != nil {
-		se.Components["Material"] = serializeMaterial(m.(*ecs.Material))
-	}
-
-	// DiffuseTexture
-	if dt := e.GetComponent((*ecs.DiffuseTexture)(nil)); dt != nil {
-		se.Components["DiffuseTexture"] = serializeDiffuseTexture(dt.(*ecs.DiffuseTexture))
-	}
-	if n := e.GetComponent((*ecs.Name)(nil)); n != nil {
-		se.Components["Name"] = map[string]interface{}{
-			"value": n.(*ecs.Name).Value,
-		}
-	}
-
-	// NormalMap
-	if nm := e.GetComponent((*ecs.NormalMap)(nil)); nm != nil {
-		se.Components["NormalMap"] = serializeNormalMap(nm.(*ecs.NormalMap))
-	}
-
-	return se
-}
+// -----------------------------------------------------------------------------
+// InstantiatePrefab: reuse scene deserialization logic
+// -----------------------------------------------------------------------------
 
 func (s *Scene) InstantiatePrefab(path string) (*ecs.Entity, []*ecs.Entity, error) {
 	data, err := os.ReadFile(path)
@@ -107,22 +62,21 @@ func (s *Scene) InstantiatePrefab(path string) (*ecs.Entity, []*ecs.Entity, erro
 		return nil, nil, err
 	}
 
-	// Map old IDs → new entities
+	// 1. Create empty entities (new IDs)
 	idMap := make(map[int64]*ecs.Entity)
-
-	// First pass: create entities
-	for _, se := range prefab.All {
+	for _, se := range prefab.Scene.Entities {
 		e := ecs.NewEntity(s.nextID)
 		s.AddExisting(e)
 		idMap[se.ID] = e
 	}
 
-	// Second pass: add components
-	for _, se := range prefab.All {
+	// 2. Add components
+	for _, se := range prefab.Scene.Entities {
 		e := idMap[se.ID]
 
 		for name, raw := range se.Components {
 			switch name {
+
 			case "Transform":
 				var t struct {
 					Position [3]float32
@@ -161,6 +115,12 @@ func (s *Scene) InstantiatePrefab(path string) (*ecs.Entity, []*ecs.Entity, erro
 				mat.Shininess = m.Shininess
 				e.AddComponent(mat)
 
+			case "Name":
+				var n struct{ Value string }
+				b, _ := json.Marshal(raw)
+				json.Unmarshal(b, &n)
+				e.AddComponent(ecs.NewName(n.Value))
+
 			case "DiffuseTexture":
 				var t struct{ ID uint32 }
 				b, _ := json.Marshal(raw)
@@ -176,8 +136,8 @@ func (s *Scene) InstantiatePrefab(path string) (*ecs.Entity, []*ecs.Entity, erro
 		}
 	}
 
-	// Third pass: restore hierarchy
-	for _, se := range prefab.All {
+	// 3. Restore hierarchy
+	for _, se := range prefab.Scene.Entities {
 		if se.ParentID != 0 {
 			child := idMap[se.ID]
 			parent := idMap[se.ParentID]
@@ -194,9 +154,29 @@ func (s *Scene) InstantiatePrefab(path string) (*ecs.Entity, []*ecs.Entity, erro
 		}
 	}
 
-	// Return the new root entity
-	root := idMap[prefab.Root.ID]
+	// Return new root
+	root := idMap[prefab.RootID]
 	return root, idMapToSlice(idMap), nil
+}
+
+// -----------------------------------------------------------------------------
+// Helpers
+// -----------------------------------------------------------------------------
+
+func collectSubtree(root *ecs.Entity) []*ecs.Entity {
+	var out []*ecs.Entity
+
+	var walk func(e *ecs.Entity)
+	walk = func(e *ecs.Entity) {
+		out = append(out, e)
+		if ch := e.GetComponent((*ecs.Children)(nil)); ch != nil {
+			for _, c := range ch.(*ecs.Children).Entities {
+				walk(c)
+			}
+		}
+	}
+	walk(root)
+	return out
 }
 
 func idMapToSlice(m map[int64]*ecs.Entity) []*ecs.Entity {

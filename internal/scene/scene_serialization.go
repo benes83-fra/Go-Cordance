@@ -542,3 +542,116 @@ func Load(path string) (*Scene, error) {
 
 	return scene, nil
 }
+
+func serializeEntity(e *ecs.Entity) SerializedEntity {
+	se := SerializedEntity{
+		ID:         e.ID,
+		Components: make(map[string]interface{}),
+	}
+
+	// Parent
+	if p := e.GetComponent((*ecs.Parent)(nil)); p != nil {
+		se.ParentID = p.(*ecs.Parent).Entity.ID
+	}
+
+	// Transform
+	if t := e.GetTransform(); t != nil {
+		se.Components["Transform"] = serializeTransform(t)
+	}
+
+	// Mesh
+	if m := e.GetComponent((*ecs.Mesh)(nil)); m != nil {
+		se.Components["Mesh"] = serializeMesh(m.(*ecs.Mesh))
+	}
+
+	// MultiMesh
+	if mm := e.GetComponent((*ecs.MultiMesh)(nil)); mm != nil {
+		se.Components["MultiMesh"] = map[string]any{
+			"meshes": mm.(*ecs.MultiMesh).Meshes,
+		}
+	}
+
+	// Material
+	if m := e.GetComponent((*ecs.Material)(nil)); m != nil {
+		se.Components["Material"] = serializeMaterial(m.(*ecs.Material))
+	}
+
+	// RigidBody
+	if rb := e.GetComponent((*ecs.RigidBody)(nil)); rb != nil {
+		se.Components["RigidBody"] = map[string]any{
+			"Mass":  rb.(*ecs.RigidBody).Mass,
+			"Vel":   rb.(*ecs.RigidBody).Vel,
+			"Force": rb.(*ecs.RigidBody).Force,
+		}
+	}
+
+	// ColliderSphere
+	if c := e.GetComponent((*ecs.ColliderSphere)(nil)); c != nil {
+		cs := c.(*ecs.ColliderSphere)
+		se.Components["ColliderSphere"] = map[string]any{
+			"radius":      cs.Radius,
+			"layer":       cs.Layer,
+			"mask":        cs.Mask,
+			"restitution": cs.Restitution,
+			"friction":    cs.Friction,
+		}
+	}
+
+	// ColliderAABB
+	if c := e.GetComponent((*ecs.ColliderAABB)(nil)); c != nil {
+		ca := c.(*ecs.ColliderAABB)
+		se.Components["ColliderAABB"] = map[string]any{
+			"halfExtents": ca.HalfExtents,
+			"layer":       ca.Layer,
+			"mask":        ca.Mask,
+			"restitution": ca.Restitution,
+			"friction":    ca.Friction,
+		}
+	}
+
+	// ColliderPlane
+	if c := e.GetComponent((*ecs.ColliderPlane)(nil)); c != nil {
+		cp := c.(*ecs.ColliderPlane)
+		se.Components["ColliderPlane"] = map[string]any{
+			"y":           cp.Y,
+			"layer":       cp.Layer,
+			"mask":        cp.Mask,
+			"restitution": cp.Restitution,
+			"friction":    cp.Friction,
+		}
+	}
+
+	// DiffuseTexture
+	if dt := e.GetComponent((*ecs.DiffuseTexture)(nil)); dt != nil {
+		se.Components["DiffuseTexture"] = serializeDiffuseTexture(dt.(*ecs.DiffuseTexture))
+	}
+
+	// NormalMap
+	if nm := e.GetComponent((*ecs.NormalMap)(nil)); nm != nil {
+		se.Components["NormalMap"] = serializeNormalMap(nm.(*ecs.NormalMap))
+	}
+
+	// Name
+	if n := e.GetComponent((*ecs.Name)(nil)); n != nil {
+		se.Components["Name"] = map[string]interface{}{
+			"value": n.(*ecs.Name).Value,
+		}
+	}
+
+	// Camera
+	if c := e.GetComponent((*ecs.Camera)(nil)); c != nil {
+		cam := c.(*ecs.Camera)
+		se.Components["Camera"] = map[string]interface{}{
+			"position": cam.Position,
+			"target":   cam.Target,
+			"up":       cam.Up,
+			"fov":      cam.Fov,
+			"near":     cam.Near,
+			"far":      cam.Far,
+			"aspect":   cam.Aspect,
+			"active":   cam.Active,
+		}
+	}
+
+	return se
+}
