@@ -333,6 +333,35 @@ func handleConn(conn net.Conn, sc *scene.Scene, camSys *ecs.CameraSystem) {
 					}
 				}
 			}
+		case "SavePrefab":
+			var m MsgSavePrefab
+			json.Unmarshal(msg.Data, &m)
+
+			ent := sc.World().FindByID(m.EntityID)
+			if ent == nil {
+				log.Printf("SavePrefab: entity %d not found", m.EntityID)
+				continue
+			}
+
+			if err := sc.SavePrefab(m.Path, ent); err != nil {
+				log.Printf("SavePrefab failed: %v", err)
+			}
+
+		case "InstantiatePrefab":
+			var m MsgInstantiatePrefab
+			json.Unmarshal(msg.Data, &m)
+
+			root, _, err := sc.InstantiatePrefab(m.Path)
+			if err != nil {
+				log.Printf("InstantiatePrefab failed: %v", err)
+				continue
+			}
+
+			// Select the new root
+			sc.Selected = root
+			sc.SelectedEntity = uint64(root.ID)
+
+			SendFullSnapshot(sc)
 
 		default:
 			log.Printf("editorlink: unknown msg type %q", msg.Type)

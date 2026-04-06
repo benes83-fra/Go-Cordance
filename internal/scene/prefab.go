@@ -3,6 +3,7 @@ package scene
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 
 	"go-engine/Go-Cordance/internal/ecs"
 )
@@ -22,6 +23,10 @@ type Prefab struct {
 
 func (s *Scene) SavePrefab(path string, root *ecs.Entity) error {
 	// Collect subtree
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
 	ents := collectSubtree(root)
 
 	// Build SerializedScene

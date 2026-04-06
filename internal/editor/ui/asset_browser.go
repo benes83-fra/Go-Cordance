@@ -438,6 +438,18 @@ func NewAssetBrowserPanel(st *state.EditorState, win fyne.Window) (fyne.CanvasOb
 
 		log.Printf("Requested global shader switch to %s", name)
 	}
+	prefabList := widget.NewList(
+		func() int { return len(state.Global.Assets.Prefabs) },
+		func() fyne.CanvasObject { return widget.NewLabel("") },
+		func(i int, o fyne.CanvasObject) {
+			o.(*widget.Label).SetText(state.Global.Assets.Prefabs[i].Path)
+		},
+	)
+
+	prefabList.OnSelected = func(id widget.ListItemID) {
+		path := state.Global.Assets.Prefabs[id].Path
+		editorlink.WriteInstantiatePrefab(editorlink.EditorConn, path)
+	}
 
 	// --- Tabs ---
 	tabs := container.NewAppTabs(
@@ -445,6 +457,7 @@ func NewAssetBrowserPanel(st *state.EditorState, win fyne.Window) (fyne.CanvasOb
 		container.NewTabItem("Meshes", meshList),
 		container.NewTabItem("Materials", matList),
 		container.NewTabItem("Shaders", shaderList),
+		container.NewTabItem("Prefabs", prefabList),
 	)
 
 	tabs.SetTabLocation(container.TabLocationTop)
@@ -658,4 +671,13 @@ func openFileDialog(win fyne.Window, t importer.AssetType) {
 	}, win)
 
 	dialog.Show()
+}
+
+func scanPrefabs() []state.PrefabView {
+	files, _ := filepath.Glob("prefabs/*.json")
+	out := make([]state.PrefabView, len(files))
+	for i, f := range files {
+		out[i] = state.PrefabView{Path: f}
+	}
+	return out
 }

@@ -1,0 +1,92 @@
+{
+  "root": 9,
+  "scene": {
+    "entities": [
+      {
+        "id": 9,
+        "components": {
+          "Material": {
+            "ambient": 0.4,
+            "bRDFLUTTex": 0,
+            "baseColor": [
+              1,
+              1,
+              1,
+              1
+            ],
+            "clearcoatFactor": 0,
+            "clearcoatNormalTex": 0,
+            "clearcoatRoughTex": 0,
+            "clearcoatRoughness": 0,
+            "clearcoatTexture": 0,
+            "diffuse": 0.6,
+            "diffuseTexturePath": "",
+            "dirty": false,
+            "irradianceTex": 0,
+            "metallic": 0,
+            "metallicRoughnessAsset": 0,
+            "metallicRoughnessID": 0,
+            "metallicRoughnessTexturePath": "",
+            "normalAsset": 0,
+            "normalID": 0,
+            "normalScale": 0,
+            "normalTexturePath": "",
+            "occlusionAsset": 0,
+            "occlusionID": 0,
+            "occlusionTexturePath": "",
+            "prefilteredEnvTex": 0,
+            "roughness": 0,
+            "shader": null,
+            "shaderName": "",
+            "sheenColor": [
+              0,
+              0,
+              0
+            ],
+            "sheenRoughness": 0,
+            "shininess": 2,
+            "specular": 0.02,
+            "specularFactor": 0,
+            "texCoordMap": null,
+            "textureAsset": 18,
+            "textureID": 5,
+            "transMissionTex": 0,
+            "transmissionFactor": 0,
+            "type": 0,
+            "useClearcoat": false,
+            "useIBL": false,
+            "useNormal": false,
+            "useTexture": true,
+            "useTransmission": false,
+            "uvOffset": null,
+            "uvScale": null
+          },
+          "Mesh": {
+            "id": "teapot"
+          },
+          "Name": {
+            "value": "Tea Pot"
+          },
+          "Transform": {
+            "position": [
+              0,
+              2,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "scale": [
+              1,
+              1,
+              1
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

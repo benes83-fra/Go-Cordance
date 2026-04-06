@@ -173,6 +173,14 @@ type MsgSaveScene struct {
 type MsgLoadScene struct {
 	Path string `json:"path"`
 }
+type MsgSavePrefab struct {
+	EntityID int64  `json:"entity"`
+	Path     string `json:"path"`
+}
+
+type MsgInstantiatePrefab struct {
+	Path string `json:"path"`
+}
 
 func readMsg(conn net.Conn) (Msg, error) {
 	var m Msg
@@ -404,4 +412,13 @@ func WriteLoadScene(conn net.Conn, path string) error {
 
 func WriteGameLog(conn net.Conn, text string) error {
 	return writeMsg(conn, "GameLog", MsgGameLog{Text: text})
+}
+func WriteSavePrefab(conn net.Conn, id int64, path string) error {
+	msg := MsgSavePrefab{EntityID: id, Path: path}
+	return writeMsg(conn, "SavePrefab", msg)
+}
+
+func WriteInstantiatePrefab(conn net.Conn, path string) error {
+	msg := MsgInstantiatePrefab{Path: path}
+	return writeMsg(conn, "InstantiatePrefab", msg)
 }

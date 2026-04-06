@@ -175,6 +175,7 @@ func NewHierarchyPanel(st *state.EditorState, win fyne.Window, onSelect func(int
 				}
 
 				gizmo.SetGlobalSelectionIDs(st.Selection.IDs)
+
 			}
 
 			btn.OnTapped = func() {
@@ -444,7 +445,13 @@ func showHierarchyContextMenu(
 			go editorlink.WriteDeleteEntity(editorlink.EditorConn, row.ID, row.Name)
 		}
 	})
-
-	menu := fyne.NewMenu("", rename, duplicate, delete)
+	savePrefab := fyne.NewMenuItem("Save as Prefab…", func() {
+		if editorlink.EditorConn != nil {
+			name := row.Name
+			path := filepath.Join("prefabs", name+".json")
+			go editorlink.WriteSavePrefab(editorlink.EditorConn, row.ID, path)
+		}
+	})
+	menu := fyne.NewMenu("", rename, duplicate, delete, savePrefab)
 	widget.ShowPopUpMenuAtPosition(menu, fyne.CurrentApp().Driver().CanvasForObject(item), item.Position())
 }

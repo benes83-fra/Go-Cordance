@@ -46,6 +46,7 @@ type EditorState struct {
 		Meshes    []AssetView
 		Materials []AssetView
 		Shaders   []AssetView
+		Prefabs   []PrefabView
 	}
 }
 
@@ -84,3 +85,7 @@ const (
 )
 
 var Global = New()
+
+type PrefabView struct {
+	Path string
+}
