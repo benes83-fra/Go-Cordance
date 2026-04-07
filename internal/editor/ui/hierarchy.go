@@ -219,7 +219,7 @@ func NewHierarchyPanel(st *state.EditorState, win fyne.Window, onSelect func(int
 			}
 			// Right-click → context menu
 			item.OnTappedSecondary = func(ev *fyne.PointEvent) {
-				showHierarchyContextMenu(item, row, st, list, onSelect)
+				showHierarchyContextMenu(item, row, st, list, win, onSelect)
 			}
 
 		},
@@ -419,6 +419,7 @@ func showHierarchyContextMenu(
 	row HierarchyRow,
 	st *state.EditorState,
 	list *widget.List,
+	win fyne.Window,
 	onSelect func(int),
 ) {
 	rename := fyne.NewMenuItem("Rename", func() {
@@ -446,12 +447,26 @@ func showHierarchyContextMenu(
 		}
 	})
 	savePrefab := fyne.NewMenuItem("Save as Prefab…", func() {
-		if editorlink.EditorConn != nil {
-			name := row.Name
-			path := filepath.Join("prefabs", name+".json")
-			go editorlink.WriteSavePrefab(editorlink.EditorConn, row.ID, path)
-		}
+		dialog.ShowFileSave(func(uc fyne.URIWriteCloser, err error) {
+			if uc == nil || err != nil {
+				return
+			}
+
+			path := uc.URI().Path()
+			if !strings.HasSuffix(strings.ToLower(path), ".json") {
+				path += ".json"
+			}
+
+			if editorlink.EditorConn != nil {
+				go editorlink.WriteSavePrefab(editorlink.EditorConn, row.ID, path)
+			}
+
+			uc.Close()
+		}, win)
+
 	})
+
 	menu := fyne.NewMenu("", rename, duplicate, delete, savePrefab)
 	widget.ShowPopUpMenuAtPosition(menu, fyne.CurrentApp().Driver().CanvasForObject(item), item.Position())
+
 }
