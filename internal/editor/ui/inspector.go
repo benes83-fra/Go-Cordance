@@ -259,6 +259,24 @@ func NewInspectorPanel() (
 
 			// Add button to inspector
 			right.Add(savePrefabBtn)
+			// --- Instantiate Prefab… button ---
+			instantiatePrefabBtn := widget.NewButton("Instantiate Prefab…", func() {
+				dialog.ShowFileOpen(func(ur fyne.URIReadCloser, err error) {
+					if ur == nil || err != nil {
+						return
+					}
+
+					path := ur.URI().Path()
+
+					if editorlink.EditorConn != nil {
+						go editorlink.WriteInstantiatePrefab(editorlink.EditorConn, path)
+					}
+
+					ur.Close()
+				}, fyne.CurrentApp().Driver().AllWindows()[0])
+			})
+
+			right.Add(instantiatePrefabBtn)
 
 		}
 		leftScroll := container.NewScroll(left)
