@@ -10,6 +10,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -224,6 +225,41 @@ func NewInspectorPanel() (
 			})
 
 			right.Add(addBtn)
+			// --- Save Prefab As… button ---
+			savePrefabBtn := widget.NewButton("Save Prefab As…", func() {
+				ent := st.Entities[st.SelectedIndex]
+
+				// Suggest default filename
+				defaultName := ent.Name
+				if defaultName == "" {
+					defaultName = fmt.Sprintf("Entity_%d", ent.ID)
+				}
+				defaultName += ".json"
+
+				// Open save dialog
+				dialog.ShowFileSave(func(uc fyne.URIWriteCloser, err error) {
+					if uc == nil || err != nil {
+						return
+					}
+
+					path := uc.URI().Path()
+
+					// Ensure .json extension
+					if !strings.HasSuffix(strings.ToLower(path), ".json") {
+						path += ".json"
+					}
+
+					if editorlink.EditorConn != nil {
+						go editorlink.WriteSavePrefab(editorlink.EditorConn, ent.ID, path)
+					}
+
+					uc.Close()
+				}, fyne.CurrentApp().Driver().AllWindows()[0])
+			})
+
+			// Add button to inspector
+			right.Add(savePrefabBtn)
+
 		}
 		leftScroll := container.NewScroll(left)
 		rightScroll := container.NewScroll(right)
