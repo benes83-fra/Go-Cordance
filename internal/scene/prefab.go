@@ -5,7 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"go-engine/Go-Cordance/internal/assets"
 	"go-engine/Go-Cordance/internal/ecs"
+	"go-engine/Go-Cordance/internal/engine"
 )
 
 // -----------------------------------------------------------------------------
@@ -110,14 +112,114 @@ func (s *Scene) InstantiatePrefab(path string) (*ecs.Entity, []*ecs.Entity, erro
 					Diffuse   float32
 					Specular  float32
 					Shininess float32
+					Metallic  float32
+					Roughness float32
+
+					Type int
+
+					UseTexture bool
+					TextureID  uint32
+					UseNormal  bool
+					NormalID   uint32
+
+					TextureAsset assets.AssetID
+					NormalAsset  assets.AssetID
+					ShaderName   string
+					Shader       *engine.ShaderProgram
+
+					DiffuseTexturePath           string
+					NormalTexturePath            string
+					OcclusionTexturePath         string
+					MetallicRoughnessTexturePath string
+
+					TexCoordMap map[string]int
+					UVScale     map[string][2]float32
+					UVOffset    map[string][2]float32
+
+					NormalScale    float32
+					SheenColor     [3]float32
+					SheenRoughness float32
+					SpecularFactor float32
+					OcclusionAsset assets.AssetID
+					OcclusionID    uint32
+
+					MetallicRoughnessAsset assets.AssetID
+					MetallicRoughnessID    uint32
+					UseIBL                 bool
+					IrradianceTex          uint32
+					PrefilteredEnvTex      uint32
+					BRDFLUTTex             uint32
+					ClearcoatFactor        float32
+					ClearcoatRoughness     float32
+					ClearcoatTexture       uint32
+					ClearcoatRoughTex      uint32
+					ClearcoatNormalTex     uint32
+					UseClearcoat           bool
+					TransmissionFactor     float32
+					UseTransmission        bool
+					TransmissionTex        uint32
+
+					Dirty bool
 				}
+
 				b, _ := json.Marshal(raw)
 				json.Unmarshal(b, &m)
+
 				mat := ecs.NewMaterial(m.BaseColor)
 				mat.Ambient = m.Ambient
 				mat.Diffuse = m.Diffuse
 				mat.Specular = m.Specular
 				mat.Shininess = m.Shininess
+				mat.Metallic = m.Metallic
+				mat.Roughness = m.Roughness
+				mat.Type = m.Type
+
+				mat.UseTexture = m.UseTexture
+				mat.TextureID = m.TextureID
+				mat.UseNormal = m.UseNormal
+				mat.NormalID = m.NormalID
+
+				mat.TextureAsset = m.TextureAsset
+				mat.NormalAsset = m.NormalAsset
+				mat.ShaderName = m.ShaderName
+				mat.Shader = m.Shader
+
+				mat.DiffuseTexturePath = m.DiffuseTexturePath
+				mat.NormalTexturePath = m.NormalTexturePath
+				mat.OcclusionTexturePath = m.OcclusionTexturePath
+				mat.MetallicRoughnessTexturePath = m.MetallicRoughnessTexturePath
+
+				mat.TexCoordMap = m.TexCoordMap
+				mat.UVScale = m.UVScale
+				mat.UVOffset = m.UVOffset
+
+				mat.NormalScale = m.NormalScale
+				mat.SheenColor = m.SheenColor
+				mat.SheenRoughness = m.SheenRoughness
+				mat.SpecularFactor = m.SpecularFactor
+				mat.OcclusionAsset = m.OcclusionAsset
+				mat.OcclusionID = m.OcclusionID
+
+				mat.MetallicRoughnessAsset = m.MetallicRoughnessAsset
+				mat.MetallicRoughnessID = m.MetallicRoughnessID
+				mat.UseIBL = m.UseIBL
+				mat.IrradianceTex = m.IrradianceTex
+				mat.PrefilteredEnvTex = m.PrefilteredEnvTex
+				mat.BRDFLUTTex = m.BRDFLUTTex
+
+				mat.ClearcoatFactor = m.ClearcoatFactor
+				mat.ClearcoatRoughness = m.ClearcoatRoughness
+				mat.ClearcoatTexture = m.ClearcoatTexture
+				mat.ClearcoatRoughTex = m.ClearcoatRoughTex
+				mat.ClearcoatNormalTex = m.ClearcoatNormalTex
+				mat.UseClearcoat = m.UseClearcoat
+
+				mat.TransmissionFactor = m.TransmissionFactor
+				mat.UseTransmission = m.UseTransmission
+				mat.TransmissionTex = m.TransmissionTex
+
+				mat.Dirty = m.Dirty
+
 				e.AddComponent(mat)
 
 			case "Name":
