@@ -11,7 +11,7 @@ import (
 	loader "go-engine/Go-Cordance/cmd/game/loader"
 	"go-engine/Go-Cordance/internal/assets"
 	"go-engine/Go-Cordance/internal/ecs"
-	"go-engine/Go-Cordance/internal/ecs/animation"
+
 	"go-engine/Go-Cordance/internal/ecs/gizmo"
 	"go-engine/Go-Cordance/internal/ecs/gizmo/bridge"
 	"go-engine/Go-Cordance/internal/editor/state"
@@ -169,7 +169,7 @@ func main() {
 	sc, named := scene.BootstrapScene()
 	//world := sc.World()
 
-	animSys := animation.NewAnimationSystem()
+	animSys := ecs.NewAnimationSystem()
 	initUndo()
 	gizmoSys.SetWorld(sc.World())
 	gizmo.RegisterGlobalGizmo(gizmoSys)

@@ -1,6 +1,4 @@
-package animation
-
-import "go-engine/Go-Cordance/internal/ecs"
+package ecs
 
 type AnimationSystem struct{}
 
@@ -8,13 +6,13 @@ func NewAnimationSystem() *AnimationSystem {
 	return &AnimationSystem{}
 }
 
-func (sys *AnimationSystem) Update(dt float32, ents []*ecs.Entity) {
+func (sys *AnimationSystem) Update(dt float32, ents []*Entity) {
 	for _, ent := range ents {
-		ap := ent.GetComponent(&ecs.AnimationPlayer{})
+		ap := ent.GetComponent(&AnimationPlayer{})
 		if ap == nil {
 			continue
 		}
-		player := ap.(*ecs.AnimationPlayer)
+		player := ap.(*AnimationPlayer)
 
 		if !player.Playing || player.Current == "" {
 			continue
@@ -45,8 +43,8 @@ func (sys *AnimationSystem) Update(dt float32, ents []*ecs.Entity) {
 		scl := lerpVec3(kf1.Scale, kf2.Scale, t)
 
 		// Apply to Transform
-		if tr := ent.GetComponent(&ecs.Transform{}); tr != nil {
-			transform := tr.(*ecs.Transform)
+		if tr := ent.GetComponent(&Transform{}); tr != nil {
+			transform := tr.(*Transform)
 			transform.Position = pos
 			transform.Rotation = rot
 			transform.Scale = scl
@@ -54,7 +52,7 @@ func (sys *AnimationSystem) Update(dt float32, ents []*ecs.Entity) {
 	}
 }
 
-func findKeyframePair(clip *ecs.AnimationClip, time float32) (*ecs.TransformKeyframe, *ecs.TransformKeyframe) {
+func findKeyframePair(clip *AnimationClip, time float32) (*TransformKeyframe, *TransformKeyframe) {
 	for i := 0; i < len(clip.Keyframes)-1; i++ {
 		k1 := &clip.Keyframes[i]
 		k2 := &clip.Keyframes[i+1]

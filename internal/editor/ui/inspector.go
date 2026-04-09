@@ -518,6 +518,51 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 		switch v := value.(type) {
 
 		case float32:
+			// --- AnimationPlayer: Speed ---
+			if name == "Speed" {
+				e := widget.NewEntry()
+				e.SetText(fmt.Sprintf("%.3f", v))
+				e.OnSubmitted = func(s string) {
+					if state.Global.IsRebuilding {
+						return
+					}
+					c.SetEditorField("Speed", parse32(s))
+					sendComponentUpdate(entityID, c)
+				}
+				box.Add(container.NewHBox(widget.NewLabel("Speed"), e))
+				continue
+			}
+
+			// --- AnimationPlayer: Time slider ---
+			if name == "Time" {
+				ap, ok := c.(*ecs.AnimationPlayer)
+				if !ok {
+					break
+				}
+
+				slider := widget.NewSlider(0, 1)
+
+				// Set max to clip duration if possible
+				if cur, ok := fields["Current"].(string); ok {
+					if clip := ap.Clips[cur]; clip != nil {
+						slider.Max = float64(clip.Duration)
+					}
+				}
+
+				slider.Value = float64(v)
+				slider.OnChanged = func(f float64) {
+					if state.Global.IsRebuilding {
+						return
+					}
+					c.SetEditorField("Time", float32(f))
+					sendComponentUpdate(entityID, c)
+				}
+
+				box.Add(container.NewHBox(widget.NewLabel("Time"), slider))
+				continue
+			}
+
+			// --- Default float32 handler ---
 			e := widget.NewEntry()
 			e.SetText(fmt.Sprintf("%.3f", v))
 			e.OnSubmitted = func(s string) {
@@ -525,13 +570,12 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 					return
 				}
 				c.SetEditorField(name, parse32(s))
-
 				sendComponentUpdate(entityID, c)
 			}
-
 			box.Add(container.NewHBox(widget.NewLabel(name), e))
 
 		case [3]float32:
+
 			x := widget.NewEntry()
 			y := widget.NewEntry()
 			z := widget.NewEntry()
@@ -577,6 +621,7 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 				container.NewHBox(widget.NewLabel("Z"), z),
 			))
 		case [4]float32:
+
 			r := widget.NewEntry()
 			g := widget.NewEntry()
 			b := widget.NewEntry()
@@ -614,6 +659,18 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 			))
 
 		case bool:
+			if name == "Playing" {
+				chk := widget.NewCheck("Playing", func(b bool) {
+					if state.Global.IsRebuilding {
+						return
+					}
+					c.SetEditorField("Playing", b)
+					sendComponentUpdate(entityID, c)
+				})
+				chk.SetChecked(v)
+				box.Add(chk)
+				continue
+			}
 			initial := v
 			chk := widget.NewCheck(name, nil)
 			chk.SetChecked(v)
@@ -730,6 +787,24 @@ func buildComponentUI(c ecs.EditorInspectable, entityID int64, refresh func()) f
 					box.Add(container.NewHBox(widget.NewLabel("Texture"), textureSelect))
 
 				}
+			}
+		case []string: // Clips list
+			if name == "Clips" {
+				clipNames := v
+				dropdown := widget.NewSelect(clipNames, func(selected string) {
+					if state.Global.IsRebuilding {
+						return
+					}
+					c.SetEditorField("Current", selected)
+					sendComponentUpdate(entityID, c)
+				})
+
+				// Set current clip
+				if cur, ok := fields["Current"].(string); ok {
+					dropdown.SetSelected(cur)
+				}
+
+				box.Add(container.NewHBox(widget.NewLabel("Clip"), dropdown))
 			}
 
 		case int:
