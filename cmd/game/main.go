@@ -11,6 +11,7 @@ import (
 	loader "go-engine/Go-Cordance/cmd/game/loader"
 	"go-engine/Go-Cordance/internal/assets"
 	"go-engine/Go-Cordance/internal/ecs"
+	"go-engine/Go-Cordance/internal/ecs/animation"
 	"go-engine/Go-Cordance/internal/ecs/gizmo"
 	"go-engine/Go-Cordance/internal/ecs/gizmo/bridge"
 	"go-engine/Go-Cordance/internal/editor/state"
@@ -157,6 +158,7 @@ func main() {
 	debugSys := ecs.NewDebugRenderSystem(debugRenderer, meshMgr, nil) // camSys set later
 	lightDebug := ecs.NewLightDebugRenderSystem(debugRenderer, meshMgr, nil)
 	gizmoSys := gizmo.NewGizmoRenderSystem(debugRenderer, meshMgr, nil)
+
 	// later, after camera system exists, call gizmoSys.SetCameraSystem(camSys)
 
 	lightDebug.Enabled = true
@@ -165,6 +167,9 @@ func main() {
 	// BootstrapScene returns the Scene and a map of named entities so we can
 	// bind runtime-only resources (textures, set LightEntity, etc).
 	sc, named := scene.BootstrapScene()
+	//world := sc.World()
+
+	animSys := animation.NewAnimationSystem()
 	initUndo()
 	gizmoSys.SetWorld(sc.World())
 	gizmo.RegisterGlobalGizmo(gizmoSys)
@@ -192,6 +197,7 @@ func main() {
 	sc.Systems().AddSystem(renderSys)
 	sc.Systems().AddSystem(debugSys)
 	sc.Systems().AddSystem(lightDebug)
+	sc.Systems().AddSystem(animSys)
 	cursorDisabled := false
 	sofa, err := gltf.LoadGLTFMulti(sc, "assets/models/sofa/sofa.gltf")
 	if err != nil {

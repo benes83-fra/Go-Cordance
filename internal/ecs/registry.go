@@ -17,6 +17,12 @@ var ComponentRegistry = map[string]func() Component{
 	"Children":       func() Component { return NewChildren() },
 	"Name":           func() Component { return NewName("") },
 	"Camera":         func() Component { return NewCamera() },
+	"AnimationPlayer": func() Component {
+		return &AnimationPlayer{
+			Clips: make(map[string]*AnimationClip),
+			Speed: 1.0,
+		}
+	},
 }
 
 // ComponentNameRegistry maps concrete component types to their registry name.
