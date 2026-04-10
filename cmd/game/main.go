@@ -215,6 +215,16 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	clips, err := gltf.LoadGLTFAnimations("assets/models/sofa/sofa.gltf")
+	if err == nil {
+		ap := &ecs.AnimationPlayer{
+			Clips:   clips,
+			Current: gltf.PickFirstClip(clips),
+			Playing: true,
+			Speed:   1.0,
+		}
+		sofa.AddComponent(ap)
+	}
 
 	t2 := house.GetTransform()
 	t2.Position = [3]float32{0, 1, 6}

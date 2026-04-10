@@ -81,6 +81,27 @@ type gltfTexture struct {
 	Source     int                        `json:"source,omitempty"`
 	Extensions map[string]json.RawMessage `json:"extensions,omitempty"`
 }
+type gltfAnimationSampler struct {
+	Input         int    `json:"input"`
+	Output        int    `json:"output"`
+	Interpolation string `json:"interpolation"`
+}
+
+type gltfAnimationChannelTarget struct {
+	Node int    `json:"node"`
+	Path string `json:"path"`
+}
+
+type gltfAnimationChannel struct {
+	Sampler int                        `json:"sampler"`
+	Target  gltfAnimationChannelTarget `json:"target"`
+}
+
+type gltfAnimation struct {
+	Name     string                 `json:"name"`
+	Samplers []gltfAnimationSampler `json:"samplers"`
+	Channels []gltfAnimationChannel `json:"channels"`
+}
 
 // helper: return the image source index for a texture, checking EXT_texture_webp
 func textureSourceIndex(t gltfTexture) int {
@@ -125,10 +146,10 @@ type gltfRoot struct {
 	Materials   []gltfMaterial   `json:"materials"`
 	Images      []gltfImage      `json:"images"`
 	Textures    []gltfTexture    `json:"textures"`
-
-	Nodes  []gltfNode  `json:"nodes"`
-	Scenes []gltfScene `json:"scenes"`
-	Scene  int         `json:"scene"` // default scene index
+	Animations  []gltfAnimation  `json:"animations"`
+	Nodes       []gltfNode       `json:"nodes"`
+	Scenes      []gltfScene      `json:"scenes"`
+	Scene       int              `json:"scene"` // default scene index
 }
 
 // ---------------------------
@@ -162,7 +183,7 @@ func componentByteSize(typ string, comp int) int {
 	}
 }
 
-func bytesToFloat32(b []byte) float32 {
+func BytesToFloat32(b []byte) float32 {
 	return math.Float32frombits(
 		uint32(b[0]) |
 			uint32(b[1])<<8 |
@@ -174,43 +195,43 @@ func bytesToFloat32(b []byte) float32 {
 // Core accessor reader
 // ---------------------------
 
-type accessorData struct {
-	acc    gltfAccessor
-	bv     gltfBufferView
-	buf    []byte
-	base   int
-	stride int
+type AccessorData struct {
+	Acc    gltfAccessor
+	Bv     gltfBufferView
+	Buf    []byte
+	Base   int
+	Stride int
 }
 
-func getAccessor(g *gltfRoot, buffers [][]byte, idx int) (accessorData, error) {
+func GetAccessor(g *gltfRoot, buffers [][]byte, idx int) (AccessorData, error) {
 	if idx < 0 || idx >= len(g.Accessors) {
-		return accessorData{}, fmt.Errorf("accessor index out of range: %d", idx)
+		return AccessorData{}, fmt.Errorf("accessor index out of range: %d", idx)
 	}
-	acc := g.Accessors[idx]
+	Acc := g.Accessors[idx]
 
-	if acc.BufferView < 0 || acc.BufferView >= len(g.BufferViews) {
-		return accessorData{}, fmt.Errorf("bufferView index out of range: %d", acc.BufferView)
+	if Acc.BufferView < 0 || Acc.BufferView >= len(g.BufferViews) {
+		return AccessorData{}, fmt.Errorf("bufferView index out of range: %d", Acc.BufferView)
 	}
-	bv := g.BufferViews[acc.BufferView]
+	Bv := g.BufferViews[Acc.BufferView]
 
-	if bv.Buffer < 0 || bv.Buffer >= len(buffers) {
-		return accessorData{}, fmt.Errorf("buffer index out of range: %d", bv.Buffer)
+	if Bv.Buffer < 0 || Bv.Buffer >= len(buffers) {
+		return AccessorData{}, fmt.Errorf("buffer index out of range: %d", Bv.Buffer)
 	}
-	buf := buffers[bv.Buffer]
+	Buf := buffers[Bv.Buffer]
 
-	elemSize := componentByteSize(acc.Type, acc.ComponentType)
-	stride := bv.ByteStride
-	if stride == 0 {
-		stride = elemSize
-	}
-
-	base := bv.ByteOffset + acc.ByteOffset
-	end := base + acc.Count*stride
-	if end > len(buf) {
-		return accessorData{}, fmt.Errorf("accessor out of range: end=%d len=%d", end, len(buf))
+	elemSize := componentByteSize(Acc.Type, Acc.ComponentType)
+	Stride := Bv.ByteStride
+	if Stride == 0 {
+		Stride = elemSize
 	}
 
-	return accessorData{acc, bv, buf, base, stride}, nil
+	Base := Bv.ByteOffset + Acc.ByteOffset
+	end := Base + Acc.Count*Stride
+	if end > len(Buf) {
+		return AccessorData{}, fmt.Errorf("accessor out of range: end=%d len=%d", end, len(Buf))
+	}
+
+	return AccessorData{Acc, Bv, Buf, Base, Stride}, nil
 }
 
 // ---------------------------
@@ -233,15 +254,15 @@ func uploadMeshToGL(mm *MeshManager, id string, vertices []float32, indices []ui
 
 	// The importer builds vertices with this interleaved layout:
 	// pos(3), normal(3), uv(2), tangent(4) => 12 floats per vertex
-	stride := int32(12 * 4)
+	Stride := int32(12 * 4)
 
-	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, stride, 0)
+	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, Stride, 0)
 	gl.EnableVertexAttribArray(0)
-	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, stride, 3*4)
+	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, Stride, 3*4)
 	gl.EnableVertexAttribArray(1)
-	gl.VertexAttribPointerWithOffset(2, 2, gl.FLOAT, false, stride, 6*4)
+	gl.VertexAttribPointerWithOffset(2, 2, gl.FLOAT, false, Stride, 6*4)
 	gl.EnableVertexAttribArray(2)
-	gl.VertexAttribPointerWithOffset(3, 4, gl.FLOAT, false, stride, 8*4)
+	gl.VertexAttribPointerWithOffset(3, 4, gl.FLOAT, false, Stride, 8*4)
 	gl.EnableVertexAttribArray(3)
 	gl.BindVertexArray(0)
 
@@ -286,7 +307,7 @@ func uploadMeshToGL(mm *MeshManager, id string, vertices []float32, indices []ui
 
 }
 
-func loadGLTFOrGLB(path string) (*gltfRoot, [][]byte, error) {
+func LoadGLTFOrGLB(path string) (*gltfRoot, [][]byte, error) {
 	ext := strings.ToLower(filepath.Ext(path))
 
 	switch ext {
@@ -355,7 +376,7 @@ func (mm *MeshManager) RegisterGLTFMulti(path string) ([]string, error) {
 func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, error) {
 
 	var meshIDs []string
-	g, buffers, err := loadGLTFOrGLB(path)
+	g, buffers, err := LoadGLTFOrGLB(path)
 	if err != nil {
 		return nil, err
 	}
@@ -426,23 +447,23 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 			meshIDs = append(meshIDs, meshID)
 
 			// POSITION
-			posA, err := getAccessor(g, buffers, prim.Attributes["POSITION"])
+			posA, err := GetAccessor(g, buffers, prim.Attributes["POSITION"])
 			if err != nil {
 				return nil, err
 			}
-			count := posA.acc.Count
+			count := posA.Acc.Count
 
 			// NORMAL
-			norA, err := getAccessor(g, buffers, prim.Attributes["NORMAL"])
+			norA, err := GetAccessor(g, buffers, prim.Attributes["NORMAL"])
 			if err != nil {
 				return nil, err
 			}
 
 			// UV (optional)
-			var uvA accessorData
+			var uvA AccessorData
 			hasUV := false
 			if uvIdx, ok := prim.Attributes["TEXCOORD_0"]; ok {
-				uvA, err = getAccessor(g, buffers, uvIdx)
+				uvA, err = GetAccessor(g, buffers, uvIdx)
 				if err != nil {
 					return nil, err
 				}
@@ -450,10 +471,10 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 			}
 
 			// TANGENT (optional)
-			var tanA accessorData
+			var tanA AccessorData
 			hasTan := false
 			if tanIdx, ok := prim.Attributes["TANGENT"]; ok {
-				tanA, err = getAccessor(g, buffers, tanIdx)
+				tanA, err = GetAccessor(g, buffers, tanIdx)
 				if err != nil {
 					return nil, err
 				}
@@ -461,31 +482,31 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 			}
 
 			// INDICES
-			idxA, err := getAccessor(g, buffers, prim.Indices)
+			idxA, err := GetAccessor(g, buffers, prim.Indices)
 			if err != nil {
 				return nil, err
 			}
 
 			// Decode indices
-			indices := make([]uint32, idxA.acc.Count)
-			switch idxA.acc.ComponentType {
+			indices := make([]uint32, idxA.Acc.Count)
+			switch idxA.Acc.ComponentType {
 			case 5123: // UNSIGNED_SHORT
-				for i := 0; i < idxA.acc.Count; i++ {
-					off := idxA.base + i*idxA.stride
-					b := idxA.buf[off : off+2]
+				for i := 0; i < idxA.Acc.Count; i++ {
+					off := idxA.Base + i*idxA.Stride
+					b := idxA.Buf[off : off+2]
 					indices[i] = uint32(b[0]) | uint32(b[1])<<8
 				}
 			case 5125: // UNSIGNED_INT
-				for i := 0; i < idxA.acc.Count; i++ {
-					off := idxA.base + i*idxA.stride
-					b := idxA.buf[off : off+4]
+				for i := 0; i < idxA.Acc.Count; i++ {
+					off := idxA.Base + i*idxA.Stride
+					b := idxA.Buf[off : off+4]
 					indices[i] = uint32(b[0]) |
 						uint32(b[1])<<8 |
 						uint32(b[2])<<16 |
 						uint32(b[3])<<24
 				}
 			default:
-				return nil, fmt.Errorf("unsupported index type: %d", idxA.acc.ComponentType)
+				return nil, fmt.Errorf("unsupported index type: %d", idxA.Acc.ComponentType)
 			}
 
 			// Build interleaved vertices
@@ -493,33 +514,33 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 
 			for i := 0; i < count; i++ {
 				// POSITION
-				pOff := posA.base + i*posA.stride
-				px := bytesToFloat32(posA.buf[pOff+0:])
-				py := bytesToFloat32(posA.buf[pOff+4:])
-				pz := bytesToFloat32(posA.buf[pOff+8:])
+				pOff := posA.Base + i*posA.Stride
+				px := BytesToFloat32(posA.Buf[pOff+0:])
+				py := BytesToFloat32(posA.Buf[pOff+4:])
+				pz := BytesToFloat32(posA.Buf[pOff+8:])
 
 				// NORMAL
-				nOff := norA.base + i*norA.stride
-				nx := bytesToFloat32(norA.buf[nOff+0:])
-				ny := bytesToFloat32(norA.buf[nOff+4:])
-				nz := bytesToFloat32(norA.buf[nOff+8:])
+				nOff := norA.Base + i*norA.Stride
+				nx := BytesToFloat32(norA.Buf[nOff+0:])
+				ny := BytesToFloat32(norA.Buf[nOff+4:])
+				nz := BytesToFloat32(norA.Buf[nOff+8:])
 
 				// UV
 				var u, v float32
 				if hasUV {
-					uvOff := uvA.base + i*uvA.stride
-					u = bytesToFloat32(uvA.buf[uvOff+0:])
-					v = bytesToFloat32(uvA.buf[uvOff+4:])
+					uvOff := uvA.Base + i*uvA.Stride
+					u = BytesToFloat32(uvA.Buf[uvOff+0:])
+					v = BytesToFloat32(uvA.Buf[uvOff+4:])
 				}
 
 				// TANGENT
 				tx, ty, tz, tw := float32(1), float32(0), float32(0), float32(1)
 				if hasTan {
-					tOff := tanA.base + i*tanA.stride
-					tx = bytesToFloat32(tanA.buf[tOff+0:])
-					ty = bytesToFloat32(tanA.buf[tOff+4:])
-					tz = bytesToFloat32(tanA.buf[tOff+8:])
-					tw = bytesToFloat32(tanA.buf[tOff+12:])
+					tOff := tanA.Base + i*tanA.Stride
+					tx = BytesToFloat32(tanA.Buf[tOff+0:])
+					ty = BytesToFloat32(tanA.Buf[tOff+4:])
+					tz = BytesToFloat32(tanA.Buf[tOff+8:])
+					tw = BytesToFloat32(tanA.Buf[tOff+12:])
 				}
 				// p := TransformPoint(world, [3]float32{px, py, pz})
 				// n := TransformNormal(world, [3]float32{nx, ny, nz})
@@ -579,7 +600,7 @@ func LoadGLTFMaterialsMulti(path string) ([]LoadedMeshMaterial, error) {
 }
 
 func loadGLTFMaterialsInternal(id, path string, multi bool) ([]LoadedMeshMaterial, error) {
-	g, _, err := loadGLTFOrGLB(path)
+	g, _, err := LoadGLTFOrGLB(path)
 	if err != nil {
 		return nil, err
 	}
@@ -1036,7 +1057,7 @@ type MeshTRS struct {
 }
 
 func ExtractGLTFMeshTRS(path string) (map[string]MeshTRS, error) {
-	g, _, err := loadGLTFOrGLB(path)
+	g, _, err := LoadGLTFOrGLB(path)
 	if err != nil {
 		return nil, err
 	}

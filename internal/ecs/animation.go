@@ -1,6 +1,7 @@
 package ecs
 
 type AnimationClip struct {
+	Name      string
 	Duration  float32
 	Keyframes []TransformKeyframe
 }
