@@ -460,6 +460,7 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 			if err != nil {
 				return nil, err
 			}
+
 			count := posA.Acc.Count
 
 			// NORMAL
@@ -488,6 +489,25 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 					return nil, err
 				}
 				hasTan = true
+			}
+			// JOINTS_0 (optional)
+			var jointsA AccessorData
+			hasJoints := false
+			if jIdx, ok := prim.Attributes["JOINTS_0"]; ok {
+				jointsA, err = GetAccessor(g, buffers, jIdx)
+				if err == nil {
+					hasJoints = true
+				}
+			}
+
+			// WEIGHTS_0 (optional)
+			var weightsA AccessorData
+			hasWeights := false
+			if wIdx, ok := prim.Attributes["WEIGHTS_0"]; ok {
+				weightsA, err = GetAccessor(g, buffers, wIdx)
+				if err == nil {
+					hasWeights = true
+				}
 			}
 
 			// INDICES
@@ -521,6 +541,8 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 			// Build interleaved vertices
 			vertices := make([]float32, 0, count*12)
 
+			// Build interleaved vertices
+
 			for i := 0; i < count; i++ {
 				// POSITION
 				pOff := posA.Base + i*posA.Stride
@@ -551,8 +573,32 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 					tz = BytesToFloat32(tanA.Buf[tOff+8:])
 					tw = BytesToFloat32(tanA.Buf[tOff+12:])
 				}
-				// p := TransformPoint(world, [3]float32{px, py, pz})
-				// n := TransformNormal(world, [3]float32{nx, ny, nz})
+				if hasJoints {
+					js := make([][4]uint16, count)
+					for i := 0; i < count; i++ {
+						off := jointsA.Base + i*jointsA.Stride
+						js[i] = [4]uint16{
+							uint16(jointsA.Buf[off+0]),
+							uint16(jointsA.Buf[off+1]),
+							uint16(jointsA.Buf[off+2]),
+							uint16(jointsA.Buf[off+3]),
+						}
+					}
+					mm.JointData[meshID] = js
+				}
+				if hasWeights {
+					ws := make([][4]float32, count)
+					for i := 0; i < count; i++ {
+						off := weightsA.Base + i*weightsA.Stride
+						ws[i] = [4]float32{
+							BytesToFloat32(weightsA.Buf[off+0:]),
+							BytesToFloat32(weightsA.Buf[off+4:]),
+							BytesToFloat32(weightsA.Buf[off+8:]),
+							BytesToFloat32(weightsA.Buf[off+12:]),
+						}
+					}
+					mm.WeightData[meshID] = ws
+				}
 
 				vertices = append(vertices,
 					px, py, pz,
@@ -560,7 +606,6 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 					u, v,
 					tx, ty, tz, tw,
 				)
-
 			}
 
 			// Upload
@@ -570,6 +615,7 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 	}
 
 	return meshIDs, nil
+
 }
 
 // ---------------------------

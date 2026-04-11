@@ -44,6 +44,13 @@ func LoadGLTFMulti(sc *scene.Scene, path string) (*ecs.Entity, error) {
 
 	for _, child := range children.Entities {
 		mesh := child.GetComponent((*ecs.Mesh)(nil)).(*ecs.Mesh)
+		// Step F: load JOINTS_0 + WEIGHTS_0 if present
+		if js, ok := engine.GlobalMeshManager.JointData[mesh.ID]; ok {
+			mesh.Joints = js
+		}
+		if ws, ok := engine.GlobalMeshManager.WeightData[mesh.ID]; ok {
+			mesh.Weights = ws
+		}
 
 		info, ok := matByMesh[mesh.ID]
 		if !ok {

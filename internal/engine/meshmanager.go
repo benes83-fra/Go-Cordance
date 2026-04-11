@@ -24,7 +24,8 @@ type MeshManager struct {
 	indexTypes   map[string]uint32 // gl.UNSIGNED_INT or gl.UNSIGNED_SHORT
 	vertexCounts map[string]int32  // number of vertices (for DrawArrays fallback if needed)
 	layoutType   map[string]int    // 8 or 12
-
+	JointData    map[string][][4]uint16
+	WeightData   map[string][][4]float32
 }
 
 func NewMeshManager() *MeshManager {
@@ -36,6 +37,8 @@ func NewMeshManager() *MeshManager {
 		indexTypes:   make(map[string]uint32),
 		vertexCounts: make(map[string]int32),
 		layoutType:   make(map[string]int),
+		JointData:    make(map[string][][4]uint16),
+		WeightData:   make(map[string][][4]float32),
 	}
 }
 
