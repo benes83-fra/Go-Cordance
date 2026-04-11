@@ -24,7 +24,13 @@ func LoadGLTFMulti(sc *scene.Scene, path string) (*ecs.Entity, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	skins, err := ExtractGLTFSkins(path)
+	if err != nil {
+		// To keep this step "safe", you can log and continue instead of failing:
+		// log.Printf("ExtractGLTFSkins(%s) failed: %v", path, err)
+		// skins = nil
+		return nil, err
+	}
 	matByMesh := map[string]engine.LoadedMeshMaterial{}
 	for _, m := range mats {
 		matByMesh[m.MeshID] = m
@@ -50,6 +56,11 @@ func LoadGLTFMulti(sc *scene.Scene, path string) (*ecs.Entity, error) {
 			m := ecs.NewMaterial(info.BaseColor)
 			child.AddComponent(m)
 			matComp = m
+		}
+		if skins != nil {
+			if skinComp, ok := skins[mesh.ID]; ok {
+				child.AddComponent(skinComp)
+			}
 		}
 		m := matComp.(*ecs.Material)
 

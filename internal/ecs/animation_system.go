@@ -8,11 +8,11 @@ func NewAnimationSystem() *AnimationSystem {
 
 func (sys *AnimationSystem) Update(dt float32, ents []*Entity) {
 	for _, ent := range ents {
-		ap := ent.GetComponent(&AnimationPlayer{})
-		if ap == nil {
+		apc := ent.GetComponent((*AnimationPlayer)(nil))
+		if apc == nil {
 			continue
 		}
-		player := ap.(*AnimationPlayer)
+		player := apc.(*AnimationPlayer)
 
 		if !player.Playing || player.Current == "" {
 			continue

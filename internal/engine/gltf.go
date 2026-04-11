@@ -103,6 +103,11 @@ type gltfAnimation struct {
 	Channels []gltfAnimationChannel `json:"channels"`
 }
 
+type gltfSkin struct {
+	Joints              []int `json:"joints"`
+	InverseBindMatrices int   `json:"inverseBindMatrices"`
+}
+
 // helper: return the image source index for a texture, checking EXT_texture_webp
 func textureSourceIndex(t gltfTexture) int {
 	// prefer explicit Source if present
@@ -132,6 +137,7 @@ type gltfNode struct {
 	Rotation    []float32 `json:"rotation"` // quaternion
 	Scale       []float32 `json:"scale"`
 	Matrix      []float32 `json:"matrix"` // 16 floats
+	Skin        int       `json:"skin"`   // NEW: index into gltfRoot.Skins, or -1
 }
 
 type gltfScene struct {
@@ -149,7 +155,8 @@ type gltfRoot struct {
 	Animations  []gltfAnimation  `json:"animations"`
 	Nodes       []gltfNode       `json:"nodes"`
 	Scenes      []gltfScene      `json:"scenes"`
-	Scene       int              `json:"scene"` // default scene index
+	Scene       int              `json:"scene"`
+	Skins       []gltfSkin       `json:"skins"` // default scene index
 }
 
 // ---------------------------
