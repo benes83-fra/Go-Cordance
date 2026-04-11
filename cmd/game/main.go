@@ -215,15 +215,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	clips, err := gltf.LoadGLTFAnimations("assets/models/sofa/sofa.gltf")
-	if err == nil {
-		ap := &ecs.AnimationPlayer{
-			Clips:   clips,
-			Current: gltf.PickFirstClip(clips),
-			Playing: true,
-			Speed:   1.0,
-		}
-		sofa.AddComponent(ap)
+	cesium, err := gltf.LoadGLTFMulti(sc, "assets/models/CesiumMan/CesiumMan.glb")
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	t2 := house.GetTransform()
@@ -231,6 +225,21 @@ func main() {
 	t2.Scale = [3]float32{0.1, 0.1, 0.1}
 	t2.SetRotationDegrees(90, 90, 90)
 
+	ct := cesium.GetTransform()
+	ct.Position = [3]float32{0, 1, -4}
+	ct.Scale = [3]float32{1, 1, 1} // CesiumMan is huge
+	cesium.AddComponent(ecs.NewName("CesiumMan"))
+	named["CesiumMan"] = cesium
+	clips, err := gltf.LoadGLTFAnimations("assets/models/CesiumMan/CesiumMan.glb")
+	if err == nil {
+		ap := &ecs.AnimationPlayer{
+			Clips:   clips,
+			Current: gltf.PickFirstClip(clips),
+			Playing: true,
+			Speed:   1.0,
+		}
+		cesium.AddComponent(ap)
+	}
 	window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if action == glfw.Press {
 			switch key {
