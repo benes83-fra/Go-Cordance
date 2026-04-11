@@ -16,6 +16,7 @@ var ComponentRegistry = map[string]func() Component{
 	"Parent":         func() Component { return &Parent{} },
 	"Children":       func() Component { return NewChildren() },
 	"Name":           func() Component { return NewName("") },
+	"Skin":           func() Component { return &Skin{} },
 	"Camera":         func() Component { return NewCamera() },
 	"AnimationPlayer": func() Component {
 		return &AnimationPlayer{

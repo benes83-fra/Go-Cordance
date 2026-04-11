@@ -198,6 +198,7 @@ func main() {
 	sc.Systems().AddSystem(debugSys)
 	sc.Systems().AddSystem(lightDebug)
 	sc.Systems().AddSystem(animSys)
+	sc.Systems().AddSystem(ecs.NewSkinningSystem(sc.World()))
 	cursorDisabled := false
 	sofa, err := gltf.LoadGLTFMulti(sc, "assets/models/sofa/sofa.gltf")
 	if err != nil {

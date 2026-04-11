@@ -6,12 +6,14 @@ type Skin struct {
 
 	// One inverse bind matrix per joint, column-major 4x4
 	InverseBindMatrices [][16]float32
+	JointMatrices       [][16]float32
 }
 
 func NewSkin(joints []int, ibm [][16]float32) *Skin {
 	return &Skin{
 		Joints:              append([]int(nil), joints...),
 		InverseBindMatrices: append([][16]float32(nil), ibm...),
+		JointMatrices:       make([][16]float32, len(joints)),
 	}
 }
 

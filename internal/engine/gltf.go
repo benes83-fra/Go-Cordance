@@ -185,6 +185,8 @@ func componentByteSize(typ string, comp int) int {
 		return csize * 3
 	case "VEC4":
 		return csize * 4
+	case "MAT4":
+		return csize * 16 // <‑‑ ADD THIS
 	default:
 		panic(fmt.Sprintf("unsupported accessor type: %s", typ))
 	}
