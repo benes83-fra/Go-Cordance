@@ -325,6 +325,7 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		var multi *MultiMesh
 		var multiMat *MultiMaterial
 		var hasChildren bool
+		var skin *Skin
 
 		for _, c := range e.Components {
 			switch v := c.(type) {
@@ -340,6 +341,8 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 				multi = v
 			case *MultiMaterial:
 				multiMat = v
+			case *Skin:
+				skin = v
 			case *Children:
 				hasChildren = true
 
@@ -359,7 +362,13 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		if mat.Shader != nil {
 			desiredShader = mat.Shader
 		}
-
+		// if skin != nil {
+		// 	sp, err := engine.GetShaderProgram("default_skinned")
+		// 	if err == nil {
+		// 		desiredShader = sp
+		// 	}
+		// }
+		_ = skin
 		if desiredShader != currentShader {
 			currentShader = desiredShader
 			if currentShader != nil {

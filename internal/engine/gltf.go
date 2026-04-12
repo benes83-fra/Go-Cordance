@@ -261,46 +261,70 @@ func uploadMeshToGL(mm *MeshManager, id string, vertices []float32, indices []ui
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*4, gl.Ptr(indices), gl.STATIC_DRAW)
 
-	// The importer builds vertices with this interleaved layout:
 	// pos(3), normal(3), uv(2), tangent(4) => 12 floats per vertex
-	Stride := int32(12 * 4)
+	stride := int32(12 * 4)
 
-	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, Stride, 0)
+	gl.VertexAttribPointerWithOffset(0, 3, gl.FLOAT, false, stride, 0)
 	gl.EnableVertexAttribArray(0)
-	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, Stride, 3*4)
+
+	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, stride, 3*4)
 	gl.EnableVertexAttribArray(1)
-	gl.VertexAttribPointerWithOffset(2, 2, gl.FLOAT, false, Stride, 6*4)
+
+	gl.VertexAttribPointerWithOffset(2, 2, gl.FLOAT, false, stride, 6*4)
 	gl.EnableVertexAttribArray(2)
-	gl.VertexAttribPointerWithOffset(3, 4, gl.FLOAT, false, Stride, 8*4)
+
+	gl.VertexAttribPointerWithOffset(3, 4, gl.FLOAT, false, stride, 8*4)
 	gl.EnableVertexAttribArray(3)
+
+	// --- NEW: JOINTS_0 (location = 4) ---
+	if js, ok := mm.JointData[id]; ok && len(js) > 0 {
+		var jointVBO uint32
+		gl.GenBuffers(1, &jointVBO)
+		gl.BindBuffer(gl.ARRAY_BUFFER, jointVBO)
+		// js is [] [4]uint16 → 8 bytes per vertex
+		gl.BufferData(gl.ARRAY_BUFFER, len(js)*4*2, gl.Ptr(js), gl.STATIC_DRAW)
+
+		gl.VertexAttribIPointer(4, 4, gl.UNSIGNED_SHORT, 8, gl.PtrOffset(0))
+		gl.EnableVertexAttribArray(4)
+
+		mm.vbos[id+"_joints"] = jointVBO
+	}
+
+	// --- NEW: WEIGHTS_0 (location = 5) ---
+	if ws, ok := mm.WeightData[id]; ok && len(ws) > 0 {
+		var weightVBO uint32
+		gl.GenBuffers(1, &weightVBO)
+		gl.BindBuffer(gl.ARRAY_BUFFER, weightVBO)
+		// ws is [] [4]float32 → 16 bytes per vertex
+		gl.BufferData(gl.ARRAY_BUFFER, len(ws)*4*4, gl.Ptr(ws), gl.STATIC_DRAW)
+
+		gl.VertexAttribPointerWithOffset(5, 4, gl.FLOAT, false, 16, 0)
+		gl.EnableVertexAttribArray(5)
+
+		mm.vbos[id+"_weights"] = weightVBO
+	}
+
 	gl.BindVertexArray(0)
 
-	// Store GL objects and counts in MeshManager
+	// Store GL objects and counts
 	mm.vaos[id] = vao
 	mm.vbos[id] = vbo
 	mm.ebos[id] = ebo
 	mm.counts[id] = int32(len(indices))
-
-	// Bookkeeping: index type and vertex count for reliable DrawElements
 	mm.indexTypes[id] = gl.UNSIGNED_INT
-	// 12 floats per vertex as above
 	mm.vertexCounts[id] = int32(len(vertices) / 12)
 	mm.layoutType[id] = 12
 
-	// Verify EBO size (warn if mismatch)
+	// EBO sanity check (unchanged)
 	var eboSize int32
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ebo)
 	gl.GetBufferParameteriv(gl.ELEMENT_ARRAY_BUFFER, gl.BUFFER_SIZE, &eboSize)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0)
-	expected := int32(len(indices) * 4) // uint32 indices -> 4 bytes each
+	expected := int32(len(indices) * 4)
 	if eboSize != expected {
-		// lightweight warning; replace with log.Printf if you prefer
-		println("Warning: EBO size mismatch for mesh", id, "got", eboSize, "expected", expected)
+		log.Printf("Warning: EBO size mismatch for mesh %s: got %d, expected %d", id, eboSize, expected)
 	}
-	// compute vertexCount from interleaved layout (12 floats per vertex for importer)
 	vertexCount := int32(len(vertices) / 12)
-
-	// validate max index
 	var maxIdx uint32 = 0
 	for _, idx := range indices {
 		if idx > maxIdx {
@@ -313,7 +337,6 @@ func uploadMeshToGL(mm *MeshManager, id string, vertices []float32, indices []ui
 		// return fmt.Errorf("mesh %s: max index %d >= vertexCount %d", id, maxIdx, vertexCount)
 		// Option B: clamp or convert indices (not recommended silently). For now, abort upload.
 	}
-
 }
 
 func LoadGLTFOrGLB(path string) (*gltfRoot, [][]byte, error) {
