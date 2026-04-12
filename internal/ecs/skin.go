@@ -1,5 +1,7 @@
 package ecs
 
+import "fmt"
+
 type Skin struct {
 	// glTF joint node indices
 	Joints []int
@@ -7,13 +9,17 @@ type Skin struct {
 	// One inverse bind matrix per joint, column-major 4x4
 	InverseBindMatrices [][16]float32
 	JointMatrices       [][16]float32
+	JointEntities       []*Entity
 }
 
 func NewSkin(joints []int, ibm [][16]float32) *Skin {
+	fmt.Printf("Skin created: joints=%v ibmCount=%d\n", joints, len(ibm))
+
 	return &Skin{
 		Joints:              append([]int(nil), joints...),
 		InverseBindMatrices: append([][16]float32(nil), ibm...),
 		JointMatrices:       make([][16]float32, len(joints)),
+		JointEntities:       make([]*Entity, len(joints)),
 	}
 }
 

@@ -42,6 +42,7 @@ func ExtractGLTFSkins(path string) (map[string]*ecs.Skin, error) {
 				for c := 0; c < 16; c++ {
 					m[c] = engine.BytesToFloat32(acc.Buf[off+4*c:])
 				}
+				// fmt.Printf("Skin %d IBM[%d]: %v\n", si, i, m)
 				data.ibm = append(data.ibm, m)
 			}
 		}

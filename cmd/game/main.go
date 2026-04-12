@@ -194,11 +194,11 @@ func main() {
 	sc.Systems().AddSystem(billboardSys)
 	sc.Systems().AddSystem(camCtrl)
 	sc.Systems().AddSystem(camSys)
+	sc.Systems().AddSystem(animSys)
+	sc.Systems().AddSystem(ecs.NewSkinningSystem(sc.World()))
 	sc.Systems().AddSystem(renderSys)
 	sc.Systems().AddSystem(debugSys)
 	sc.Systems().AddSystem(lightDebug)
-	sc.Systems().AddSystem(animSys)
-	sc.Systems().AddSystem(ecs.NewSkinningSystem(sc.World()))
 	cursorDisabled := false
 	sofa, err := gltf.LoadGLTFMulti(sc, "assets/models/sofa/sofa.gltf")
 	if err != nil {
@@ -220,6 +220,20 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	// After loading CesiumMan
+	// cesiumRoot, nodeEntities, skinEntities := gltf.GetLastLoadInfo()
+
+	// // Wire joints → ECS entities
+	// for _, skinEnt := range skinEntities {
+	// 	skin := skinEnt.GetComponent((*ecs.Skin)(nil)).(*ecs.Skin)
+
+	// 	for i, nodeIndex := range skin.Joints {
+	// 		if nodeIndex < 0 || nodeIndex >= len(nodeEntities) {
+	// 			continue
+	// 		}
+	// 		skin.JointEntities[i] = nodeEntities[nodeIndex]
+	// 	}
+	// }
 
 	t2 := house.GetTransform()
 	t2.Position = [3]float32{0, 1, 6}

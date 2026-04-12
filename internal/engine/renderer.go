@@ -73,6 +73,7 @@ type Renderer struct {
 	LocPrefilteredEnv int32
 	LocBRDFLUT        int32
 	LocUseIBL         int32
+	LocuJointMatrices [128]int32
 
 	LocClearcoatTex          int32
 	LocUseClearcoatTex       int32
@@ -198,6 +199,7 @@ func (r *Renderer) InitUniforms() {
 	r.LocUseClearcoatNormalTex = gl.GetUniformLocation(r.Program, gl.Str("useClearcoatNormalTex\x00"))
 	r.LocTransmissionTex = gl.GetUniformLocation(r.Program, gl.Str("transmissionTex\x00"))
 	r.LocUseTransmissionTex = gl.GetUniformLocation(r.Program, gl.Str("useTransmissionTex\x00"))
+	// --- NEW: joint matrices ---
 
 	names := map[string]int32{
 		"model": r.LocModel, "view": r.LocView, "projection": r.LocProj,

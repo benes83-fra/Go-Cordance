@@ -547,6 +547,18 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		} else {
 			engine.SetInt(rs.Renderer.LocUseClearcoatTex, 0)
 		}
+		if skin != nil {
+			// assume skin.JointMatrices already filled as joint * inverseBind
+			loc := gl.GetUniformLocation(currentShader.ID, gl.Str("uJointMatrices[0]\x00"))
+			if loc != -1 && len(skin.JointMatrices) > 0 {
+				gl.UniformMatrix4fv(
+					loc,
+					int32(len(skin.JointMatrices)),
+					false,
+					&skin.JointMatrices[0][0],
+				)
+			}
+		}
 
 		drawItems = drawItems[:0]
 		drawItems = rs.collectMeshes(mesh, multi, mat, multiMat, normalMapComp, drawItems)

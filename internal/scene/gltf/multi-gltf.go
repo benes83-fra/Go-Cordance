@@ -166,6 +166,7 @@ func LoadGLTFMulti(sc *scene.Scene, path string) (*ecs.Entity, error) {
 
 		// Mark material dirty so renderer/editor can pick up changes
 		m.Dirty = true
+
 	}
 
 	return root, nil

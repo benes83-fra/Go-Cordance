@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+
 	"log"
 	"math"
 	"os"
@@ -12,6 +13,21 @@ import (
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
+
+type GltfRoot struct {
+	Buffers     []gltfBuffer     `json:"buffers"`
+	BufferViews []gltfBufferView `json:"bufferViews"`
+	Accessors   []gltfAccessor   `json:"accessors"`
+	Meshes      []gltfMesh       `json:"meshes"`
+	Materials   []gltfMaterial   `json:"materials"`
+	Images      []gltfImage      `json:"images"`
+	Textures    []gltfTexture    `json:"textures"`
+	Animations  []gltfAnimation  `json:"animations"`
+	Nodes       []gltfNode       `json:"nodes"`
+	Scenes      []gltfScene      `json:"scenes"`
+	Scene       int              `json:"scene"`
+	Skins       []gltfSkin       `json:"skins"` // default scene index
+}
 
 // ---------------------------
 // glTF 2.0 minimal structs
@@ -137,26 +153,11 @@ type gltfNode struct {
 	Rotation    []float32 `json:"rotation"` // quaternion
 	Scale       []float32 `json:"scale"`
 	Matrix      []float32 `json:"matrix"` // 16 floats
-	Skin        int       `json:"skin"`   // NEW: index into gltfRoot.Skins, or -1
+	Skin        int       `json:"skin"`   // NEW: index into GltfRoot.Skins, or -1
 }
 
 type gltfScene struct {
 	Nodes []int `json:"nodes"`
-}
-
-type gltfRoot struct {
-	Buffers     []gltfBuffer     `json:"buffers"`
-	BufferViews []gltfBufferView `json:"bufferViews"`
-	Accessors   []gltfAccessor   `json:"accessors"`
-	Meshes      []gltfMesh       `json:"meshes"`
-	Materials   []gltfMaterial   `json:"materials"`
-	Images      []gltfImage      `json:"images"`
-	Textures    []gltfTexture    `json:"textures"`
-	Animations  []gltfAnimation  `json:"animations"`
-	Nodes       []gltfNode       `json:"nodes"`
-	Scenes      []gltfScene      `json:"scenes"`
-	Scene       int              `json:"scene"`
-	Skins       []gltfSkin       `json:"skins"` // default scene index
 }
 
 // ---------------------------
@@ -212,7 +213,7 @@ type AccessorData struct {
 	Stride int
 }
 
-func GetAccessor(g *gltfRoot, buffers [][]byte, idx int) (AccessorData, error) {
+func GetAccessor(g *GltfRoot, buffers [][]byte, idx int) (AccessorData, error) {
 	if idx < 0 || idx >= len(g.Accessors) {
 		return AccessorData{}, fmt.Errorf("accessor index out of range: %d", idx)
 	}
@@ -339,7 +340,7 @@ func uploadMeshToGL(mm *MeshManager, id string, vertices []float32, indices []ui
 	}
 }
 
-func LoadGLTFOrGLB(path string) (*gltfRoot, [][]byte, error) {
+func LoadGLTFOrGLB(path string) (*GltfRoot, [][]byte, error) {
 	ext := strings.ToLower(filepath.Ext(path))
 
 	switch ext {
@@ -360,7 +361,7 @@ func LoadGLTFOrGLB(path string) (*gltfRoot, [][]byte, error) {
 			return nil, nil, err
 		}
 
-		var g gltfRoot
+		var g GltfRoot
 		if err := json.Unmarshal(raw, &g); err != nil {
 			return nil, nil, err
 		}
@@ -566,6 +567,32 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 
 			// Build interleaved vertices
 
+			if hasJoints {
+				js := make([][4]uint16, count)
+				for i := 0; i < count; i++ {
+					off := jointsA.Base + i*jointsA.Stride
+					js[i] = [4]uint16{
+						uint16(jointsA.Buf[off+0]),
+						uint16(jointsA.Buf[off+1]),
+						uint16(jointsA.Buf[off+2]),
+						uint16(jointsA.Buf[off+3]),
+					}
+				}
+				mm.JointData[meshID] = js
+			}
+			if hasWeights {
+				ws := make([][4]float32, count)
+				for i := 0; i < count; i++ {
+					off := weightsA.Base + i*weightsA.Stride
+					ws[i] = [4]float32{
+						BytesToFloat32(weightsA.Buf[off+0:]),
+						BytesToFloat32(weightsA.Buf[off+4:]),
+						BytesToFloat32(weightsA.Buf[off+8:]),
+						BytesToFloat32(weightsA.Buf[off+12:]),
+					}
+				}
+				mm.WeightData[meshID] = ws
+			}
 			for i := 0; i < count; i++ {
 				// POSITION
 				pOff := posA.Base + i*posA.Stride
@@ -595,32 +622,6 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 					ty = BytesToFloat32(tanA.Buf[tOff+4:])
 					tz = BytesToFloat32(tanA.Buf[tOff+8:])
 					tw = BytesToFloat32(tanA.Buf[tOff+12:])
-				}
-				if hasJoints {
-					js := make([][4]uint16, count)
-					for i := 0; i < count; i++ {
-						off := jointsA.Base + i*jointsA.Stride
-						js[i] = [4]uint16{
-							uint16(jointsA.Buf[off+0]),
-							uint16(jointsA.Buf[off+1]),
-							uint16(jointsA.Buf[off+2]),
-							uint16(jointsA.Buf[off+3]),
-						}
-					}
-					mm.JointData[meshID] = js
-				}
-				if hasWeights {
-					ws := make([][4]float32, count)
-					for i := 0; i < count; i++ {
-						off := weightsA.Base + i*weightsA.Stride
-						ws[i] = [4]float32{
-							BytesToFloat32(weightsA.Buf[off+0:]),
-							BytesToFloat32(weightsA.Buf[off+4:]),
-							BytesToFloat32(weightsA.Buf[off+8:]),
-							BytesToFloat32(weightsA.Buf[off+12:]),
-						}
-					}
-					mm.WeightData[meshID] = ws
 				}
 
 				vertices = append(vertices,
@@ -946,19 +947,19 @@ func ComposeNodeTransform(n gltfNode) [16]float32 {
 	return composeNodeTransform(n)
 }
 
-func LoadGLTFRoot(path string) (*gltfRoot, error) {
+func LoadGLTFRoot(path string) (*GltfRoot, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	var g gltfRoot
+	var g GltfRoot
 	if err := json.Unmarshal(raw, &g); err != nil {
 		return nil, err
 	}
 	return &g, nil
 }
 
-func loadGLB(path string) (*gltfRoot, [][]byte, error) {
+func loadGLB(path string) (*GltfRoot, [][]byte, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, nil, err
@@ -992,7 +993,7 @@ func loadGLB(path string) (*gltfRoot, [][]byte, error) {
 	jsonBytes := raw[offset : offset+jsonChunkLen]
 	offset += jsonChunkLen
 
-	var g gltfRoot
+	var g GltfRoot
 	if err := json.Unmarshal(jsonBytes, &g); err != nil {
 		return nil, nil, err
 	}
@@ -1044,7 +1045,7 @@ func TransformNormal(m [16]float32, n [3]float32) [3]float32 {
 		m[2]*n[0] + m[6]*n[1] + m[10]*n[2],
 	}
 }
-func findNodesForMesh(g *gltfRoot, meshIndex int) []int {
+func findNodesForMesh(g *GltfRoot, meshIndex int) []int {
 	out := []int{}
 	for i, n := range g.Nodes {
 		if n.Mesh == meshIndex {
