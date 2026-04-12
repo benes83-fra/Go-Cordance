@@ -362,13 +362,13 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		if mat.Shader != nil {
 			desiredShader = mat.Shader
 		}
-		// if skin != nil {
-		// 	sp, err := engine.GetShaderProgram("default_skinned")
-		// 	if err == nil {
-		// 		desiredShader = sp
-		// 	}
-		// }
-		_ = skin
+		if skin != nil {
+			sp, err := engine.GetShaderProgram("default_skinned")
+			if err == nil {
+				desiredShader = sp
+			}
+		}
+		// _ = skin
 		if desiredShader != currentShader {
 			currentShader = desiredShader
 			if currentShader != nil {
