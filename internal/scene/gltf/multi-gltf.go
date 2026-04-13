@@ -171,3 +171,72 @@ func LoadGLTFMulti(sc *scene.Scene, path string) (*ecs.Entity, error) {
 
 	return root, nil
 }
+
+func LoadGLTFMultiSkinned(
+	sc *scene.Scene,
+	path string,
+) (*ecs.Entity, []*ecs.Entity, []*ecs.Entity, error) {
+
+	root, err := LoadGLTFMulti(sc, path)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	g, _, err := engine.LoadGLTFOrGLB(path)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	nodeEntities := BuildNodeEntities(sc, g)
+
+	// attach skeleton to root (CesiumMan entity)
+	root.AddComponent(&ecs.Skeleton{
+		Nodes: nodeEntities,
+	})
+
+	children := root.GetComponent((*ecs.Children)(nil)).(*ecs.Children)
+	var skinEntities []*ecs.Entity
+	for _, child := range children.Entities {
+		if child.GetComponent((*ecs.Skin)(nil)) != nil {
+			skinEntities = append(skinEntities, child)
+		}
+	}
+
+	for _, skinEnt := range skinEntities {
+		skin := skinEnt.GetComponent((*ecs.Skin)(nil)).(*ecs.Skin)
+		for i, nodeIndex := range skin.Joints {
+			if nodeIndex < 0 || nodeIndex >= len(nodeEntities) {
+				continue
+			}
+			skin.JointEntities[i] = nodeEntities[nodeIndex]
+		}
+	}
+
+	return root, nodeEntities, skinEntities, nil
+}
+
+func BuildNodeEntities(sc *scene.Scene, g *engine.GltfRoot) []*ecs.Entity {
+	nodeEntities := make([]*ecs.Entity, len(g.Nodes))
+
+	// 1. Create one ECS entity per glTF node
+	for i := range g.Nodes {
+		ent := sc.AddEntity()
+		ent.AddComponent(&ecs.Transform{}) // animation system will update this
+		ent.AddComponent(ecs.NewChildren())
+		nodeEntities[i] = ent
+	}
+
+	// 2. Build parent-child relationships
+	for i, n := range g.Nodes {
+		for _, childIdx := range n.Children {
+			parent := nodeEntities[i]
+			child := nodeEntities[childIdx]
+
+			child.AddComponent(ecs.NewParent(parent))
+			pc := parent.GetComponent((*ecs.Children)(nil)).(*ecs.Children)
+			pc.AddChild(child)
+		}
+	}
+
+	return nodeEntities
+}

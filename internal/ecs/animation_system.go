@@ -19,43 +19,65 @@ func (sys *AnimationSystem) Update(dt float32, ents []*Entity) {
 		}
 
 		clip := player.Clips[player.Current]
-		if clip == nil || len(clip.Keyframes) == 0 {
+		if clip == nil || len(clip.Tracks) == 0 {
 			continue
 		}
 
-		// Advance time
+		// advance time
 		player.Time += dt * player.Speed
 		if player.Time > clip.Duration {
-			player.Time = 0 // loop
+			player.Time = 0
 		}
 
-		// Find keyframes
-		kf1, kf2 := findKeyframePair(clip, player.Time)
-		if kf1 == nil || kf2 == nil {
+		// find skeleton
+		skc := ent.GetComponent((*Skeleton)(nil))
+		if skc == nil {
 			continue
 		}
+		skeleton := skc.(*Skeleton)
 
-		// Interpolate
-		t := (player.Time - kf1.Time) / (kf2.Time - kf1.Time)
+		// apply each track to its node entity
+		for _, track := range clip.Tracks {
+			if track.NodeIndex < 0 || track.NodeIndex >= len(skeleton.Nodes) {
+				continue
+			}
+			nodeEnt := skeleton.Nodes[track.NodeIndex]
+			if nodeEnt == nil {
+				continue
+			}
 
-		pos := lerpVec3(kf1.Position, kf2.Position, t)
-		rot := slerpQuat(kf1.Rotation, kf2.Rotation, t)
-		scl := lerpVec3(kf1.Scale, kf2.Scale, t)
+			kf1, kf2 := findKeyframePairTrack(track.Keyframes, player.Time)
+			if kf1 == nil || kf2 == nil {
+				continue
+			}
 
-		// Apply to Transform
-		if tr := ent.GetComponent(&Transform{}); tr != nil {
-			transform := tr.(*Transform)
-			transform.Position = pos
-			transform.Rotation = rot
-			transform.Scale = scl
+			t := (player.Time - kf1.Time) / (kf2.Time - kf1.Time)
+
+			pos := lerpVec3(kf1.Position, kf2.Position, t)
+			rot := slerpQuat(kf1.Rotation, kf2.Rotation, t)
+			scl := lerpVec3(kf1.Scale, kf2.Scale, t)
+
+			if tr := nodeEnt.GetComponent((*Transform)(nil)); tr != nil {
+				transform := tr.(*Transform)
+				// only overwrite if channel actually had data
+				if kf1.Position != [3]float32{} || kf2.Position != [3]float32{} {
+					transform.Position = pos
+				}
+				if kf1.Rotation != [4]float32{} || kf2.Rotation != [4]float32{} {
+					transform.Rotation = rot
+				}
+				if kf1.Scale != [3]float32{} || kf2.Scale != [3]float32{} {
+					transform.Scale = scl
+				}
+			}
 		}
 	}
 }
 
-func findKeyframePair(clip *AnimationClip, time float32) (*TransformKeyframe, *TransformKeyframe) {
-	for i := 0; i < len(clip.Keyframes)-1; i++ {
-		k1 := &clip.Keyframes[i]
-		k2 := &clip.Keyframes[i+1]
+func findKeyframePairTrack(kfs []TransformKeyframe, time float32) (*TransformKeyframe, *TransformKeyframe) {
+	for i := 0; i < len(kfs)-1; i++ {
+		k1 := &kfs[i]
+		k2 := &kfs[i+1]
 		if time >= k1.Time && time <= k2.Time {
 			return k1, k2
 		}

@@ -1,9 +1,14 @@
 package ecs
 
-type AnimationClip struct {
-	Name      string
-	Duration  float32
+type AnimationTrack struct {
+	NodeIndex int
 	Keyframes []TransformKeyframe
+}
+
+type AnimationClip struct {
+	Name     string
+	Duration float32
+	Tracks   []AnimationTrack
 }
 
 type TransformKeyframe struct {

@@ -14,36 +14,43 @@ func LoadGLTFAnimations(path string) (map[string]*ecs.AnimationClip, error) {
 	clips := map[string]*ecs.AnimationClip{}
 
 	for _, anim := range g.Animations {
-		clip := &ecs.AnimationClip{}
-		clip.Name = anim.Name
+		clip := &ecs.AnimationClip{
+			Name: anim.Name,
+		}
 
-		var duration float32 = 0
-		keyframes := map[int]*ecs.TransformKeyframe{}
+		var duration float32
+		// nodeIndex -> []TransformKeyframe
+		perNode := map[int][]ecs.TransformKeyframe{}
 
 		for _, ch := range anim.Channels {
 			sampler := anim.Samplers[ch.Sampler]
 
 			inputAcc, _ := engine.GetAccessor(g, buffers, sampler.Input)
-			times := make([]float32, inputAcc.Acc.Count)
+			outputAcc, _ := engine.GetAccessor(g, buffers, sampler.Output)
 
+			times := make([]float32, inputAcc.Acc.Count)
 			for i := 0; i < inputAcc.Acc.Count; i++ {
 				off := inputAcc.Base + i*inputAcc.Stride
-				times[i] = engine.BytesToFloat32(inputAcc.Buf[off:])
-				if times[i] > duration {
-					duration = times[i]
+				t := engine.BytesToFloat32(inputAcc.Buf[off:])
+				times[i] = t
+				if t > duration {
+					duration = t
 				}
 			}
 
-			outputAcc, _ := engine.GetAccessor(g, buffers, sampler.Output)
+			nodeIndex := ch.Target.Node
+			kfs := perNode[nodeIndex]
+			if len(kfs) < len(times) {
+				// grow and preserve existing data
+				newKfs := make([]ecs.TransformKeyframe, len(times))
+				copy(newKfs, kfs)
+				kfs = newKfs
+			}
 
-			for i := 0; i < inputAcc.Acc.Count; i++ {
+			for i := 0; i < len(times); i++ {
 				t := times[i]
-
-				kf := keyframes[i]
-				if kf == nil {
-					kf = &ecs.TransformKeyframe{Time: t}
-					keyframes[i] = kf
-				}
+				kf := kfs[i]
+				kf.Time = t
 
 				off := outputAcc.Base + i*outputAcc.Stride
 
@@ -54,7 +61,6 @@ func LoadGLTFAnimations(path string) (map[string]*ecs.AnimationClip, error) {
 						engine.BytesToFloat32(outputAcc.Buf[off+4:]),
 						engine.BytesToFloat32(outputAcc.Buf[off+8:]),
 					}
-
 				case "rotation":
 					kf.Rotation = [4]float32{
 						engine.BytesToFloat32(outputAcc.Buf[off+0:]),
@@ -62,7 +68,6 @@ func LoadGLTFAnimations(path string) (map[string]*ecs.AnimationClip, error) {
 						engine.BytesToFloat32(outputAcc.Buf[off+8:]),
 						engine.BytesToFloat32(outputAcc.Buf[off+12:]),
 					}
-
 				case "scale":
 					kf.Scale = [3]float32{
 						engine.BytesToFloat32(outputAcc.Buf[off+0:]),
@@ -70,14 +75,25 @@ func LoadGLTFAnimations(path string) (map[string]*ecs.AnimationClip, error) {
 						engine.BytesToFloat32(outputAcc.Buf[off+8:]),
 					}
 				}
-			}
-		}
 
-		for _, kf := range keyframes {
-			clip.Keyframes = append(clip.Keyframes, *kf)
+				kfs[i] = kf
+			}
+
+			perNode[nodeIndex] = kfs
 		}
 
 		clip.Duration = duration
+
+		for nodeIdx, kfs := range perNode {
+			if len(kfs) == 0 {
+				continue
+			}
+			clip.Tracks = append(clip.Tracks, ecs.AnimationTrack{
+				NodeIndex: nodeIdx,
+				Keyframes: kfs,
+			})
+		}
+
 		clips[clip.Name] = clip
 	}
 

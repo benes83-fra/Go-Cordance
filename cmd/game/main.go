@@ -216,24 +216,17 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	cesium, err := gltf.LoadGLTFMulti(sc, "assets/models/CesiumMan/CesiumMan.glb")
+	cesium, nodeEntities, skinEntities, err := gltf.LoadGLTFMultiSkinned(
+		sc,
+		"assets/models/CesiumMan/CesiumMan.glb",
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
-	// After loading CesiumMan
-	// cesiumRoot, nodeEntities, skinEntities := gltf.GetLastLoadInfo()
 
-	// // Wire joints → ECS entities
-	// for _, skinEnt := range skinEntities {
-	// 	skin := skinEnt.GetComponent((*ecs.Skin)(nil)).(*ecs.Skin)
-
-	// 	for i, nodeIndex := range skin.Joints {
-	// 		if nodeIndex < 0 || nodeIndex >= len(nodeEntities) {
-	// 			continue
-	// 		}
-	// 		skin.JointEntities[i] = nodeEntities[nodeIndex]
-	// 	}
-	// }
+	// (Optional) if you still want explicit wiring here, you can log/inspect:
+	_ = nodeEntities
+	_ = skinEntities
 
 	t2 := house.GetTransform()
 	t2.Position = [3]float32{0, 1, 6}
