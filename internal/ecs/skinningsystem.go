@@ -165,6 +165,9 @@ func (sys *SkinningSystem) Update(dt float32, ents []*Entity) {
 			// jointMatrix[paletteIndex] = M_jointWorld * B^-1
 			skin.JointMatrices[i] =
 				engine.MulMat4(jointWorld, skin.InverseBindMatrices[i])
+			// if i < 5 {
+			// 	fmt.Printf("Joint %d final matrix: %v\n", i, skin.JointMatrices[i])
+			// }
 		}
 	}
 }

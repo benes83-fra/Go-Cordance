@@ -1,6 +1,7 @@
 package gltf
 
 import (
+	"fmt"
 	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/engine"
 )
@@ -13,7 +14,11 @@ func LoadGLTFAnimations(path string) (map[string]*ecs.AnimationClip, error) {
 
 	clips := map[string]*ecs.AnimationClip{}
 
-	for _, anim := range g.Animations {
+	for i, anim := range g.Animations {
+		name := anim.Name
+		if name == "" {
+			name = fmt.Sprintf("Animation_%d", i)
+		}
 		clip := &ecs.AnimationClip{
 			Name: anim.Name,
 		}

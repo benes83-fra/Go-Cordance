@@ -1,5 +1,7 @@
 package ecs
 
+import "fmt"
+
 type AnimationSystem struct{}
 
 func NewAnimationSystem() *AnimationSystem {
@@ -14,7 +16,8 @@ func (sys *AnimationSystem) Update(dt float32, ents []*Entity) {
 		}
 		player := apc.(*AnimationPlayer)
 
-		if !player.Playing || player.Current == "" {
+		if !player.Playing /*|| player.Current == "" */ {
+			// fmt.Println("  plyer playing not found on ent", player, player.Playing, player.Current)
 			continue
 		}
 
@@ -22,7 +25,6 @@ func (sys *AnimationSystem) Update(dt float32, ents []*Entity) {
 		if clip == nil || len(clip.Tracks) == 0 {
 			continue
 		}
-
 		// advance time
 		player.Time += dt * player.Speed
 		if player.Time > clip.Duration {
@@ -32,9 +34,11 @@ func (sys *AnimationSystem) Update(dt float32, ents []*Entity) {
 		// find skeleton
 		skc := ent.GetComponent((*Skeleton)(nil))
 		if skc == nil {
+			fmt.Println("  BUT: no Skeleton on ent", ent.ID)
 			continue
 		}
 		skeleton := skc.(*Skeleton)
+		fmt.Println("  Skeleton found on ent", ent.ID, "nodes:", len(skeleton.Nodes))
 
 		// apply each track to its node entity
 		for _, track := range clip.Tracks {
@@ -56,6 +60,8 @@ func (sys *AnimationSystem) Update(dt float32, ents []*Entity) {
 			pos := lerpVec3(kf1.Position, kf2.Position, t)
 			rot := slerpQuat(kf1.Rotation, kf2.Rotation, t)
 			scl := lerpVec3(kf1.Scale, kf2.Scale, t)
+			fmt.Printf("Track node=%d t=%.3f pos=%v rot=%v scl=%v\n",
+				track.NodeIndex, player.Time, pos, rot, scl)
 
 			if tr := nodeEnt.GetComponent((*Transform)(nil)); tr != nil {
 				transform := tr.(*Transform)
@@ -70,6 +76,14 @@ func (sys *AnimationSystem) Update(dt float32, ents []*Entity) {
 					transform.Scale = scl
 				}
 			}
+			if clip == nil || len(clip.Tracks) == 0 {
+				fmt.Printf("Anim: ent %d has clip %q but no tracks or nil clip\n", ent.ID, player.Current)
+				continue
+			}
+
+			fmt.Printf("Anim: ent %d time=%.3f duration=%.3f tracks=%d\n",
+				ent.ID, player.Time, clip.Duration, len(clip.Tracks))
+
 		}
 	}
 }
