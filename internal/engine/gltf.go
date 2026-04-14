@@ -23,7 +23,7 @@ type GltfRoot struct {
 	Images      []gltfImage      `json:"images"`
 	Textures    []gltfTexture    `json:"textures"`
 	Animations  []gltfAnimation  `json:"animations"`
-	Nodes       []gltfNode       `json:"nodes"`
+	Nodes       []GltfNode       `json:"nodes"`
 	Scenes      []gltfScene      `json:"scenes"`
 	Scene       int              `json:"scene"`
 	Skins       []gltfSkin       `json:"skins"` // default scene index
@@ -145,7 +145,7 @@ func textureSourceIndex(t gltfTexture) int {
 	return -1
 }
 
-type gltfNode struct {
+type GltfNode struct {
 	Name        string    `json:"name"`
 	Mesh        int       `json:"mesh"`
 	Children    []int     `json:"children"`
@@ -571,11 +571,26 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 				js := make([][4]uint16, count)
 				for i := 0; i < count; i++ {
 					off := jointsA.Base + i*jointsA.Stride
-					js[i] = [4]uint16{
-						uint16(jointsA.Buf[off+0]),
-						uint16(jointsA.Buf[off+1]),
-						uint16(jointsA.Buf[off+2]),
-						uint16(jointsA.Buf[off+3]),
+
+					switch jointsA.Acc.ComponentType {
+					case 5121: // UNSIGNED_BYTE
+						js[i] = [4]uint16{
+							uint16(jointsA.Buf[off+0]),
+							uint16(jointsA.Buf[off+1]),
+							uint16(jointsA.Buf[off+2]),
+							uint16(jointsA.Buf[off+3]),
+						}
+
+					case 5123: // UNSIGNED_SHORT
+						js[i] = [4]uint16{
+							uint16(jointsA.Buf[off+0]) | uint16(jointsA.Buf[off+1])<<8,
+							uint16(jointsA.Buf[off+2]) | uint16(jointsA.Buf[off+3])<<8,
+							uint16(jointsA.Buf[off+4]) | uint16(jointsA.Buf[off+5])<<8,
+							uint16(jointsA.Buf[off+6]) | uint16(jointsA.Buf[off+7])<<8,
+						}
+
+					default:
+						panic(fmt.Sprintf("unsupported JOINTS_0 component type: %d", jointsA.Acc.ComponentType))
 					}
 				}
 				mm.JointData[meshID] = js
@@ -880,7 +895,7 @@ func loadGLTFMaterialsInternal(id, path string, multi bool) ([]LoadedMeshMateria
 
 	return results, nil
 }
-func composeNodeTransform(n gltfNode) [16]float32 {
+func composeNodeTransform(n GltfNode) [16]float32 {
 	// If matrix is provided, it overrides everything
 	if len(n.Matrix) == 16 {
 		var out [16]float32
@@ -943,7 +958,7 @@ func composeNodeTransform(n gltfNode) [16]float32 {
 }
 
 // Public wrapper so scene package can use it
-func ComposeNodeTransform(n gltfNode) [16]float32 {
+func ComposeNodeTransform(n GltfNode) [16]float32 {
 	return composeNodeTransform(n)
 }
 

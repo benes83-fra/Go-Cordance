@@ -219,9 +219,22 @@ func BuildNodeEntities(sc *scene.Scene, g *engine.GltfRoot) []*ecs.Entity {
 	nodeEntities := make([]*ecs.Entity, len(g.Nodes))
 
 	// 1. Create one ECS entity per glTF node
-	for i := range g.Nodes {
+	for i, n := range g.Nodes {
 		ent := sc.AddEntity()
-		ent.AddComponent(&ecs.Transform{}) // animation system will update this
+
+		// Build the correct local matrix from glTF TRS or matrix
+		localMat := engine.ComposeNodeTransform(n)
+
+		// Decompose into TRS for your Transform component
+		pos, rot, scale := engine.DecomposeTRS(localMat)
+
+		tr := &ecs.Transform{
+			Position: pos,
+			Rotation: rot,
+			Scale:    scale,
+		}
+		ent.AddComponent(tr)
+
 		ent.AddComponent(ecs.NewChildren())
 		nodeEntities[i] = ent
 	}
