@@ -16,8 +16,8 @@ type Transform struct {
 
 	LocalMatrix [16]float32
 	WorldMatrix [16]float32
-
-	Dirty bool
+	FrozenLocal bool
+	Dirty       bool
 }
 
 func NewTransform(pos [3]float32) *Transform {

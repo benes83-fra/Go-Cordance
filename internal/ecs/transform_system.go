@@ -43,8 +43,11 @@ func (ts *TransformSystem) updateRecursive(e *Entity, parentWorld *[16]float32) 
 	tr := e.GetTransform()
 	if tr != nil {
 		// Always rebuild for now
-		tr.RecalculateLocal()
-		tr.WorldMatrix = MulMat4(*parentWorld, tr.LocalMatrix)
+		if !tr.FrozenLocal { // <--- ADD (4)
+			tr.RecalculateLocal() // <--- unchanged
+		}
+		tr.WorldMatrix = MulMat4(*parentWorld, tr.LocalMatrix) // <--- unchanged
+
 	}
 
 	children, ok := e.GetComponent((*Children)(nil)).(*Children)
