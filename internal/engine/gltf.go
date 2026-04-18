@@ -122,6 +122,7 @@ type gltfAnimation struct {
 type gltfSkin struct {
 	Joints              []int `json:"joints"`
 	InverseBindMatrices int   `json:"inverseBindMatrices"`
+	Skeleton            int   `json:"skeleton,omitempty"`
 }
 
 // helper: return the image source index for a texture, checking EXT_texture_webp
@@ -1077,72 +1078,135 @@ func IdentityMatrix() [16]float32 {
 		0, 0, 0, 1,
 	}
 }
-
-// DecomposeTRS extracts translation, rotation (quat), and scale from a 4x4 matrix.
-// Assumes column-major order (OpenGL style).
 func DecomposeTRS(m [16]float32) (pos [3]float32, rot [4]float32, scale [3]float32) {
-
-	// Translation
+	// Translation (column-major)
 	pos = [3]float32{m[12], m[13], m[14]}
 
-	// Extract basis vectors
+	// Basis vectors (column-major)
 	x := [3]float32{m[0], m[1], m[2]}
 	y := [3]float32{m[4], m[5], m[6]}
 	z := [3]float32{m[8], m[9], m[10]}
 
 	// Scale = length of basis vectors
-	scale[0] = float32(math.Sqrt(float64(x[0]*x[0] + x[1]*x[1] + x[2]*x[2])))
-	scale[1] = float32(math.Sqrt(float64(y[0]*y[0] + y[1]*y[1] + y[2]*y[2])))
-	scale[2] = float32(math.Sqrt(float64(z[0]*z[0] + z[1]*z[1] + z[2]*z[2])))
+	sx := float32(math.Sqrt(float64(x[0]*x[0] + x[1]*x[1] + x[2]*x[2])))
+	sy := float32(math.Sqrt(float64(y[0]*y[0] + y[1]*y[1] + y[2]*y[2])))
+	sz := float32(math.Sqrt(float64(z[0]*z[0] + z[1]*z[1] + z[2]*z[2])))
+	scale = [3]float32{sx, sy, sz}
 
-	// Normalize basis vectors
-	if scale[0] != 0 {
-		x[0] /= scale[0]
-		x[1] /= scale[0]
-		x[2] /= scale[0]
+	// Normalize basis to get pure rotation matrix
+	if sx != 0 {
+		x[0] /= sx
+		x[1] /= sx
+		x[2] /= sx
 	}
-	if scale[1] != 0 {
-		y[0] /= scale[1]
-		y[1] /= scale[1]
-		y[2] /= scale[1]
+	if sy != 0 {
+		y[0] /= sy
+		y[1] /= sy
+		y[2] /= sy
 	}
-	if scale[2] != 0 {
-		z[0] /= scale[2]
-		z[1] /= scale[2]
-		z[2] /= scale[2]
+	if sz != 0 {
+		z[0] /= sz
+		z[1] /= sz
+		z[2] /= sz
 	}
 
-	// Convert rotation matrix → quaternion
+	// Convert 3x3 (column-major) to quaternion
 	trace := x[0] + y[1] + z[2]
-
+	var qx, qy, qz, qw float32
 	if trace > 0 {
-		s := float32(math.Sqrt(float64(trace+1.0)) * 2)
-		rot[3] = 0.25 * s
-		rot[0] = (y[2] - z[1]) / s
-		rot[1] = (z[0] - x[2]) / s
-		rot[2] = (x[1] - y[0]) / s
+		s := float32(math.Sqrt(float64(trace+1.0)) * 2.0)
+		qw = 0.25 * s
+		qx = (y[2] - z[1]) / s
+		qy = (z[0] - x[2]) / s
+		qz = (x[1] - y[0]) / s
 	} else if x[0] > y[1] && x[0] > z[2] {
-		s := float32(math.Sqrt(float64(1.0+x[0]-y[1]-z[2])) * 2)
-		rot[3] = (y[2] - z[1]) / s
-		rot[0] = 0.25 * s
-		rot[1] = (y[0] + x[1]) / s
-		rot[2] = (z[0] + x[2]) / s
+		s := float32(math.Sqrt(float64(1.0+x[0]-y[1]-z[2])) * 2.0)
+		qw = (y[2] - z[1]) / s
+		qx = 0.25 * s
+		qy = (y[0] + x[1]) / s
+		qz = (z[0] + x[2]) / s
 	} else if y[1] > z[2] {
-		s := float32(math.Sqrt(float64(1.0+y[1]-x[0]-z[2])) * 2)
-		rot[3] = (z[0] - x[2]) / s
-		rot[0] = (y[0] + x[1]) / s
-		rot[1] = 0.25 * s
-		rot[2] = (z[1] + y[2]) / s
+		s := float32(math.Sqrt(float64(1.0+y[1]-x[0]-z[2])) * 2.0)
+		qw = (z[0] - x[2]) / s
+		qx = (y[0] + x[1]) / s
+		qy = 0.25 * s
+		qz = (z[1] + y[2]) / s
 	} else {
-		s := float32(math.Sqrt(float64(1.0+z[2]-x[0]-y[1])) * 2)
-		rot[3] = (x[1] - y[0]) / s
-		rot[0] = (z[0] + x[2]) / s
-		rot[1] = (z[1] + y[2]) / s
-		rot[2] = 0.25 * s
+		s := float32(math.Sqrt(float64(1.0+z[2]-x[0]-y[1])) * 2.0)
+		qw = (x[1] - y[0]) / s
+		qx = (z[0] + x[2]) / s
+		qy = (z[1] + y[2]) / s
+		qz = 0.25 * s
 	}
-
+	rot = [4]float32{qx, qy, qz, qw}
 	return
 }
+
+// DecomposeTRS extracts translation, rotation (quat), and scale from a 4x4 matrix.
+// Assumes column-major order (OpenGL style).
+// func DecomposeTRS(m [16]float32) (pos [3]float32, rot [4]float32, scale [3]float32) {
+
+// 	// Translation
+// 	pos = [3]float32{m[12], m[13], m[14]}
+
+// 	// Extract basis vectors
+// 	x := [3]float32{m[0], m[1], m[2]}
+// 	y := [3]float32{m[4], m[5], m[6]}
+// 	z := [3]float32{m[8], m[9], m[10]}
+
+// 	// Scale = length of basis vectors
+// 	scale[0] = float32(math.Sqrt(float64(x[0]*x[0] + x[1]*x[1] + x[2]*x[2])))
+// 	scale[1] = float32(math.Sqrt(float64(y[0]*y[0] + y[1]*y[1] + y[2]*y[2])))
+// 	scale[2] = float32(math.Sqrt(float64(z[0]*z[0] + z[1]*z[1] + z[2]*z[2])))
+
+// 	// Normalize basis vectors
+// 	if scale[0] != 0 {
+// 		x[0] /= scale[0]
+// 		x[1] /= scale[0]
+// 		x[2] /= scale[0]
+// 	}
+// 	if scale[1] != 0 {
+// 		y[0] /= scale[1]
+// 		y[1] /= scale[1]
+// 		y[2] /= scale[1]
+// 	}
+// 	if scale[2] != 0 {
+// 		z[0] /= scale[2]
+// 		z[1] /= scale[2]
+// 		z[2] /= scale[2]
+// 	}
+
+// 	// Convert rotation matrix → quaternion
+// 	trace := x[0] + y[1] + z[2]
+
+// 	if trace > 0 {
+// 		s := float32(math.Sqrt(float64(trace+1.0)) * 2)
+// 		rot[3] = 0.25 * s
+// 		rot[0] = (y[2] - z[1]) / s
+// 		rot[1] = (z[0] - x[2]) / s
+// 		rot[2] = (x[1] - y[0]) / s
+// 	} else if x[0] > y[1] && x[0] > z[2] {
+// 		s := float32(math.Sqrt(float64(1.0+x[0]-y[1]-z[2])) * 2)
+// 		rot[3] = (y[2] - z[1]) / s
+// 		rot[0] = 0.25 * s
+// 		rot[1] = (y[0] + x[1]) / s
+// 		rot[2] = (z[0] + x[2]) / s
+// 	} else if y[1] > z[2] {
+// 		s := float32(math.Sqrt(float64(1.0+y[1]-x[0]-z[2])) * 2)
+// 		rot[3] = (z[0] - x[2]) / s
+// 		rot[0] = (y[0] + x[1]) / s
+// 		rot[1] = 0.25 * s
+// 		rot[2] = (z[1] + y[2]) / s
+// 	} else {
+// 		s := float32(math.Sqrt(float64(1.0+z[2]-x[0]-y[1])) * 2)
+// 		rot[3] = (x[1] - y[0]) / s
+// 		rot[0] = (z[0] + x[2]) / s
+// 		rot[1] = (z[1] + y[2]) / s
+// 		rot[2] = 0.25 * s
+// 	}
+
+// 	return
+// }
 
 type MeshTRS struct {
 	Position [3]float32

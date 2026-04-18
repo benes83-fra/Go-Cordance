@@ -10,9 +10,10 @@ type Skin struct {
 	InverseBindMatrices [][16]float32
 	JointMatrices       [][16]float32
 	JointEntities       []*Entity
+	SkeletonRootNode    int // glTF node index
 }
 
-func NewSkin(joints []int, ibm [][16]float32) *Skin {
+func NewSkin(joints []int, ibm [][16]float32, skeletonRoot int) *Skin {
 	fmt.Printf("Skin created: joints=%v ibmCount=%d\n", joints, len(ibm))
 
 	return &Skin{
@@ -20,6 +21,7 @@ func NewSkin(joints []int, ibm [][16]float32) *Skin {
 		InverseBindMatrices: append([][16]float32(nil), ibm...),
 		JointMatrices:       make([][16]float32, len(joints)),
 		JointEntities:       make([]*Entity, len(joints)),
+		SkeletonRootNode:    skeletonRoot,
 	}
 }
 

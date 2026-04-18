@@ -17,14 +17,16 @@ func ExtractGLTFSkins(path string) (map[string]*ecs.Skin, error) {
 
 	// Pre-decode all skins' inverse bind matrices
 	type skinData struct {
-		joints []int
-		ibm    [][16]float32
+		joints   []int
+		ibm      [][16]float32
+		skeleton int
 	}
 	skins := make([]skinData, len(g.Skins))
 
 	for si, s := range g.Skins {
 		data := skinData{
-			joints: append([]int(nil), s.Joints...),
+			joints:   append([]int(nil), s.Joints...),
+			skeleton: s.Skeleton,
 		}
 
 		if s.InverseBindMatrices >= 0 {
@@ -66,7 +68,7 @@ func ExtractGLTFSkins(path string) (map[string]*ecs.Skin, error) {
 		}
 
 		sd := skins[n.Skin]
-		skinComp := ecs.NewSkin(sd.joints, sd.ibm)
+		skinComp := ecs.NewSkin(sd.joints, sd.ibm, sd.skeleton)
 
 		// One Skin per primitive, keyed like RegisterGLTFMulti / loadGLTFInternal
 		for pi := range mesh.Primitives {

@@ -102,11 +102,12 @@ func (s *Scene) InstantiatePrefab(path string) (*ecs.Entity, []*ecs.Entity, erro
 				var s struct {
 					Joints              []int
 					InverseBindMatrices [][16]float32
+					Skeleton            int
 				}
 				b, _ := json.Marshal(raw)
 				json.Unmarshal(b, &s)
 
-				skin := ecs.NewSkin(s.Joints, s.InverseBindMatrices)
+				skin := ecs.NewSkin(s.Joints, s.InverseBindMatrices, s.Skeleton)
 				e.AddComponent(skin)
 			case "Skeleton":
 				var s struct {
