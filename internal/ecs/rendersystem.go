@@ -380,6 +380,7 @@ func (rs *RenderSystem) RenderMainPass(entities []*Entity) {
 		}
 
 		engine.SetMat4(rs.Renderer.LocModel, &t.WorldMatrix[0])
+
 		engine.SetMat4(rs.Renderer.LocView, &view[0])
 		engine.SetMat4(rs.Renderer.LocProj, &proj[0])
 		// --- draw each mesh ---

@@ -652,6 +652,24 @@ func serializeEntity(e *ecs.Entity) SerializedEntity {
 			"active":   cam.Active,
 		}
 	}
+	// inside serializeEntity(e)
+	if s, ok := e.GetComponent((*ecs.Skin)(nil)).(*ecs.Skin); ok {
+		se.Components["Skin"] = map[string]any{
+			"Joints":              s.Joints,
+			"InverseBindMatrices": s.InverseBindMatrices,
+			// JointMatrices / JointEntities are runtime-only, skip them
+		}
+	}
+	// serializeEntity
+	if skel, ok := e.GetComponent((*ecs.Skeleton)(nil)).(*ecs.Skeleton); ok {
+		ids := make([]int64, len(skel.Nodes))
+		for i, n := range skel.Nodes {
+			ids[i] = n.ID
+		}
+		se.Components["Skeleton"] = map[string]any{
+			"NodeIDs": ids,
+		}
+	}
 
 	return se
 }

@@ -98,6 +98,33 @@ func (s *Scene) InstantiatePrefab(path string) (*ecs.Entity, []*ecs.Entity, erro
 				tr.Scale = t.Scale
 				tr.RecalculateLocal()
 				e.AddComponent(tr)
+			case "Skin":
+				var s struct {
+					Joints              []int
+					InverseBindMatrices [][16]float32
+				}
+				b, _ := json.Marshal(raw)
+				json.Unmarshal(b, &s)
+
+				skin := ecs.NewSkin(s.Joints, s.InverseBindMatrices)
+				e.AddComponent(skin)
+			case "Skeleton":
+				var s struct {
+					NodeIDs []int64
+				}
+				b, _ := json.Marshal(raw)
+				json.Unmarshal(b, &s)
+
+				skel := &ecs.Skeleton{
+					Nodes: make([]*ecs.Entity, len(s.NodeIDs)),
+				}
+				// after all entities are created and idMap is filled:
+				for i, id := range s.NodeIDs {
+					if ent, ok := idMap[id]; ok {
+						skel.Nodes[i] = ent
+					}
+				}
+				e.AddComponent(skel)
 
 			case "Mesh":
 				var m struct{ ID string }
