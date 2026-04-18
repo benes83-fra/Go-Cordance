@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/engine"
+	"log"
 )
 
 // ExtractGLTFSkins builds Skin components keyed by meshID ("MeshName/primitiveIndex").
@@ -44,9 +45,23 @@ func ExtractGLTFSkins(path string) (map[string]*ecs.Skin, error) {
 				for c := 0; c < 16; c++ {
 					m[c] = engine.BytesToFloat32(acc.Buf[off+4*c:])
 				}
-				// fmt.Printf("Skin %d IBM[%d]: %v\n", si, i, m)
 				data.ibm = append(data.ibm, m)
+				// try transpose read for diagnostic
+				var mt [16]float32
+				for r := 0; r < 4; r++ {
+					for c := 0; c < 4; c++ {
+						mt[c*4+r] = engine.BytesToFloat32(acc.Buf[off+4*(r*4+c):])
+					}
+				}
+				log.Printf("IBM alt read: %v", mt)
+
+				if i < 2 {
+					log.Printf("Skin %d IBM[%d]: %v", si, i, m)
+				}
+				log.Printf("Skin %d IBM[%d] rawStride=%d base=%d", si, i, acc.Stride, acc.Base)
+
 			}
+
 		}
 
 		skins[si] = data
@@ -74,6 +89,7 @@ func ExtractGLTFSkins(path string) (map[string]*ecs.Skin, error) {
 		for pi := range mesh.Primitives {
 			meshID := fmt.Sprintf("%s/%d", meshName, pi)
 			result[meshID] = skinComp
+
 		}
 	}
 

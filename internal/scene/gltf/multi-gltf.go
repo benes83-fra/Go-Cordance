@@ -5,6 +5,7 @@ import (
 	"go-engine/Go-Cordance/internal/ecs"
 	"go-engine/Go-Cordance/internal/engine"
 	"go-engine/Go-Cordance/internal/scene"
+	"log"
 	"path/filepath"
 	"strings"
 )
@@ -204,12 +205,24 @@ func LoadGLTFMultiSkinned(
 
 	for _, skinEnt := range skinEntities {
 		skin := skinEnt.GetComponent((*ecs.Skin)(nil)).(*ecs.Skin)
+		if len(skin.JointEntities) != len(skin.Joints) {
+			skin.JointEntities = make([]*ecs.Entity, len(skin.Joints))
+		}
+
 		for i, nodeIndex := range skin.Joints {
 			if nodeIndex < 0 || nodeIndex >= len(nodeEntities) {
+				log.Printf("Skin joint %d -> invalid node index %d", i, nodeIndex)
 				continue
 			}
-			skin.JointEntities[i] = nodeEntities[nodeIndex]
+			ent := nodeEntities[nodeIndex]
+			if ent == nil {
+				log.Printf("Skin joint %d -> node entity nil for node %d", i, nodeIndex)
+			} else {
+				log.Printf("Skin joint %d -> entity ID %d (node %d)", i, ent.ID, nodeIndex)
+			}
+			skin.JointEntities[i] = ent
 		}
+
 	}
 
 	return root, nodeEntities, skinEntities, nil

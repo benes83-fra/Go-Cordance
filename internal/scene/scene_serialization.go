@@ -596,6 +596,7 @@ func serializeEntity(e *ecs.Entity) SerializedEntity {
 			"friction":    cs.Friction,
 		}
 	}
+	// inside serializeEntity(e)
 
 	// ColliderAABB
 	if c := e.GetComponent((*ecs.ColliderAABB)(nil)); c != nil {
@@ -657,6 +658,7 @@ func serializeEntity(e *ecs.Entity) SerializedEntity {
 		se.Components["Skin"] = map[string]any{
 			"Joints":              s.Joints,
 			"InverseBindMatrices": s.InverseBindMatrices,
+			"Skeleton":            s.SkeletonRootNode,
 			// JointMatrices / JointEntities are runtime-only, skip them
 		}
 	}

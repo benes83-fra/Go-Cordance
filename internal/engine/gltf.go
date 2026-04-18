@@ -279,28 +279,49 @@ func uploadMeshToGL(mm *MeshManager, id string, vertices []float32, indices []ui
 	gl.EnableVertexAttribArray(3)
 
 	// --- NEW: JOINTS_0 (location = 4) ---
+	// JOINTS_0 (location = 4)
 	if js, ok := mm.JointData[id]; ok && len(js) > 0 {
 		var jointVBO uint32
 		gl.GenBuffers(1, &jointVBO)
 		gl.BindBuffer(gl.ARRAY_BUFFER, jointVBO)
-		// js is [] [4]uint16 → 8 bytes per vertex
-		gl.BufferData(gl.ARRAY_BUFFER, len(js)*4*2, gl.Ptr(js), gl.STATIC_DRAW)
+		size := int(len(js) * 8) // 4 * uint16 = 8 bytes per vertex
+		if len(js) > 0 {
+			gl.BufferData(gl.ARRAY_BUFFER, size, gl.Ptr(&js[0][0]), gl.STATIC_DRAW)
+		} else {
+			gl.BufferData(gl.ARRAY_BUFFER, size, nil, gl.STATIC_DRAW)
+		}
 
-		gl.VertexAttribIPointer(4, 4, gl.UNSIGNED_SHORT, 8, gl.PtrOffset(0))
+		// integer attribute: ivec4 in shader
+		gl.VertexAttribIPointer(4, 4, gl.UNSIGNED_SHORT, int32(8), gl.PtrOffset(0))
 		gl.EnableVertexAttribArray(4)
 
 		mm.vbos[id+"_joints"] = jointVBO
 	}
 
-	// --- NEW: WEIGHTS_0 (location = 5) ---
+	// WEIGHTS_0 (location = 5)
 	if ws, ok := mm.WeightData[id]; ok && len(ws) > 0 {
+		// optional: renormalize here
+		for i := range ws {
+			s := ws[i][0] + ws[i][1] + ws[i][2] + ws[i][3]
+			if s > 0 && math.Abs(float64(s-1.0)) > 1e-4 {
+				ws[i][0] /= s
+				ws[i][1] /= s
+				ws[i][2] /= s
+				ws[i][3] /= s
+			}
+		}
+
 		var weightVBO uint32
 		gl.GenBuffers(1, &weightVBO)
 		gl.BindBuffer(gl.ARRAY_BUFFER, weightVBO)
-		// ws is [] [4]float32 → 16 bytes per vertex
-		gl.BufferData(gl.ARRAY_BUFFER, len(ws)*4*4, gl.Ptr(ws), gl.STATIC_DRAW)
+		size := int(len(ws) * 16) // 4 * float32 = 16 bytes per vertex
+		if len(ws) > 0 {
+			gl.BufferData(gl.ARRAY_BUFFER, size, gl.Ptr(&ws[0][0]), gl.STATIC_DRAW)
+		} else {
+			gl.BufferData(gl.ARRAY_BUFFER, size, nil, gl.STATIC_DRAW)
+		}
 
-		gl.VertexAttribPointerWithOffset(5, 4, gl.FLOAT, false, 16, 0)
+		gl.VertexAttribPointerWithOffset(5, 4, gl.FLOAT, false, int32(16), 0)
 		gl.EnableVertexAttribArray(5)
 
 		mm.vbos[id+"_weights"] = weightVBO
@@ -600,12 +621,32 @@ func (mm *MeshManager) loadGLTFInternal(id, path string, multi bool) ([]string, 
 				ws := make([][4]float32, count)
 				for i := 0; i < count; i++ {
 					off := weightsA.Base + i*weightsA.Stride
-					ws[i] = [4]float32{
-						BytesToFloat32(weightsA.Buf[off+0:]),
-						BytesToFloat32(weightsA.Buf[off+4:]),
-						BytesToFloat32(weightsA.Buf[off+8:]),
-						BytesToFloat32(weightsA.Buf[off+12:]),
+					switch weightsA.Acc.ComponentType {
+					case 5126: // FLOAT
+						ws[i] = [4]float32{
+							BytesToFloat32(weightsA.Buf[off+0:]),
+							BytesToFloat32(weightsA.Buf[off+4:]),
+							BytesToFloat32(weightsA.Buf[off+8:]),
+							BytesToFloat32(weightsA.Buf[off+12:]),
+						}
+					case 5121: // UNSIGNED_BYTE (normalized)
+						ws[i] = [4]float32{
+							float32(weightsA.Buf[off+0]) / 255.0,
+							float32(weightsA.Buf[off+1]) / 255.0,
+							float32(weightsA.Buf[off+2]) / 255.0,
+							float32(weightsA.Buf[off+3]) / 255.0,
+						}
+					case 5123: // UNSIGNED_SHORT (normalized)
+						ws[i] = [4]float32{
+							float32(uint16(weightsA.Buf[off+0])|uint16(weightsA.Buf[off+1])<<8) / 65535.0,
+							float32(uint16(weightsA.Buf[off+2])|uint16(weightsA.Buf[off+3])<<8) / 65535.0,
+							float32(uint16(weightsA.Buf[off+4])|uint16(weightsA.Buf[off+5])<<8) / 65535.0,
+							float32(uint16(weightsA.Buf[off+6])|uint16(weightsA.Buf[off+7])<<8) / 65535.0,
+						}
+					default:
+						return nil, fmt.Errorf("unsupported WEIGHTS_0 component type: %d", weightsA.Acc.ComponentType)
 					}
+
 				}
 				mm.WeightData[meshID] = ws
 			}
