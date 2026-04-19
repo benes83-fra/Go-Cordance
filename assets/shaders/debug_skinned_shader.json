@@ -1,0 +1,8 @@
+{
+    "name": "debug_skinned_shader",
+    "vertex": "assets/shaders/debug_skinned_vertex.glsl",
+    "fragment": "assets/shaders/debug_skinned_fragment.glsl",
+    "defines": {
+        "USE_FOG": 1
+    }
+}
