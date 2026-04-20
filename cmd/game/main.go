@@ -236,7 +236,7 @@ func main() {
 	ct := cesium.GetTransform()
 	ct.Position = [3]float32{0, 1, -4}
 	ct.Scale = [3]float32{1, 1, 1} // CesiumMan is huge
-	ct.SetRotationDegrees(90, 0, 90)
+	ct.SetRotationDegrees(180, 90, 0)
 	cesium.AddComponent(ecs.NewName("CesiumMan"))
 	named["CesiumMan"] = cesium
 	clips, err := gltf.LoadGLTFAnimations("assets/models/CesiumMan/CesiumMan.glb")
