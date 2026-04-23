@@ -142,49 +142,49 @@ func sanitizeScale(s *[3]float32) {
 // }
 
 // RecalculateLocal rebuilds LocalMatrix from Position/Rotation/Scale.
-func (t *Transform) RecalculateLocal() {
-	sanitizeScale(&t.Scale)
-	// Build rotation matrix from quaternion
-	qx, qy, qz, qw := t.Rotation[0], t.Rotation[1], t.Rotation[2], t.Rotation[3]
-	sx, sy, sz := t.Scale[0], t.Scale[1], t.Scale[2]
-	tx, ty, tz := t.Position[0], t.Position[1], t.Position[2]
+// func (t *Transform) RecalculateLocal() {
+// 	sanitizeScale(&t.Scale)
+// 	// Build rotation matrix from quaternion
+// 	qx, qy, qz, qw := t.Rotation[0], t.Rotation[1], t.Rotation[2], t.Rotation[3]
+// 	sx, sy, sz := t.Scale[0], t.Scale[1], t.Scale[2]
+// 	tx, ty, tz := t.Position[0], t.Position[1], t.Position[2]
 
-	xx := qx * qx
-	yy := qy * qy
-	zz := qz * qz
-	xy := qx * qy
-	xz := qx * qz
-	yz := qy * qz
-	wx := qw * qx
-	wy := qw * qy
-	wz := qw * qz
+// 	xx := qx * qx
+// 	yy := qy * qy
+// 	zz := qz * qz
+// 	xy := qx * qy
+// 	xz := qx * qz
+// 	yz := qy * qz
+// 	wx := qw * qx
+// 	wy := qw * qy
+// 	wz := qw * qz
 
-	m := [16]float32{
-		1 - 2*(yy+zz), 2 * (xy - wz), 2 * (xz + wy), 0,
-		2 * (xy + wz), 1 - 2*(xx+zz), 2 * (yz - wx), 0,
-		2 * (xz - wy), 2 * (yz + wx), 1 - 2*(xx+yy), 0,
-		0, 0, 0, 1,
-	}
+// 	m := [16]float32{
+// 		1 - 2*(yy+zz), 2 * (xy - wz), 2 * (xz + wy), 0,
+// 		2 * (xy + wz), 1 - 2*(xx+zz), 2 * (yz - wx), 0,
+// 		2 * (xz - wy), 2 * (yz + wx), 1 - 2*(xx+yy), 0,
+// 		0, 0, 0, 1,
+// 	}
 
-	// Apply scale
-	m[0] *= sx
-	m[1] *= sx
-	m[2] *= sx
-	m[4] *= sy
-	m[5] *= sy
-	m[6] *= sy
-	m[8] *= sz
-	m[9] *= sz
-	m[10] *= sz
+// 	// Apply scale
+// 	m[0] *= sx
+// 	m[1] *= sx
+// 	m[2] *= sx
+// 	m[4] *= sy
+// 	m[5] *= sy
+// 	m[6] *= sy
+// 	m[8] *= sz
+// 	m[9] *= sz
+// 	m[10] *= sz
 
-	// Apply translation
-	m[12] = tx
-	m[13] = ty
-	m[14] = tz
+// 	// Apply translation
+// 	m[12] = tx
+// 	m[13] = ty
+// 	m[14] = tz
 
-	t.LocalMatrix = m
-	t.Dirty = false
-}
+// 	t.LocalMatrix = m
+// 	t.Dirty = false
+// }
 
 func (t *Transform) RecalculateWorld(parent *Transform) {
 	if parent != nil {
@@ -217,4 +217,22 @@ func MulMat4(a, b [16]float32) [16]float32 {
 		}
 	}
 	return r
+}
+func (t *Transform) RecalculateLocal() {
+	sanitizeScale(&t.Scale)
+	qx, qy, qz, qw := t.Rotation[0], t.Rotation[1], t.Rotation[2], t.Rotation[3]
+	sx, sy, sz := t.Scale[0], t.Scale[1], t.Scale[2]
+	tx, ty, tz := t.Position[0], t.Position[1], t.Position[2]
+
+	xx, yy, zz := qx*qx, qy*qy, qz*qz
+	xy, xz, yz := qx*qy, qx*qz, qy*qz
+	wx, wy, wz := qw*qx, qw*qy, qw*qz
+
+	t.LocalMatrix = [16]float32{
+		(1 - 2*(yy+zz)) * sx, (2 * (xy + wz)) * sx, (2 * (xz - wy)) * sx, 0,
+		(2 * (xy - wz)) * sy, (1 - 2*(xx+zz)) * sy, (2 * (yz + wx)) * sy, 0,
+		(2 * (xz + wy)) * sz, (2 * (yz - wx)) * sz, (1 - 2*(xx+yy)) * sz, 0,
+		tx, ty, tz, 1,
+	}
+	t.Dirty = false
 }

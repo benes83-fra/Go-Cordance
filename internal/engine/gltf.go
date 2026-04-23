@@ -292,7 +292,8 @@ func uploadMeshToGL(mm *MeshManager, id string, vertices []float32, indices []ui
 		}
 
 		// integer attribute: ivec4 in shader
-		gl.VertexAttribIPointer(4, 4, gl.UNSIGNED_SHORT, int32(8), gl.PtrOffset(0))
+		gl.VertexAttribIPointer(4, 4, gl.UNSIGNED_SHORT, 8, gl.PtrOffset(0))
+
 		gl.EnableVertexAttribArray(4)
 
 		mm.vbos[id+"_joints"] = jointVBO
@@ -321,7 +322,7 @@ func uploadMeshToGL(mm *MeshManager, id string, vertices []float32, indices []ui
 			gl.BufferData(gl.ARRAY_BUFFER, size, nil, gl.STATIC_DRAW)
 		}
 
-		gl.VertexAttribPointerWithOffset(5, 4, gl.FLOAT, false, int32(16), 0)
+		gl.VertexAttribPointerWithOffset(5, 4, gl.FLOAT, false, 16, 0)
 		gl.EnableVertexAttribArray(5)
 
 		mm.vbos[id+"_weights"] = weightVBO

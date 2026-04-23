@@ -246,6 +246,7 @@ func BuildNodeEntities(sc *scene.Scene, g *engine.GltfRoot) []*ecs.Entity {
 			Rotation: rot,
 			Scale:    scale,
 		}
+		tr.RecalculateLocal()
 		ent.AddComponent(tr)
 
 		ent.AddComponent(ecs.NewChildren())

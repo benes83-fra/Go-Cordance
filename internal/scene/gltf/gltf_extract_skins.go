@@ -71,115 +71,124 @@ func ExtractGLTFSkins(path string) (map[string]*ecs.Skin, error) {
 				acc.Acc.Count = maxCount
 			}
 
+			// for i := 0; i < acc.Acc.Count; i++ {
+			// 	off := acc.Base + i*acc.Stride
+			// 	if off+expectedStride > len(acc.Buf) {
+			// 		log.Printf("matrix %d truncated at offset %d; stopping", i, off)
+			// 		break
+			// 	}
+
+			// 	// Read 16 floats in the buffer order into m[0..15].
+			// 	// The accessor stores floats in the buffer in column-major order per glTF spec.
+			// 	var m [16]float32
+			// 	for c := 0; c < 16; c++ {
+			// 		m[c] = engine.BytesToFloat32(acc.Buf[off+4*c:])
+			// 	}
+
+			// 	// diagnostic checks
+			// 	// last row (row index 3) in column-major storage is at indices 3,7,11,15
+			// 	lastRow := [4]float32{m[3], m[7], m[11], m[15]}
+			// 	isAffine := (math.Abs(float64(lastRow[0])) < 1e-5) &&
+			// 		(math.Abs(float64(lastRow[1])) < 1e-5) &&
+			// 		(math.Abs(float64(lastRow[2])) < 1e-5) &&
+			// 		(math.Abs(float64(lastRow[3]-1.0)) < 1e-5)
+
+			// 	// determinant (should be non-zero; for pure rotation+scale near +/-1)
+			// 	det := determinant(m)
+
+			// 	// rotation orthogonality error
+			// 	rotErr := rotationOrthogonalityError(m)
+
+			// 	// read transpose candidate (interpret buffer as row-major)
+			// 	var mt [16]float32
+			// 	for r := 0; r < 4; r++ {
+			// 		for c := 0; c < 4; c++ {
+			// 			// buffer index r*4 + c -> when interpreted as row-major, place at column-major index c*4 + r
+			// 			mt[c*4+r] = engine.BytesToFloat32(acc.Buf[off+4*(r*4+c):])
+			// 		}
+			// 	}
+
+			// 	// compute mt diagnostics
+			// 	mtLastRow := [4]float32{mt[3], mt[7], mt[11], mt[15]}
+			// 	mtIsAffine := (math.Abs(float64(mtLastRow[0])) < 1e-5) &&
+			// 		(math.Abs(float64(mtLastRow[1])) < 1e-5) &&
+			// 		(math.Abs(float64(mtLastRow[2])) < 1e-5) &&
+			// 		(math.Abs(float64(mtLastRow[3]-1.0)) < 1e-5)
+			// 	mtRotErr := rotationOrthogonalityError(mt)
+
+			// 	log.Printf("Skin %d IBM[%d] read: lastRow=%v affine=%v det=%f rotErr=%f", si, i, lastRow, isAffine, det, rotErr)
+			// 	log.Printf("Skin %d IBM[%d] matrix: %v", si, i, m)
+			// 	log.Printf("Skin %d IBM[%d] alt(transpose) read: %v", si, i, mt)
+			// 	log.Printf("Skin %d IBM[%d] rawStride=%d base=%d", si, i, acc.Stride, acc.Base)
+
+			// 	// sanity warnings
+			// 	if math.IsNaN(float64(det)) || math.IsInf(float64(det), 0) || math.Abs(float64(det)) > 1e6 {
+			// 		log.Printf("Warning: IBM[%d] determinant suspicious: %f", i, det)
+			// 	}
+			// 	if !isAffine {
+			// 		log.Printf("Warning: IBM[%d] last row != [0 0 0 1] (lastRow=%v). This may indicate wrong interpretation (row/col) or non-affine data.", i, lastRow)
+			// 	}
+			// 	if rotErr > 0.1 {
+			// 		log.Printf("Warning: IBM[%d] rotation part not orthonormal (rotErr=%f). This may indicate scale/shear or wrong byte ordering.", i, rotErr)
+			// 	}
+
+			// 	// Heuristic: prefer the read that is affine and has smaller rotation error.
+			// 	useTranspose := false
+			// 	if !isAffine && mtIsAffine {
+			// 		useTranspose = true
+			// 		log.Printf("IBM[%d] original read non-affine; using transpose read (rotErr %f -> %f)", i, rotErr, mtRotErr)
+			// 	} else if mtIsAffine && (!isAffine || mtRotErr < rotErr) {
+			// 		// if both affine but mt has smaller rotErr, prefer mt
+			// 		useTranspose = true
+			// 		log.Printf("IBM[%d] transpose read has smaller rotErr (rotErr %f -> %f); using transpose", i, rotErr, mtRotErr)
+			// 	} else {
+			// 		log.Printf("IBM[%d] using original read (affine=%v rotErr=%f altAffine=%v altRotErr=%f)", i, isAffine, rotErr, mtIsAffine, mtRotErr)
+			// 	}
+
+			// 	if useTranspose {
+			// 		data.ibm = append(data.ibm, mt)
+			// 	} else {
+			// 		data.ibm = append(data.ibm, m)
+			// 	}
+			// }
 			for i := 0; i < acc.Acc.Count; i++ {
 				off := acc.Base + i*acc.Stride
-				if off+expectedStride > len(acc.Buf) {
-					log.Printf("matrix %d truncated at offset %d; stopping", i, off)
-					break
-				}
-
-				// Read 16 floats in the buffer order into m[0..15].
-				// The accessor stores floats in the buffer in column-major order per glTF spec.
 				var m [16]float32
 				for c := 0; c < 16; c++ {
 					m[c] = engine.BytesToFloat32(acc.Buf[off+4*c:])
 				}
-
-				// diagnostic checks
-				// last row (row index 3) in column-major storage is at indices 3,7,11,15
-				lastRow := [4]float32{m[3], m[7], m[11], m[15]}
-				isAffine := (math.Abs(float64(lastRow[0])) < 1e-5) &&
-					(math.Abs(float64(lastRow[1])) < 1e-5) &&
-					(math.Abs(float64(lastRow[2])) < 1e-5) &&
-					(math.Abs(float64(lastRow[3]-1.0)) < 1e-5)
-
-				// determinant (should be non-zero; for pure rotation+scale near +/-1)
-				det := determinant(m)
-
-				// rotation orthogonality error
-				rotErr := rotationOrthogonalityError(m)
-
-				// read transpose candidate (interpret buffer as row-major)
-				var mt [16]float32
-				for r := 0; r < 4; r++ {
-					for c := 0; c < 4; c++ {
-						// buffer index r*4 + c -> when interpreted as row-major, place at column-major index c*4 + r
-						mt[c*4+r] = engine.BytesToFloat32(acc.Buf[off+4*(r*4+c):])
-					}
-				}
-
-				// compute mt diagnostics
-				mtLastRow := [4]float32{mt[3], mt[7], mt[11], mt[15]}
-				mtIsAffine := (math.Abs(float64(mtLastRow[0])) < 1e-5) &&
-					(math.Abs(float64(mtLastRow[1])) < 1e-5) &&
-					(math.Abs(float64(mtLastRow[2])) < 1e-5) &&
-					(math.Abs(float64(mtLastRow[3]-1.0)) < 1e-5)
-				mtRotErr := rotationOrthogonalityError(mt)
-
-				log.Printf("Skin %d IBM[%d] read: lastRow=%v affine=%v det=%f rotErr=%f", si, i, lastRow, isAffine, det, rotErr)
-				log.Printf("Skin %d IBM[%d] matrix: %v", si, i, m)
-				log.Printf("Skin %d IBM[%d] alt(transpose) read: %v", si, i, mt)
-				log.Printf("Skin %d IBM[%d] rawStride=%d base=%d", si, i, acc.Stride, acc.Base)
-
-				// sanity warnings
-				if math.IsNaN(float64(det)) || math.IsInf(float64(det), 0) || math.Abs(float64(det)) > 1e6 {
-					log.Printf("Warning: IBM[%d] determinant suspicious: %f", i, det)
-				}
-				if !isAffine {
-					log.Printf("Warning: IBM[%d] last row != [0 0 0 1] (lastRow=%v). This may indicate wrong interpretation (row/col) or non-affine data.", i, lastRow)
-				}
-				if rotErr > 0.1 {
-					log.Printf("Warning: IBM[%d] rotation part not orthonormal (rotErr=%f). This may indicate scale/shear or wrong byte ordering.", i, rotErr)
-				}
-
-				// Heuristic: prefer the read that is affine and has smaller rotation error.
-				useTranspose := false
-				if !isAffine && mtIsAffine {
-					useTranspose = true
-					log.Printf("IBM[%d] original read non-affine; using transpose read (rotErr %f -> %f)", i, rotErr, mtRotErr)
-				} else if mtIsAffine && (!isAffine || mtRotErr < rotErr) {
-					// if both affine but mt has smaller rotErr, prefer mt
-					useTranspose = true
-					log.Printf("IBM[%d] transpose read has smaller rotErr (rotErr %f -> %f); using transpose", i, rotErr, mtRotErr)
-				} else {
-					log.Printf("IBM[%d] using original read (affine=%v rotErr=%f altAffine=%v altRotErr=%f)", i, isAffine, rotErr, mtIsAffine, mtRotErr)
-				}
-
-				if useTranspose {
-					data.ibm = append(data.ibm, mt)
-				} else {
-					data.ibm = append(data.ibm, m)
-				}
+				// Trust the glTF data. Do NOT transpose. Do NOT recompute.
+				data.ibm = append(data.ibm, m)
 			}
 		}
 		// --- recompute IBMs from node bind-pose and replace accessor IBMs when inconsistent ---
 		// --- recompute IBMs from node bind-pose and replace accessor IBMs when inconsistent ---
 
 		// <-- move this out, see below
-		for iJoint := range data.joints {
-			jNode := data.joints[iJoint]
-			if jNode < 0 || jNode >= len(nodeWorlds) {
-				continue
-			}
+		// for iJoint := range data.joints {
+		// 	jNode := data.joints[iJoint]
+		// 	if jNode < 0 || jNode >= len(nodeWorlds) {
+		// 		continue
+		// 	}
 
-			world := nodeWorlds[jNode]
-			invWorld, ok := invertMat4(world)
-			if !ok {
-				continue
-			}
+		// 	world := nodeWorlds[jNode]
+		// 	invWorld, ok := invertMat4(world)
+		// 	if !ok {
+		// 		continue
+		// 	}
 
-			accessor := data.ibm[iJoint]
-			prodAccessor := engine.MulMat4(world, accessor)
-			prodRecomputed := engine.MulMat4(world, invWorld)
+		// 	accessor := data.ibm[iJoint]
+		// 	prodAccessor := engine.MulMat4(world, accessor)
+		// 	prodRecomputed := engine.MulMat4(world, invWorld)
 
-			errAccessor := identityError(prodAccessor)
-			errRecomputed := identityError(prodRecomputed)
+		// 	errAccessor := identityError(prodAccessor)
+		// 	errRecomputed := identityError(prodRecomputed)
 
-			if errRecomputed+1e-6 < errAccessor {
-				log.Printf("Skin %d joint %d: replacing accessor IBM (err=%f) with recomputed invWorld (err=%f)", si, iJoint, errAccessor, errRecomputed)
-				data.ibm[iJoint] = invWorld
-			}
-		}
+		// 	if errRecomputed+1e-6 < errAccessor {
+		// 		log.Printf("Skin %d joint %d: replacing accessor IBM (err=%f) with recomputed invWorld (err=%f)", si, iJoint, errAccessor, errRecomputed)
+		// 		data.ibm[iJoint] = invWorld
+		// 	}
+		// }
 
 		skins[si] = data
 	}
@@ -205,35 +214,44 @@ func ExtractGLTFSkins(path string) (map[string]*ecs.Skin, error) {
 
 		// world of the mesh node in bind pose
 		meshWorld := nodeWorlds[nodeIndex]
-
-		// recompute IBM_j = inverse(jointWorldBind) * meshWorldBind
-		ibm := make([][16]float32, len(sd.joints))
-		for iJoint, jNode := range sd.joints {
-			if jNode < 0 || jNode >= len(nodeWorlds) {
-				continue
-			}
-			jointWorld := nodeWorlds[jNode]
-			invJoint, ok := invertMat4(jointWorld)
-			if !ok {
-				// fallback: keep accessor IBM if available
-				if iJoint < len(sd.ibm) {
-					ibm[iJoint] = sd.ibm[iJoint]
-				}
-				continue
-			}
-
-			// IBM_j = jointWorld^-1 * meshWorld
-			ibm[iJoint] = mulMat4(invJoint, meshWorld)
-
-			// optional sanity check: jointWorld * IBM_j ≈ meshWorld
-			prod := mulMat4(jointWorld, ibm[iJoint])
-			err := identityError(diffMat(prod, meshWorld))
-			if err > 1e-3 {
-				log.Printf("Skin %d joint %d: jointWorld*IBM != meshWorld (err=%f)", n.Skin, iJoint, err)
-			}
+		_ = meshWorld
+		// use the skin's IBM as established above (accessor + possible invWorld replacement)
+		ibm := sd.ibm
+		if len(ibm) != len(sd.joints) {
+			log.Printf("Skin %d: joints=%d, ibm=%d (mismatch)", n.Skin, len(sd.joints), len(ibm))
 		}
 
 		skinComp := ecs.NewSkin(sd.joints, ibm, sd.skeleton)
+
+		// recompute IBM_j = inverse(jointWorldBind) * meshWorldBind
+		// ibm := make([][16]float32, len(sd.joints))
+		// for iJoint, jNode := range sd.joints {
+		// 	if jNode < 0 || jNode >= len(nodeWorlds) {
+		// 		continue
+		// 	}
+		// 	jointWorld := nodeWorlds[jNode]
+		// 	invJoint, ok := invertMat4(jointWorld)
+		// 	if !ok {
+		// 		// fallback: keep accessor IBM if available
+		// 		if iJoint < len(sd.ibm) {
+		// 			ibm[iJoint] = sd.ibm[iJoint]
+		// 		}
+		// 		continue
+		// 	}
+
+		// 	// IBM_j = jointWorld^-1 * meshWorld
+		// 	ibm[iJoint] = mulMat4(invJoint, meshWorld)
+
+		// 	// optional sanity check: jointWorld * IBM_j ≈ meshWorld
+		// 	prod := mulMat4(jointWorld, ibm[iJoint])
+		// 	log.Printf("bind check joint %d: err=%f", iJoint, identityError(diffMat(prod, meshWorld)))
+		// 	err := identityError(diffMat(prod, meshWorld))
+		// 	if err > 1e-3 {
+		// 		log.Printf("Skin %d joint %d: jointWorld*IBM != meshWorld (err=%f)", n.Skin, iJoint, err)
+		// 	}
+		// }
+
+		// skinComp := ecs.NewSkin(sd.joints, ibm, sd.skeleton)
 
 		for pi := range mesh.Primitives {
 			meshID := fmt.Sprintf("%s/%d", meshName, pi)
