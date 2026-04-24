@@ -25,3 +25,12 @@ func (c *Children) AddChild(e *Entity) {
 }
 
 func (c *Children) Update(dt float32) { _ = dt }
+
+func (c *Children) Remove(e *Entity) {
+	for i, child := range c.Entities {
+		if child == e {
+			c.Entities = append(c.Entities[:i], c.Entities[i+1:]...)
+			return
+		}
+	}
+}
