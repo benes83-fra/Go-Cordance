@@ -216,50 +216,31 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	cesium, nodeEntities, skinEntities, err := gltf.LoadGLTFMultiSkinned(
-		sc,
-		"assets/models/CesiumMan/CesiumMan.glb",
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	// (Optional) if you still want explicit wiring here, you can log/inspect:
-	_ = nodeEntities
-	_ = skinEntities
 
 	t2 := house.GetTransform()
 	t2.Position = [3]float32{0, 1, 6}
 	t2.Scale = [3]float32{0.1, 0.1, 0.1}
 	t2.SetRotationDegrees(90, 90, 90)
 
-	// 1) Get the skeleton root index from the skin component
-	skin := skinEntities[0].GetComponent((*ecs.Skin)(nil)).(*ecs.Skin)
-	rootIndex := skin.Joints[0] // glTF guarantees joint 0 is the skeleton root
-
-	// 2) Get the ECS entity for that node
-	skeletonRoot := nodeEntities[rootIndex]
-
-	// 3) Remove old parent relationship
-	if parentComp := skeletonRoot.GetComponent((*ecs.Parent)(nil)); parentComp != nil {
-		oldParent := parentComp.(*ecs.Parent).Entity
-		if oldParent != nil {
-			if ch := oldParent.GetComponent((*ecs.Children)(nil)); ch != nil {
-				ch.(*ecs.Children).Remove(skeletonRoot) // THIS METHOD EXISTS
-			}
-		}
+	cesiumInstance, err := gltf.LoadGLTFMultiSkinnedAttached(
+		sc,
+		"assets/models/CesiumMan/CesiumMan.glb",
+		nil, // or some higher-level parent if you want
+	)
+	if err != nil {
+		log.Fatal(err)
 	}
-
-	// 4) Attach skeleton root under CesiumMan
-	skeletonRoot.AddComponent(ecs.NewParent(cesium))
-	cesium.GetComponent((*ecs.Children)(nil)).(*ecs.Children).AddChild(skeletonRoot)
+	cesium := cesiumInstance.Root
 
 	ct := cesium.GetTransform()
 	ct.Position = [3]float32{0, 1, -4}
-	ct.Scale = [3]float32{1, 1, 1} // CesiumMan is huge
+	ct.Scale = [3]float32{1, 1, 1}
 	ct.SetRotationDegrees(-90, -90, 0)
 	cesium.AddComponent(ecs.NewName("CesiumMan"))
 	named["CesiumMan"] = cesium
+
 	clips, err := gltf.LoadGLTFAnimations("assets/models/CesiumMan/CesiumMan.glb")
 	if err == nil {
 		ap := &ecs.AnimationPlayer{

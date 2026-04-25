@@ -267,3 +267,74 @@ func BuildNodeEntities(sc *scene.Scene, g *engine.GltfRoot) []*ecs.Entity {
 
 	return nodeEntities
 }
+
+// in package gltf
+// in package gltf
+
+type SkinnedInstance struct {
+	Root         *ecs.Entity   // CesiumMan root (multi-mesh root)
+	SkeletonRoot *ecs.Entity   // node entity that is the skeleton root
+	NodeEntities []*ecs.Entity // all node entities
+	SkinEntities []*ecs.Entity // mesh entities with Skin
+}
+
+func LoadGLTFMultiSkinnedAttached(
+	sc *scene.Scene,
+	path string,
+	parent *ecs.Entity,
+) (*SkinnedInstance, error) {
+	root, nodeEntities, skinEntities, err := LoadGLTFMultiSkinned(sc, path)
+	if err != nil {
+		return nil, nil
+	}
+
+	// 1) pick skeleton root from first skin
+	if len(skinEntities) == 0 {
+		return &SkinnedInstance{
+			Root:         root,
+			SkeletonRoot: nil,
+			NodeEntities: nodeEntities,
+			SkinEntities: skinEntities,
+		}, nil
+	}
+	skin := skinEntities[0].GetComponent((*ecs.Skin)(nil)).(*ecs.Skin)
+	rootIndex := skin.Joints[0]
+	skeletonRoot := nodeEntities[rootIndex]
+
+	// 2) detach skeletonRoot from its old parent (node hierarchy)
+	if parentComp := skeletonRoot.GetComponent((*ecs.Parent)(nil)); parentComp != nil {
+		oldParent := parentComp.(*ecs.Parent).Entity
+		if oldParent != nil {
+			if ch := oldParent.GetComponent((*ecs.Children)(nil)); ch != nil {
+				children := ch.(*ecs.Children)
+				for i, e := range children.Entities {
+					if e == skeletonRoot {
+						children.Entities = append(children.Entities[:i], children.Entities[i+1:]...)
+						break
+					}
+				}
+			}
+		}
+	}
+
+	// 3) attach skeletonRoot under the CesiumMan root entity
+	skeletonRoot.AddComponent(ecs.NewParent(root))
+	if ch := root.GetComponent((*ecs.Children)(nil)); ch != nil {
+		ch.(*ecs.Children).AddChild(skeletonRoot)
+	}
+
+	// 4) optionally attach the whole CesiumMan root under a higher-level parent
+	if parent != nil {
+		root.AddComponent(ecs.NewParent(parent))
+		if ch := parent.GetComponent((*ecs.Children)(nil)); ch != nil {
+			ch.(*ecs.Children).AddChild(root)
+		}
+	}
+
+	return &SkinnedInstance{
+		Root:         root,
+		SkeletonRoot: skeletonRoot,
+		NodeEntities: nodeEntities,
+		SkinEntities: skinEntities,
+	}, nil
+}
