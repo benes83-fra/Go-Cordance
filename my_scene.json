@@ -4742,6 +4742,125 @@
           ]
         }
       }
+    },
+    {
+      "id": 74,
+      "components": {
+        "MultiMesh": {
+          "meshes": [
+            "mesh_0/0"
+          ]
+        },
+        "Name": {
+          "value": "crawling_man"
+        },
+        "Transform": {
+          "position": [
+            0,
+            1,
+            6
+          ],
+          "rotation": [
+            0,
+            0.7071067,
+            0,
+            0.7071067
+          ],
+          "scale": [
+            0.1,
+            0.1,
+            0.1
+          ]
+        }
+      }
+    },
+    {
+      "id": 75,
+      "parent": 74,
+      "components": {
+        "Material": {
+          "ambient": 0.2,
+          "bRDFLUTTex": 0,
+          "baseColor": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "clearcoatFactor": 0,
+          "clearcoatNormalTex": 0,
+          "clearcoatRoughTex": 0,
+          "clearcoatRoughness": 0,
+          "clearcoatTexture": 0,
+          "diffuse": 0.8,
+          "diffuseTexturePath": "",
+          "dirty": true,
+          "irradianceTex": 0,
+          "metallic": 0,
+          "metallicRoughnessAsset": 0,
+          "metallicRoughnessID": 0,
+          "metallicRoughnessTexturePath": "",
+          "normalAsset": 0,
+          "normalID": 0,
+          "normalScale": 0,
+          "normalTexturePath": "",
+          "occlusionAsset": 0,
+          "occlusionID": 0,
+          "occlusionTexturePath": "",
+          "prefilteredEnvTex": 0,
+          "roughness": 0,
+          "shader": null,
+          "shaderName": "",
+          "sheenColor": [
+            0,
+            0,
+            0
+          ],
+          "sheenRoughness": 0,
+          "shininess": 32,
+          "specular": 0.5,
+          "specularFactor": 0,
+          "texCoordMap": {
+            "baseColor": 0
+          },
+          "textureAsset": 0,
+          "textureID": 0,
+          "transMissionTex": 0,
+          "transmissionFactor": 0,
+          "type": 0,
+          "useClearcoat": false,
+          "useIBL": false,
+          "useNormal": false,
+          "useTexture": false,
+          "useTransmission": false,
+          "uvOffset": null,
+          "uvScale": null
+        },
+        "Mesh": {
+          "id": "mesh_0/0"
+        },
+        "Name": {
+          "value": "mesh_0/0"
+        },
+        "Transform": {
+          "position": [
+            0,
+            0,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "scale": [
+            1,
+            1,
+            1
+          ]
+        }
+      }
     }
   ]
 }

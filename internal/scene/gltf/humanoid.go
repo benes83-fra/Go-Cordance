@@ -2,7 +2,6 @@ package gltf
 
 import (
 	"go-engine/Go-Cordance/internal/ecs"
-	"go-engine/Go-Cordance/internal/engine"
 )
 
 // package gltf or ecs/humanoid.go
@@ -38,6 +37,6 @@ type HumanoidRig struct {
 	NodeToBone map[int]HumanoidBone // optional reverse map
 }
 
-func BuildHumanoidRigFromGLTF(g *engine.GltfRoot, nodes []*ecs.Entity) *HumanoidRig
+//func BuildHumanoidRigFromGLTF(g *engine.GltfRoot, nodes []*ecs.Entity) *HumanoidRig
 
-func RetargetClip(srcRig, dstRig *HumanoidRig, srcClip *ecs.AnimationClip) *ecs.AnimationClip
+//func RetargetClip(srcRig, dstRig *HumanoidRig, srcClip *ecs.AnimationClip) *ecs.AnimationClip
