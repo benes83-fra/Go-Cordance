@@ -276,6 +276,7 @@ type SkinnedInstance struct {
 	SkeletonRoot *ecs.Entity   // node entity that is the skeleton root
 	NodeEntities []*ecs.Entity // all node entities
 	SkinEntities []*ecs.Entity // mesh entities with Skin
+	Skeleton     *ecs.Skeleton
 }
 
 func LoadGLTFMultiSkinnedAttached(
@@ -295,6 +296,7 @@ func LoadGLTFMultiSkinnedAttached(
 			SkeletonRoot: nil,
 			NodeEntities: nodeEntities,
 			SkinEntities: skinEntities,
+			Skeleton:     &ecs.Skeleton{Nodes: nodeEntities},
 		}, nil
 	}
 	skin := skinEntities[0].GetComponent((*ecs.Skin)(nil)).(*ecs.Skin)
