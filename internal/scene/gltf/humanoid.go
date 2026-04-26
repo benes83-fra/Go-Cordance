@@ -94,7 +94,38 @@ func BuildHumanoidRigFromGLTF(g *engine.GltfRoot, nodes []*ecs.Entity) *Humanoid
 	return rig
 }
 func RetargetClip(srcRig, dstRig *HumanoidRig, srcClip *ecs.AnimationClip) *ecs.AnimationClip {
-	// TEMP: just return the source clip for now
-	// Next step will be: build a new clip with curves remapped bone-by-bone.
-	return srcClip
+	boneMap := BuildBoneMap(srcRig, dstRig)
+
+	dstClip := &ecs.AnimationClip{
+		Name:     srcClip.Name + "_retargeted",
+		Duration: srcClip.Duration,
+		Tracks:   []ecs.AnimationTrack{},
+	}
+
+	for _, track := range srcClip.Tracks {
+		dstNode, ok := boneMap[track.NodeIndex]
+		if !ok {
+			continue
+		}
+
+		newTrack := ecs.AnimationTrack{
+			NodeIndex: dstNode,
+			Keyframes: track.Keyframes, // naive copy for now
+		}
+
+		dstClip.Tracks = append(dstClip.Tracks, newTrack)
+	}
+
+	return dstClip
+}
+
+func BuildBoneMap(src, dst *HumanoidRig) map[int]int {
+	out := map[int]int{}
+	for bone, srcNode := range src.BoneToNode {
+		dstNode := dst.BoneToNode[bone]
+		if srcNode >= 0 && dstNode >= 0 {
+			out[srcNode] = dstNode
+		}
+	}
+	return out
 }

@@ -280,10 +280,22 @@ func main() {
 	crawlingRig := gltf.BuildHumanoidRigFromGLTF(crawlingRoot, crawlingInstance.NodeEntities)
 
 	// 2) Collect node entities for each (Skeleton.Nodes or however your loader exposes them)
+	cesiumClip := clips[gltf.PickFirstClip(clips)]
 
 	// 3) Debug-print some key bones
 	fmt.Println("Cesium hips node index:", cesiumRig.BoneToNode[gltf.HumanoidHips])
 	fmt.Println("CrawlingMan hips node index:", crawlingRig.BoneToNode[gltf.HumanoidHips])
+	retargeted := gltf.RetargetClip(cesiumRig, crawlingRig, cesiumClip)
+
+	crawlingAP := &ecs.AnimationPlayer{
+		Clips:   map[string]*ecs.AnimationClip{retargeted.Name: retargeted},
+		Current: retargeted.Name,
+		Playing: true,
+		Speed:   1.0,
+	}
+
+	crawlingMan.AddComponent(crawlingAP)
+
 	window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if action == glfw.Press {
 			switch key {
