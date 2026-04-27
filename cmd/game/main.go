@@ -244,10 +244,11 @@ func main() {
 	clips, err := gltf.LoadGLTFAnimations("assets/models/CesiumMan/CesiumMan.glb")
 	if err == nil {
 		ap := &ecs.AnimationPlayer{
-			Clips:   clips,
-			Current: gltf.PickFirstClip(clips),
-			Playing: true,
-			Speed:   1.0,
+			Clips:        clips,
+			Current:      gltf.PickFirstClip(clips),
+			Playing:      true,
+			Speed:        1.0,
+			NodeEntities: cesiumInstance.NodeEntities,
 		}
 		cesium.AddComponent(ap)
 	}
@@ -281,20 +282,21 @@ func main() {
 
 	// 2) Collect node entities for each (Skeleton.Nodes or however your loader exposes them)
 	cesiumClip := clips[gltf.PickFirstClip(clips)]
-
+	crawlingRootEntity := crawlingInstance.Root
 	// 3) Debug-print some key bones
 	fmt.Println("Cesium hips node index:", cesiumRig.BoneToNode[gltf.HumanoidHips])
 	fmt.Println("CrawlingMan hips node index:", crawlingRig.BoneToNode[gltf.HumanoidHips])
 	retargeted := gltf.RetargetClip(cesiumRig, crawlingRig, cesiumClip)
 
 	crawlingAP := &ecs.AnimationPlayer{
-		Clips:   map[string]*ecs.AnimationClip{retargeted.Name: retargeted},
-		Current: retargeted.Name,
-		Playing: true,
-		Speed:   1.0,
+		Clips:        map[string]*ecs.AnimationClip{retargeted.Name: retargeted},
+		Current:      retargeted.Name,
+		Playing:      true,
+		Speed:        1.0,
+		NodeEntities: crawlingInstance.NodeEntities,
 	}
 
-	crawlingMan.AddComponent(crawlingAP)
+	crawlingRootEntity.AddComponent(crawlingAP)
 
 	window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if action == glfw.Press {
