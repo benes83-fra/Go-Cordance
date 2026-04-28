@@ -266,19 +266,19 @@ func main() {
 	ct2.Position = [3]float32{0, 1, 6}
 	ct2.Scale = [3]float32{0.1, 0.1, 0.1}
 	ct2.SetRotationDegrees(90, 90, 90)
-	cesiumRoot, _, err := engine.LoadGLTFOrGLB("assets/models/CesiumMan/CesiumMan.glb")
-	if err != nil {
-		log.Fatal(err)
-	}
-	crawlingRoot, _, err := engine.LoadGLTFOrGLB("assets/models/crawling-man/crawling_man.glb")
-	if err != nil {
-		log.Fatal(err)
-	}
+	// cesiumRoot, _, err := engine.LoadGLTFOrGLB("assets/models/CesiumMan/CesiumMan.glb")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// crawlingRoot, _, err := engine.LoadGLTFOrGLB("assets/models/crawling-man/crawling_man.glb")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 	cesiumInstance, _ = gltf.LoadGLTFMultiSkinnedAttached(sc, "assets/models/CesiumMan/CesiumMan.glb", nil)
 	crawlingInstance, _ := gltf.LoadGLTFMultiSkinnedAttached(sc, "assets/models/crawling-man/crawling_man.glb", nil)
 
-	cesiumRig := gltf.BuildHumanoidRigFromGLTF(cesiumRoot, cesiumInstance.NodeEntities)
-	crawlingRig := gltf.BuildHumanoidRigFromGLTF(crawlingRoot, crawlingInstance.NodeEntities)
+	cesiumRig := gltf.BuildHumanoidRigFromGLTF(cesiumInstance.GltfRoot, cesiumInstance.NodeEntities)
+	crawlingRig := gltf.BuildHumanoidRigFromGLTF(crawlingInstance.GltfRoot, crawlingInstance.NodeEntities)
 
 	// 2) Collect node entities for each (Skeleton.Nodes or however your loader exposes them)
 	cesiumClip := clips[gltf.PickFirstClip(clips)]

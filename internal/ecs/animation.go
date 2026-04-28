@@ -42,17 +42,20 @@ func (ap *AnimationPlayer) Update(dt float32) {
 	}
 
 	ap.Time += dt * ap.Speed
+	// temporary debug
+	// log.Printf("Animation %s time=%.3f", ap.Current, ap.Time)
+
 	if ap.Time > clip.Duration {
 		ap.Time = float32(math.Mod(float64(ap.Time), float64(clip.Duration)))
 	}
 
-	// Sample each track
 	for _, track := range clip.Tracks {
+		kf := sampleTrack(track, ap.Time)
+
+		// bounds check to avoid panics
 		if track.NodeIndex < 0 || track.NodeIndex >= len(ap.NodeEntities) {
 			continue
 		}
-
-		kf := sampleTrack(track, ap.Time)
 		ent := ap.NodeEntities[track.NodeIndex]
 		if ent == nil {
 			continue
@@ -63,7 +66,6 @@ func (ap *AnimationPlayer) Update(dt float32) {
 		t.Rotation = kf.Rotation
 		t.Scale = kf.Scale
 	}
-
 }
 
 func (ap *AnimationPlayer) EditorName() string {
