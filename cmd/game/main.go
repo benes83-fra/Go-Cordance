@@ -261,11 +261,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	ct2 := crawlingMan.GetTransform()
 	ct2.Position = [3]float32{0, 1, 6}
 	ct2.Scale = [3]float32{0.1, 0.1, 0.1}
 	ct2.SetRotationDegrees(90, 90, 90)
+
 	// cesiumRoot, _, err := engine.LoadGLTFOrGLB("assets/models/CesiumMan/CesiumMan.glb")
 	// if err != nil {
 	// 	log.Fatal(err)
@@ -287,7 +287,11 @@ func main() {
 	fmt.Println("Cesium hips node index:", cesiumRig.BoneToNode[gltf.HumanoidHips])
 	fmt.Println("CrawlingMan hips node index:", crawlingRig.BoneToNode[gltf.HumanoidHips])
 	retargeted := gltf.RetargetClip(cesiumRig, crawlingRig, cesiumClip)
-
+	crawlingClips, err := gltf.LoadGLTFAnimations("assets/models/crawling-man/crawling_man.glb")
+	if err != nil {
+		log.Fatal(err)
+	}
+	_ = crawlingClips
 	crawlingAP := &ecs.AnimationPlayer{
 		Clips:        map[string]*ecs.AnimationClip{retargeted.Name: retargeted},
 		Current:      retargeted.Name,
