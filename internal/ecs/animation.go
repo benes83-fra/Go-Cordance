@@ -60,6 +60,9 @@ func (ap *AnimationPlayer) Update(dt float32) {
 		if ent == nil {
 			continue
 		}
+		if track.NodeIndex == 0 { // root bone
+			kf.Position[1] += 0.5 // bob up and down
+		}
 
 		t := ent.GetTransform()
 		t.Position = kf.Position
