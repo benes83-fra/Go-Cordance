@@ -281,7 +281,34 @@ func main() {
 	ct2.SetRotationDegrees(90, 90, 90)
 
 	crawlingRoot.AddComponent(ecs.NewName("CrawlingMan"))
+	// === DEBUG: CrawlingMan visibility check ===
+	fmt.Printf("\n=== CrawlingMan Debug ===\n")
+	fmt.Printf("Root entity ID: %d, Name: %s\n",
+		crawlingRoot.ID,
+		crawlingRoot.GetComponent((*ecs.Name)(nil)))
 
+	// Check if root has Mesh (it shouldn't - meshes are on children)
+	hasMesh := crawlingRoot.GetComponent((*ecs.Mesh)(nil)) != nil
+	hasSkin := crawlingRoot.GetComponent((*ecs.Skin)(nil)) != nil
+	fmt.Printf("Root components: Mesh=%v, Skin=%v\n", hasMesh, hasSkin)
+
+	// Check children for Mesh+Skin
+	childrenComp := crawlingRoot.GetComponent((*ecs.Children)(nil))
+	if childrenComp != nil {
+		children := childrenComp.(*ecs.Children)
+		fmt.Printf("Root has %d children\n", len(children.Entities))
+		for i, child := range children.Entities {
+			childHasMesh := child.GetComponent((*ecs.Mesh)(nil)) != nil
+			childHasSkin := child.GetComponent((*ecs.Skin)(nil)) != nil
+			childName := "unnamed"
+			if nc := child.GetComponent((*ecs.Name)(nil)); nc != nil {
+				childName = nc.(*ecs.Name).Value
+			}
+			fmt.Printf("  Child %d [%s]: Mesh=%v, Skin=%v, EntityID=%d\n",
+				i, childName, childHasMesh, childHasSkin, child.ID)
+		}
+	}
+	fmt.Printf("========================\n\n")
 	// cesiumRoot, _, err := engine.LoadGLTFOrGLB("assets/models/CesiumMan/CesiumMan.glb")
 	// if err != nil {
 	// 	log.Fatal(err)
@@ -304,15 +331,41 @@ func main() {
 	fmt.Println("Cesium hips node index:", cesiumRig.BoneToNode[gltf.HumanoidHips])
 	fmt.Println("CrawlingMan hips node index:", crawlingRig.BoneToNode[gltf.HumanoidHips])
 	retargeted := gltf.RetargetClip(cesiumRig, crawlingRig, cesiumClip)
+	// AFTER loading crawlingInstance and setting up crawlingRoot:
+	_ = retargeted
+	// Load animations
 	crawlingClips, err := gltf.LoadGLTFAnimations("assets/models/crawling-man/crawling_man.glb")
 	if err != nil {
 		log.Fatal(err)
 	}
-	_ = retargeted
+
 	fmt.Println("CrawlingMan clips:", len(crawlingClips))
 	for name := range crawlingClips {
 		fmt.Println(" -", name)
 	}
+
+	// Find the child entity that has the Skin component
+	childrenComp = crawlingRoot.GetComponent((*ecs.Children)(nil))
+	if childrenComp != nil {
+		children := childrenComp.(*ecs.Children)
+		for _, child := range children.Entities {
+			if child.GetComponent((*ecs.Skin)(nil)) != nil {
+				// Add AnimationPlayer to the child with Skin
+				ap := &ecs.AnimationPlayer{
+					Clips:        crawlingClips,
+					Current:      gltf.PickFirstClip(crawlingClips),
+					Playing:      true,
+					Speed:        1.0,
+					NodeEntities: crawlingInstance.NodeEntities,
+				}
+				child.AddComponent(ap)
+				log.Printf("Added AnimationPlayer to child entity %d (has Skin)", child.ID)
+				break // Only need one
+			}
+		}
+	}
+
+	// Also keep it on root for reference if needed
 	ap := &ecs.AnimationPlayer{
 		Clips:        crawlingClips,
 		Current:      gltf.PickFirstClip(crawlingClips),
@@ -320,8 +373,6 @@ func main() {
 		Speed:        1.0,
 		NodeEntities: crawlingInstance.NodeEntities,
 	}
-	log.Printf("CrawlingMan anim time = %.3f", ap.Time)
-
 	crawlingRoot.AddComponent(ap)
 
 	window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
