@@ -1,3 +1,8 @@
+<p align="center">
+  <img src="https://github.com/benes83-fra/Go-Cordance/blob/main/Go-Cordance.png" width="280" alt="Go Cordance Logo">
+</p>
+
+
 # Go‑Cordance
 
 A modular, experimental 3D game engine and editor written in Go.
