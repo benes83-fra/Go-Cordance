@@ -321,7 +321,27 @@ func main() {
 
 	cesiumInstance, _ = gltf.LoadGLTFMultiSkinnedAttached(sc, "assets/models/CesiumMan/CesiumMan.glb", nil)
 	//crawlingInstance, _ := gltf.LoadGLTFMultiSkinnedAttached(sc, "assets/models/crawling-man/crawling_man.glb", nil)
+	// After loading crawlingInstance, expand skins to include ALL joints
+	for _, child := range crawlingInstance.NodeEntities {
+		if skinComp := child.GetComponent((*ecs.Skin)(nil)); skinComp != nil {
+			skin := skinComp.(*ecs.Skin)
 
+			// If skin has fewer joints than IBMs, expand it with placeholders
+			if len(skin.Joints) < len(skin.InverseBindMatrices) {
+				log.Printf("⚠️ Expanding skin: %d joints -> %d IBMs",
+					len(skin.Joints), len(skin.InverseBindMatrices))
+
+				for i := len(skin.Joints); i < len(skin.InverseBindMatrices); i++ {
+					skin.Joints = append(skin.Joints, i)
+					if i < len(crawlingInstance.NodeEntities) {
+						skin.JointEntities = append(skin.JointEntities, crawlingInstance.NodeEntities[i])
+					} else {
+						skin.JointEntities = append(skin.JointEntities, nil)
+					}
+				}
+			}
+		}
+	}
 	cesiumRig := gltf.BuildHumanoidRigFromGLTF(cesiumInstance.GltfRoot, cesiumInstance.NodeEntities)
 	crawlingRig := gltf.BuildHumanoidRigFromGLTF(crawlingInstance.GltfRoot, crawlingInstance.NodeEntities)
 

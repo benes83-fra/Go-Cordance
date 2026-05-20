@@ -30,12 +30,11 @@ const (
 )
 
 type HumanoidRig struct {
-	Nodes      []*ecs.Entity        // same as Skeleton.Nodes
-	BoneToNode map[HumanoidBone]int // bone -> glTF node index
-	NodeToBone map[int]HumanoidBone // optional reverse map
+	Nodes      []*ecs.Entity
+	BoneToNode map[HumanoidBone]int
+	NodeToBone map[int]HumanoidBone
 }
 
-// BuildHumanoidRigFromGLTF builds a rig using node names.
 func BuildHumanoidRigFromGLTF(g *engine.GltfRoot, nodes []*ecs.Entity) *HumanoidRig {
 	rig := &HumanoidRig{
 		Nodes:      nodes,
@@ -43,7 +42,6 @@ func BuildHumanoidRigFromGLTF(g *engine.GltfRoot, nodes []*ecs.Entity) *Humanoid
 		NodeToBone: make(map[int]HumanoidBone),
 	}
 
-	// helper
 	find := func(pred func(name string) bool) int {
 		for i, n := range g.Nodes {
 			if pred(n.Name) {
@@ -52,13 +50,6 @@ func BuildHumanoidRigFromGLTF(g *engine.GltfRoot, nodes []*ecs.Entity) *Humanoid
 		}
 		return -1
 	}
-
-	// crawling_man naming (from your dump):
-	// pelvis, spine_01, spine_02, spine_03, neck_01, head,
-	// clavicle_l, upperarm_l, lowerarm_l, hand_l,
-	// clavicle_r, upperarm_r, lowerarm_r, hand_r,
-	// thigh_l, calf_l, foot_l,
-	// thigh_r, calf_r, foot_r
 
 	rig.BoneToNode[HumanoidHips] = find(func(n string) bool { return n == "pelvis" })
 	rig.BoneToNode[HumanoidSpine] = find(func(n string) bool { return n == "spine_01" })
@@ -84,15 +75,15 @@ func BuildHumanoidRigFromGLTF(g *engine.GltfRoot, nodes []*ecs.Entity) *Humanoid
 	rig.BoneToNode[HumanoidRightLowerLeg] = find(func(n string) bool { return n == "calf_r" })
 	rig.BoneToNode[HumanoidRightFoot] = find(func(n string) bool { return n == "foot_r" })
 
-	// build reverse map
 	for b, idx := range rig.BoneToNode {
 		if idx >= 0 {
 			rig.NodeToBone[idx] = b
 		}
 	}
-
 	return rig
 }
+
+// Simple naive retargeting - copies keyframes directly
 func RetargetClip(srcRig, dstRig *HumanoidRig, srcClip *ecs.AnimationClip) *ecs.AnimationClip {
 	boneMap := BuildBoneMap(srcRig, dstRig)
 
@@ -107,15 +98,12 @@ func RetargetClip(srcRig, dstRig *HumanoidRig, srcClip *ecs.AnimationClip) *ecs.
 		if !ok {
 			continue
 		}
-
-		newTrack := ecs.AnimationTrack{
+		// Naive copy - may cause deformation but compiles and runs
+		dstClip.Tracks = append(dstClip.Tracks, ecs.AnimationTrack{
 			NodeIndex: dstNode,
-			Keyframes: track.Keyframes, // naive copy for now
-		}
-
-		dstClip.Tracks = append(dstClip.Tracks, newTrack)
+			Keyframes: track.Keyframes,
+		})
 	}
-
 	return dstClip
 }
 
