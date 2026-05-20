@@ -117,6 +117,7 @@ func ExtractGLTFSkins(path string) (map[string]*ecs.Skin, error) {
 			meshID := fmt.Sprintf("%s/%d", meshName, pi)
 			result[meshID] = skinComp
 		}
+
 	}
 
 	return result, nil

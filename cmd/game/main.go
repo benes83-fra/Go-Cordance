@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
@@ -344,6 +343,7 @@ func main() {
 	}
 	cesiumRig := gltf.BuildHumanoidRigFromGLTF(cesiumInstance.GltfRoot, cesiumInstance.NodeEntities)
 	crawlingRig := gltf.BuildHumanoidRigFromGLTF(crawlingInstance.GltfRoot, crawlingInstance.NodeEntities)
+	// In your SkinningSystem.Update, add this ONE log line:
 
 	// 2) Collect node entities for each (Skeleton.Nodes or however your loader exposes them)
 	cesiumClip := clips[gltf.PickFirstClip(clips)]
@@ -376,49 +376,32 @@ func main() {
 
 	// Find the child entity that has the Skin component
 	childrenComp = crawlingRoot.GetComponent((*ecs.Children)(nil))
-	if childrenComp != nil {
-		children := childrenComp.(*ecs.Children)
-		for _, child := range children.Entities {
-			if child.GetComponent((*ecs.Skin)(nil)) != nil {
-				// Add AnimationPlayer to the child with Skin
-				ap := &ecs.AnimationPlayer{
-					Clips:        crawlingClips,
-					Current:      gltf.PickFirstClip(crawlingClips),
-					Playing:      true,
-					Time:         0,
-					Speed:        1.0,
-					NodeEntities: crawlingInstance.NodeEntities,
-				}
-				fmt.Printf("CrawlingMan clip '%s' duration: %.2fs\n",
-					ap.Current, crawlingClips[ap.Current].Duration)
-				// After adding AnimationPlayer, add this verification:
-				go func() {
-					time.Sleep(2 * time.Second) // Wait for first few frames
-					ap := crawlingRoot.GetComponent((*ecs.AnimationPlayer)(nil))
-					if ap != nil {
-						player := ap.(*ecs.AnimationPlayer)
-						log.Printf("✓ CrawlingMan anim: time=%.2f/%.2f, playing=%v, clip=%s",
-							player.Time, crawlingClips[player.Current].Duration,
-							player.Playing, player.Current)
-					}
-				}()
-				child.AddComponent(ap)
-				log.Printf("Added AnimationPlayer to child entity %d (has Skin)", child.ID)
-				break // Only need one
-
+	// Find the skeleton root entity (has Skeleton component)
+	var skeletonRoot *ecs.Entity
+	for _, nodeEnt := range crawlingInstance.NodeEntities {
+		if nodeEnt != nil {
+			if nodeEnt.GetComponent((*ecs.Skeleton)(nil)) != nil {
+				skeletonRoot = nodeEnt
+				break
 			}
 		}
 	}
+	if skeletonRoot == nil {
+		// Fallback: use the multi-mesh root
+		skeletonRoot = crawlingInstance.Root
+	}
 
-	// Also keep it on root for reference if needed
-	// ap := &ecs.AnimationPlayer{
-	// 	Clips:        crawlingClips,
-	// 	Current:      gltf.PickFirstClip(crawlingClips),
-	// 	Playing:      true,
-	// 	Speed:        1.0,
-	// 	NodeEntities: crawlingInstance.NodeEntities,
-	// }
-	// crawlingRoot.AddComponent(ap)
+	// Add AnimationPlayer to the skeleton root (has Skeleton component)
+	ap := &ecs.AnimationPlayer{
+		Clips:        crawlingClips,
+		Current:      gltf.PickFirstClip(crawlingClips),
+		Playing:      true,
+		Time:         0,
+		Speed:        1.0,
+		NodeEntities: crawlingInstance.NodeEntities,
+	}
+	skeletonRoot.AddComponent(ap)
+	log.Printf("✓ Added AnimationPlayer to skeleton root entity %d", skeletonRoot.ID)
 
 	window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if action == glfw.Press {
