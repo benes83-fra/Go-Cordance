@@ -2,6 +2,7 @@ package ecs
 
 import (
 	"go-engine/Go-Cordance/internal/engine"
+	"log"
 	"math"
 )
 
@@ -49,6 +50,10 @@ func (sys *SkinningSystem) Update(dt float32, ents []*Entity) {
 		if len(skin.JointMatrices) != len(skin.JointEntities) {
 			skin.JointMatrices = make([][16]float32, len(skin.JointEntities))
 		}
+		if len(skin.Joints) != len(skin.InverseBindMatrices) {
+			log.Printf("❌ Skin mismatch: joints=%d ibm=%d entity=%d",
+				len(skin.Joints), len(skin.InverseBindMatrices), e.ID)
+		}
 
 		for i := range skin.Joints {
 			jointEnt := skin.JointEntities[i]
@@ -64,9 +69,28 @@ func (sys *SkinningSystem) Update(dt float32, ents []*Entity) {
 				continue
 			}
 
-			// ← ADD THIS: Check for zero or near-zero scale
-			if tr.Scale[0] < 0.001 && tr.Scale[1] < 0.001 && tr.Scale[2] < 0.001 {
-				skin.JointMatrices[i] = skin.InverseBindMatrices[i]
+			// If scale is zero → neutralize scale in the world matrix
+			if tr.Scale[0] < 0.001 || tr.Scale[1] < 0.001 || tr.Scale[2] < 0.001 {
+				// Copy world matrix
+				jointWorld := tr.WorldMatrix
+
+				// Remove scale from the 3×3 rotation/scale block
+				// Column-major: each column is a basis vector
+				for c := 0; c < 3; c++ {
+					// length of column vector
+					x := jointWorld[c*4+0]
+					y := jointWorld[c*4+1]
+					z := jointWorld[c*4+2]
+					l := float32(math.Sqrt(float64(x*x + y*y + z*z)))
+					if l > 0.00001 {
+						jointWorld[c*4+0] = x / l
+						jointWorld[c*4+1] = y / l
+						jointWorld[c*4+2] = z / l
+					}
+				}
+
+				modelSpaceJoint := engine.MulMat4(invMeshWorld, jointWorld)
+				skin.JointMatrices[i] = engine.MulMat4(modelSpaceJoint, skin.InverseBindMatrices[i])
 				continue
 			}
 

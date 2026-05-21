@@ -277,7 +277,7 @@ func main() {
 	crawlingRoot := crawlingInstance.Root
 	ct2 := crawlingRoot.GetTransform()
 	ct2.Position = [3]float32{0, 1, -6}
-	ct2.Scale = [3]float32{0.1, 0.1, 0.1}
+	ct2.Scale = [3]float32{1, 1, 1}
 	ct2.SetRotationDegrees(90, 90, 90)
 
 	crawlingRoot.AddComponent(ecs.NewName("CrawlingMan"))
