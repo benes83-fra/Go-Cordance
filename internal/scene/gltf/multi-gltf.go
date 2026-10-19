@@ -290,9 +290,6 @@ func LoadGLTFMultiSkinnedAttached(
 		return nil, err
 	}
 
-	// Load GLTF root here (no signature changes anywhere else)
-
-	// 1) pick skeleton root from first skin
 	if len(skinEntities) == 0 {
 		return &SkinnedInstance{
 			Root:         root,
@@ -305,8 +302,37 @@ func LoadGLTFMultiSkinnedAttached(
 	}
 
 	skin := skinEntities[0].GetComponent((*ecs.Skin)(nil)).(*ecs.Skin)
-	rootIndex := skin.Joints[0]
+
+	// ✅ Prefer the glTF-declared skeleton root
+	rootIndex := skin.SkeletonRootNode
+	if rootIndex < 0 || rootIndex >= len(nodeEntities) {
+		// Fallback: old behavior, but log loudly
+		log.Printf("⚠️ Skin.SkeletonRootNode invalid (%d), falling back to joints[0]", rootIndex)
+		if len(skin.Joints) == 0 {
+			return &SkinnedInstance{
+				Root:         root,
+				SkeletonRoot: nil,
+				NodeEntities: nodeEntities,
+				SkinEntities: skinEntities,
+				Skeleton:     &ecs.Skeleton{Nodes: nodeEntities},
+				GltfRoot:     g,
+			}, nil
+		}
+		rootIndex = skin.Joints[0]
+	}
+
 	skeletonRoot := nodeEntities[rootIndex]
+	if skeletonRoot == nil {
+		log.Printf("⚠️ skeletonRoot node entity nil for index %d", rootIndex)
+		return &SkinnedInstance{
+			Root:         root,
+			SkeletonRoot: nil,
+			NodeEntities: nodeEntities,
+			SkinEntities: skinEntities,
+			Skeleton:     &ecs.Skeleton{Nodes: nodeEntities},
+			GltfRoot:     g,
+		}, nil
+	}
 
 	// 2) detach skeletonRoot from its old parent
 	if parentComp := skeletonRoot.GetComponent((*ecs.Parent)(nil)); parentComp != nil {

@@ -31,45 +31,10 @@ type AnimationPlayer struct {
 	NodeEntities []*Entity
 }
 
-func (ap *AnimationPlayer) Update(dt float32) {
-	if !ap.Playing {
-		return
-	}
-
-	clip := ap.Clips[ap.Current]
-	if clip == nil || len(clip.Tracks) == 0 {
-		return
-	}
-
-	ap.Time += dt * ap.Speed
-	// temporary debug
-	// log.Printf("Animation %s time=%.3f", ap.Current, ap.Time)
-
-	if ap.Time > clip.Duration {
-		ap.Time = float32(math.Mod(float64(ap.Time), float64(clip.Duration)))
-	}
-
-	for _, track := range clip.Tracks {
-		kf := sampleTrack(track, ap.Time)
-
-		// bounds check to avoid panics
-		if track.NodeIndex < 0 || track.NodeIndex >= len(ap.NodeEntities) {
-			continue
-		}
-		ent := ap.NodeEntities[track.NodeIndex]
-		if ent == nil {
-			continue
-		}
-		if track.NodeIndex == 0 { // root bone
-			kf.Position[1] += 0.5 // bob up and down
-		}
-
-		t := ent.GetTransform()
-		t.Position = kf.Position
-		t.Rotation = kf.Rotation
-		t.Scale = kf.Scale
-	}
-}
+// Update is intentionally a no-op: AnimationSystem advances time and applies
+// tracks. Doing it here too ran the animation twice per frame and zeroed bone
+// positions for rotation-only tracks.
+func (ap *AnimationPlayer) Update(dt float32) { _ = dt }
 
 func (ap *AnimationPlayer) EditorName() string {
 	return "AnimationPlayer"
