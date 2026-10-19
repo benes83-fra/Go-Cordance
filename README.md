@@ -1,279 +1,155 @@
 <p align="center">
-  <img src="https://github.com/benes83-fra/Go-Cordance/blob/main/Go-Cordance.png" width="280" alt="Go Cordance Logo">
+  <img src="Go-Cordance.png" width="260" alt="Go-Cordance logo">
 </p>
 
+<h1 align="center">Go-Cordance</h1>
 
-# Go‑Cordance
+<p align="center">
+  An experimental 3D game engine and live-linked editor, written in Go.
+</p>
 
-A modular, experimental 3D game engine and editor written in Go.
-
-Go‑Cordance is a real‑time 3D game engine built around a clean ECS architecture, a modern OpenGL rendering pipeline, a growing asset system, and a live‑linked editor that communicates directly with the running game. The project focuses on clarity, extensibility, and professional‑grade workflows: stable transforms, predictable systems, and an editor that mirrors the runtime state.
-
----
-
-## Features
-
-### Core Architecture
-
-- **Entity‑Component‑System (ECS)**
-- Systems for physics, transforms, rendering, camera, billboards, gizmos, debugging, and more
-- JSON‑based scene format
-- Scene load/save
-- Named entity lookup for runtime binding
-- Editor ↔ game synchronization via TCP
+<p align="center">
+  <img alt="Go" src="https://img.shields.io/badge/Go-1.25-00ADD8?logo=go&logoColor=white">
+  <img alt="OpenGL" src="https://img.shields.io/badge/OpenGL-4.2-5586A4?logo=opengl&logoColor=white">
+  <img alt="License" src="https://img.shields.io/badge/license-Apache%202.0-blue">
+  <img alt="Status" src="https://img.shields.io/badge/status-work%20in%20progress-orange">
+</p>
 
 ---
 
-## Rendering
+Go-Cordance is a hobby engine for learning how real-time 3D engines are put together. The engine uses an entity-component-system (ECS) design and renders with OpenGL. The editor is a separate program that connects to the running game over TCP, so changes made in the editor show up in the game immediately.
 
-### Modern OpenGL Pipeline
+It is a work in progress. Expect rough edges, debug output and APIs that change.
 
-- GLSL shader pipeline (vertex, fragment, shadow, debug)
-- Perspective camera with controller system
-- MeshManager with built‑in primitives:
-  - Cube, sphere, plane, wireframe shapes
-  - Gizmo primitives (arrows, planes, circles)
-  - Billboard quad
+## Contents
 
-### glTF Support
+- [Quick start](#quick-start)
+- [What's in it](#whats-in-it)
+- [Controls](#controls)
+- [Project layout](#project-layout)
+- [Roadmap](#roadmap)
+- [License](#license)
 
-- Single‑mesh and multi‑mesh glTF loading
-- Material extraction (`LoadGLTFMaterials`)
-- Automatic VAO/VBO setup
-- Multi‑material mesh support
+## Quick start
 
-### Lighting & Shadows
+**Requirements**
 
-- Multiple light sources
-- Directional, point, and spotlight variants
-- Shadow mapping pipeline:
-  - Dedicated shadow shaders
-  - Configurable shadow resolution
-- Light debug visualization system
+- Go 1.25+
+- A C compiler for cgo (used by `go-gl`, GLFW and Fyne)
+  - Windows: MinGW-w64, e.g. via MSYS2. `setenv.bat` shows the environment variables used here.
+  - Linux: `gcc` plus the usual OpenGL/X11 development packages
+- A GPU with OpenGL 4.2 support
 
-### Debug Rendering
+**Run**
 
-- Toggleable debug overlays
-- Normal/tangent/bitangent/UV visualization
-- Light direction visualization
-- Wireframe and collider rendering
+Run both commands from the repository root, because asset paths are relative to it:
 
----
+```sh
+# 1. start the engine
+go run ./cmd/game
 
-## Physics
+# 2. in a second terminal, start the editor (connects to localhost:7777)
+go run ./cmd/editor
+```
 
-### Components
+**Build**
 
-- Velocity  
-- Acceleration  
-- AngularVelocity  
-- AngularAcceleration  
-- AngularMass  
-- AngularDamping  
+`build_windows.bat` and the `build_linux_*.sh` / `build_darwin_arm64.sh` scripts produce release binaries for the engine and the editor.
 
-### Collider Types
+## What's in it
 
-- Sphere  
-- AABB  
-- Plane  
+### Engine core
+- ECS with systems for physics, transforms, animation, skinning, camera, rendering and debug drawing
+- Parent/child hierarchies with transform propagation
+- Scenes and prefabs saved as JSON
 
-### Systems
+### Rendering
+- OpenGL pipeline with JSON-described shaders and `#define` injection
+- Shaders are reloaded automatically when their files change
+- Materials (`.mat` files): PBR, toon, flat colour and several debug shaders
+- Directional, point and spot lights with shadow mapping
+- Debug views for normals, tangents, bitangents, UVs and light directions
 
-- Force system (e.g., gravity)
-- Physics integration
-- Collision detection
-- Transform propagation
+### glTF and animation
+- `.gltf` / `.glb` loading, including multi-mesh models with per-mesh materials and textures
+- Skeletal animation with GPU skinning (up to 128 joints)
+- Animation channels with linear, step and cubic-spline interpolation
+- Basic humanoid bone mapping for retargeting clips between rigs (early)
 
----
+### Physics
+- Velocity, acceleration and angular motion with mass and damping
+- Sphere, AABB and plane colliders
+- Force system (e.g. gravity) and collision detection
 
-## Camera
+### Editor
+- Built with [Fyne](https://fyne.io), runs as a separate process
+- Hierarchy panel and inspector; any component implementing `EditorFields()` can be edited
+- Asset browser with texture, mesh and material thumbnails
+- Move / rotate / scale gizmo with local/world and pivot/center modes, plus snapping
+- Undo / redo kept in sync between editor and game
 
-### Camera Component
+## Controls
 
-- Position, target, up vector  
-- FOV, near/far, aspect  
-- Active camera selection  
+These keys are handled by the engine window.
 
-### Camera Systems
+**Camera**
 
-- **CameraSystem**: view/projection calculation  
-- **CameraControllerSystem**:
-  - WASD movement  
-  - Mouse‑look  
-  - Cursor‑locked camera mode  
-- `FocusOn(entity)` support for editor integration  
+| Key | Action |
+| --- | --- |
+| `W` `A` `S` `D` | Move (camera mode) |
+| Mouse | Look (camera mode) |
+| `Tab` | Switch between camera mode and cursor/editor mode |
+| `Esc` | Quit |
 
----
+**Gizmo** (cursor mode)
 
-## Asset Pipeline (Early Stage)
+| Key | Action |
+| --- | --- |
+| `W` / `E` / `R` / `Q` | Move / Rotate / Scale / Combined |
+| `L` | Toggle local rotation |
+| `P` | Toggle pivot / center |
+| hold `Ctrl` | Snap while dragging |
+| `Z` / `Y` | Undo / Redo |
 
-### Asset Registry
+**Rendering and debug**
 
-Global registry for:
+| Key | Action |
+| --- | --- |
+| `F1` | Toggle debug rendering |
+| `F2` | Toggle light debug |
+| `1` – `7` | Final / normal map / tangent / bitangent / normal / tangent W / UV |
+| `G` | Flip normal map green channel |
+| Arrow keys | Adjust directional light |
+| `Space` | Toggle orbiting light |
 
-- Textures  
-- Meshes  
-- Materials  
-
-### Texture Importing
-
-- `assets.ImportTexture(path)`  
-- Stores GPU texture ID in registry  
-- ECS texture component wraps GL ID  
-
-### Mesh Importing
-
-- glTF single‑mesh and multi‑mesh importers  
-- Assets registered with metadata  
-
-### Material Metadata
-
-- Base color  
-- Diffuse/normal texture paths  
-- Future‑proof for shader/material graph integration  
-
----
-
-## Editor
-
-The editor is a separate executable (`cmd/editor`) that connects to the running game via TCP and provides a live view of the scene.
-
-### Editor ↔ Game Link
-
-- TCP connection on port 7777  
-- Full scene snapshot transfer  
-- Incremental transform updates  
-- Undo/redo synchronization  
-
-### Hierarchy Panel
-
-- Displays all entities in the scene  
-- Selecting an entity updates the inspector  
-- Selection is synchronized with the game runtime  
-
-### Inspector
-
-Displays all components on the selected entity.
-
-Editable fields for:
-
-- Transform  
-- Materials  
-- Billboards  
-- Any component implementing `EditorFields()`  
-
-Writes changes back to the game in real time.
-
-### Transformation Gizmo
-
-- Move / Rotate / Scale / Combined modes  
-- Local vs world rotation  
-- Pivot vs center mode  
-- Drawn using dedicated gizmo meshes  
-- Depth‑independent rendering  
-- Sends transform deltas back to the game  
-
-### Undo / Redo
-
-- Full undo/redo stack  
-- Editor and game stay synchronized  
-- Triggered via keyboard shortcuts (Z/Y)  
-
----
-
-## Project Structure
+## Project layout
 
 ```
 cmd/
-    game/       → Runtime game executable
-    editor/     → Editor executable
-
+  game/          engine executable (and asset/shader loaders)
+  editor/        editor executable
 internal/
-    assets/     → Asset registry, texture importers, glTF helpers
-    ecs/        → ECS core, components, systems
-    editor/     → Editor UI, hierarchy, inspector, gizmo logic
-    editorlink/ → TCP protocol between editor and game
-    engine/     → Rendering, shaders, GL setup, mesh manager
-    scene/      → Scene loading, saving, bootstrap
+  assets/        asset registry, texture/mesh/material import
+  ecs/           entities, components and systems
+  ecs/gizmo/     transform gizmo
+  editor/        editor UI, state and undo
+  editorlink/    TCP protocol between editor and game
+  engine/        OpenGL renderer, shaders, glTF parsing, mesh manager
+  scene/         scenes, prefabs, serialization, glTF spawning
+  shaderlang/    shader descriptions and define injection
+  thumbnails/    thumbnail generation for the editor
+assets/          models, textures, materials, shaders
 ```
-
----
-
-## Controls (Runtime)
-
-### Camera
-
-- W/A/S/D – Move  
-- Mouse – Look (cursor disabled)  
-- Tab – Toggle cursor (editor vs camera mode)  
-
-### Rendering / Debug
-
-- F1 – Toggle debug rendering  
-- F2 – Toggle light debug  
-- 1–7 – Debug visualization modes  
-- G – Flip green channel (normal maps)  
-
-### Lighting
-
-- Arrow keys – Adjust directional light  
-- Space – Toggle orbital light animation  
-
-### Gizmo
-
-- W – Move  
-- E – Rotate  
-- R – Scale  
-- Q – Combined  
-- L – Toggle local rotation  
-- P – Toggle pivot mode  
-
-### Editor Sync
-
-- Z – Undo  
-- Y – Redo  
-
----
-
-## Building & Running
-
-### Game
-
-```
-cd cmd/game
-go run .
-```
-
-### Editor
-
-```
-cd cmd/editor
-go run .
-```
-
-The editor will automatically connect to the running game.
-
----
 
 ## Roadmap
 
-### Rendering
+Rough plans, in no particular order:
 
-- PBR materials  
-- Cascaded shadow maps  
-- HDR + bloom  
-- GPU instancing  
+- **Rendering**: cascaded shadow maps, HDR and bloom, GPU instancing, skinned shadows
+- **Animation**: blending between clips, morph targets, better retargeting
+- **Editor**: component creation UI, material editor, reparenting in the hierarchy
+- **Engine**: audio
 
-### Editor
+## License
 
-- Drag‑and‑drop asset assignment  
-- Scene graph parenting  
-- Component creation UI  
-- Material editor  
-
-### Engine
-
-- Animation system (skeletal + morph)  
-- Audio system  
-- Prefab system  
-- Hot‑reloadable shaders  
+[Apache License 2.0](LICENSE)
