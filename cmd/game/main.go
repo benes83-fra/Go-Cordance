@@ -394,7 +394,7 @@ func main() {
 	// Add AnimationPlayer to the skeleton root (has Skeleton component)
 	ap := &ecs.AnimationPlayer{
 		Clips:        crawlingClips,
-		Current:      gltf.PickFirstClip(crawlingClips),
+		Current:      gltf.PickClip(crawlingClips, "Crawl"),
 		Playing:      true,
 		Time:         0,
 		Speed:        1.0,

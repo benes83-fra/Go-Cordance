@@ -1,25 +1,38 @@
 package ecs
 
-import (
-	"math"
+// AnimationPath is the node property an AnimationTrack drives.
+type AnimationPath int
+
+const (
+	PathTranslation AnimationPath = iota
+	PathRotation
+	PathScale
 )
 
+// Interpolation mirrors glTF sampler interpolation modes.
+type Interpolation int
+
+const (
+	InterpLinear Interpolation = iota
+	InterpStep
+	InterpCubicSpline
+)
+
+// AnimationTrack drives one property of one node (one glTF channel).
+// Values hold vec3 (xyz, w unused) or quaternions (x, y, z, w).
+// For InterpCubicSpline there are 3 values per key: in-tangent, value, out-tangent.
 type AnimationTrack struct {
-	NodeIndex int
-	Keyframes []TransformKeyframe
+	NodeIndex     int
+	Path          AnimationPath
+	Interpolation Interpolation
+	Times         []float32
+	Values        [][4]float32
 }
 
 type AnimationClip struct {
 	Name     string
 	Duration float32
 	Tracks   []AnimationTrack
-}
-
-type TransformKeyframe struct {
-	Time     float32
-	Position [3]float32
-	Rotation [4]float32
-	Scale    [3]float32
 }
 
 type AnimationPlayer struct {
@@ -77,75 +90,5 @@ func (ap *AnimationPlayer) SetEditorField(name string, value any) {
 		if f, ok := value.(float32); ok {
 			ap.Time = f
 		}
-	}
-}
-func sampleTrack(track AnimationTrack, t float32) TransformKeyframe {
-	kfs := track.Keyframes
-	if len(kfs) == 0 {
-		return TransformKeyframe{}
-	}
-
-	// find the two keyframes around t
-	for i := 0; i < len(kfs)-1; i++ {
-		if t >= kfs[i].Time && t <= kfs[i+1].Time {
-			a := kfs[i]
-			b := kfs[i+1]
-			alpha := (t - a.Time) / (b.Time - a.Time)
-			return lerpKeyframe(a, b, alpha)
-		}
-	}
-
-	return kfs[len(kfs)-1]
-}
-func lerpKeyframe(a, b TransformKeyframe, alpha float32) TransformKeyframe {
-	return TransformKeyframe{
-		Time:     a.Time + alpha*(b.Time-a.Time),
-		Position: lerp3(a.Position, b.Position, alpha),
-		Rotation: slerp(a.Rotation, b.Rotation, alpha),
-		Scale:    lerp3(a.Scale, b.Scale, alpha),
-	}
-}
-func slerp(a, b [4]float32, t float32) [4]float32 {
-	dot := a[0]*b[0] + a[1]*b[1] + a[2]*b[2] + a[3]*b[3]
-
-	if dot < 0 {
-		b = [4]float32{-b[0], -b[1], -b[2], -b[3]}
-		dot = -dot
-	}
-
-	if dot > 0.9995 {
-		return lerpQuat(a, b, t)
-	}
-
-	theta0 := float32(math.Acos(float64(dot)))
-	theta := theta0 * t
-
-	sinTheta := float32(math.Sin(float64(theta)))
-	sinTheta0 := float32(math.Sin(float64(theta0)))
-
-	s0 := float32(math.Cos(float64(theta))) - dot*sinTheta/sinTheta0
-	s1 := sinTheta / sinTheta0
-
-	return [4]float32{
-		s0*a[0] + s1*b[0],
-		s0*a[1] + s1*b[1],
-		s0*a[2] + s1*b[2],
-		s0*a[3] + s1*b[3],
-	}
-}
-
-func lerpQuat(a, b [4]float32, t float32) [4]float32 {
-	return [4]float32{
-		a[0] + (b[0]-a[0])*t,
-		a[1] + (b[1]-a[1])*t,
-		a[2] + (b[2]-a[2])*t,
-		a[3] + (b[3]-a[3])*t,
-	}
-}
-func lerp3(a, b [3]float32, t float32) [3]float32 {
-	return [3]float32{
-		a[0] + (b[0]-a[0])*t,
-		a[1] + (b[1]-a[1])*t,
-		a[2] + (b[2]-a[2])*t,
 	}
 }

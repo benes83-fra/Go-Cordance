@@ -20,8 +20,7 @@ func (sys *AnimationSystem) Update(dt float32, ents []*Entity) {
 		}
 		player := apc.(*AnimationPlayer)
 
-		if !player.Playing /*|| player.Current == "" */ {
-			// fmt.Println("  plyer playing not found on ent", player, player.Playing, player.Current)
+		if !player.Playing {
 			continue
 		}
 
@@ -29,23 +28,26 @@ func (sys *AnimationSystem) Update(dt float32, ents []*Entity) {
 		if clip == nil || len(clip.Tracks) == 0 {
 			continue
 		}
-		// advance time
+
+		// advance time and loop
 		player.Time += dt * player.Speed
-		if player.Time > clip.Duration {
-			player.Time = 0
+		if clip.Duration > 0 {
+			player.Time = float32(math.Mod(float64(player.Time), float64(clip.Duration)))
+			if player.Time < 0 {
+				player.Time += clip.Duration
+			}
 		}
 
 		// find skeleton
 		skc := ent.GetComponent((*Skeleton)(nil))
 		if skc == nil {
-			// fmt.Println("  BUT: no Skeleton on ent", ent.ID)
 			continue
 		}
 		skeleton := skc.(*Skeleton)
-		// fmt.Println("  Skeleton found on ent", ent.ID, "nodes:", len(skeleton.Nodes))
 
-		// apply each track to its node entity
-		for _, track := range clip.Tracks {
+		// apply each track to its node entity; only the animated property is touched
+		for i := range clip.Tracks {
+			track := &clip.Tracks[i]
 			if track.NodeIndex < 0 || track.NodeIndex >= len(skeleton.Nodes) {
 				continue
 			}
@@ -53,87 +55,124 @@ func (sys *AnimationSystem) Update(dt float32, ents []*Entity) {
 			if nodeEnt == nil {
 				continue
 			}
-
-			kf1, kf2 := findKeyframePairTrack(track.Keyframes, player.Time)
-			if kf1 == nil || kf2 == nil {
+			transform := nodeEnt.GetTransform()
+			if transform == nil {
 				continue
 			}
 
-			t := (player.Time - kf1.Time) / (kf2.Time - kf1.Time)
-
-			pos := lerpVec3(kf1.Position, kf2.Position, t)
-			rot := slerpQuat(kf1.Rotation, kf2.Rotation, t)
-			// Inside AnimationSystem.Update
-			scl := lerpVec3(kf1.Scale, kf2.Scale, t)
-
-			// Add this safety check:
-			if math.Abs(float64(scl[0]-1.0)) < 1e-5 &&
-				math.Abs(float64(scl[1]-1.0)) < 1e-5 &&
-				math.Abs(float64(scl[2]-1.0)) < 1e-5 {
-				scl = [3]float32{1, 1, 1}
-			}
-
-			// fmt.Printf("Track node=%d t=%.3f pos=%v rot=%v scl=%v\n",
-			// 	track.NodeIndex, player.Time, pos, rot, scl)
-
-			if tr := nodeEnt.GetComponent((*Transform)(nil)); tr != nil {
-				transform := tr.(*Transform)
-				// only overwrite if channel actually had data
-				if kf1.Position != [3]float32{} || kf2.Position != [3]float32{} {
-					transform.Position = pos
-				}
-				if kf1.Rotation != [4]float32{} || kf2.Rotation != [4]float32{} {
-					transform.Rotation = rot
-				}
-				if kf1.Scale != [3]float32{} || kf2.Scale != [3]float32{} {
-					transform.Scale = scl
-				}
-				transform.Dirty = true
-			}
-			if clip == nil || len(clip.Tracks) == 0 {
-				// fmt.Printf("Anim: ent %d has clip %q but no tracks or nil clip\n", ent.ID, player.Current)
+			v, ok := sampleTrack(track, player.Time)
+			if !ok {
 				continue
 			}
 
-			// fmt.Printf("Anim: ent %d time=%.3f duration=%.3f tracks=%d\n",
-			// 	ent.ID, player.Time, clip.Duration, len(clip.Tracks))
-
+			switch track.Path {
+			case PathTranslation:
+				transform.Position = [3]float32{v[0], v[1], v[2]}
+			case PathRotation:
+				transform.Rotation = v
+			case PathScale:
+				transform.Scale = [3]float32{v[0], v[1], v[2]}
+			}
+			transform.Dirty = true
 		}
 	}
 }
 
-func findKeyframePairTrack(kfs []TransformKeyframe, time float32) (*TransformKeyframe, *TransformKeyframe) {
-	for i := 0; i < len(kfs)-1; i++ {
-		k1 := &kfs[i]
-		k2 := &kfs[i+1]
-		if time >= k1.Time && time <= k2.Time {
-			return k1, k2
+// sampleTrack evaluates a track at time t. Times before the first key clamp to
+// the first value, times after the last key clamp to the last value.
+func sampleTrack(track *AnimationTrack, t float32) ([4]float32, bool) {
+	times := track.Times
+	n := len(times)
+	if n == 0 {
+		return [4]float32{}, false
+	}
+	cubic := track.Interpolation == InterpCubicSpline
+	if (cubic && len(track.Values) < 3*n) || (!cubic && len(track.Values) < n) {
+		return [4]float32{}, false
+	}
+
+	value := func(i int) [4]float32 {
+		if cubic {
+			return track.Values[3*i+1]
 		}
+		return track.Values[i]
 	}
-	return nil, nil
+
+	if n == 1 || t <= times[0] {
+		return value(0), true
+	}
+	if t >= times[n-1] {
+		return value(n - 1), true
+	}
+
+	// find k such that times[k] <= t < times[k+1]
+	k := 0
+	for k < n-2 && t >= times[k+1] {
+		k++
+	}
+
+	td := times[k+1] - times[k]
+	if td <= 0 {
+		return value(k), true
+	}
+	alpha := (t - times[k]) / td
+	isRot := track.Path == PathRotation
+
+	switch track.Interpolation {
+	case InterpStep:
+		return value(k), true
+
+	case InterpCubicSpline:
+		// glTF cubic Hermite: p0 = value k, m0 = out-tangent k, p1 = value k+1, m1 = in-tangent k+1
+		p0 := track.Values[3*k+1]
+		m0 := track.Values[3*k+2]
+		p1 := track.Values[3*(k+1)+1]
+		m1 := track.Values[3*(k+1)]
+		a2 := alpha * alpha
+		a3 := a2 * alpha
+		h00 := 2*a3 - 3*a2 + 1
+		h10 := a3 - 2*a2 + alpha
+		h01 := -2*a3 + 3*a2
+		h11 := a3 - a2
+		var out [4]float32
+		for c := 0; c < 4; c++ {
+			out[c] = h00*p0[c] + h10*td*m0[c] + h01*p1[c] + h11*td*m1[c]
+		}
+		if isRot {
+			out = normalizeQuat(out)
+		}
+		return out, true
+
+	default: // linear
+		a, b := value(k), value(k+1)
+		if isRot {
+			return slerpQuat(a, b, alpha), true
+		}
+		return [4]float32{
+			a[0] + (b[0]-a[0])*alpha,
+			a[1] + (b[1]-a[1])*alpha,
+			a[2] + (b[2]-a[2])*alpha,
+			0,
+		}, true
+	}
 }
 
-func lerpVec3(a, b [3]float32, t float32) [3]float32 {
-	return [3]float32{
-		a[0] + (b[0]-a[0])*t,
-		a[1] + (b[1]-a[1])*t,
-		a[2] + (b[2]-a[2])*t,
+func normalizeQuat(q [4]float32) [4]float32 {
+	l := float32(math.Sqrt(float64(q[0]*q[0] + q[1]*q[1] + q[2]*q[2] + q[3]*q[3])))
+	if l < 1e-8 {
+		return [4]float32{0, 0, 0, 1}
 	}
+	return [4]float32{q[0] / l, q[1] / l, q[2] / l, q[3] / l}
 }
-
-// func slerpQuat(a, b [4]float32, t float32) [4]float32 {
-// 	// simple linear fallback for now (safe)
-// 	return [4]float32{
-// 		a[0] + (b[0]-a[0])*t,
-// 		a[1] + (b[1]-a[1])*t,
-// 		a[2] + (b[2]-a[2])*t,
-// 		a[3] + (b[3]-a[3])*t,
-// 	}
-// }
 
 func slerpQuat(a, b [4]float32, t float32) [4]float32 {
 	q1 := mgl32.Quat{W: a[3], V: mgl32.Vec3{a[0], a[1], a[2]}}
 	q2 := mgl32.Quat{W: b[3], V: mgl32.Vec3{b[0], b[1], b[2]}}
+
+	// take the shortest arc (mathgl's Slerp does not flip on its own)
+	if q1.Dot(q2) < 0 {
+		q2 = q2.Scale(-1)
+	}
 
 	// Use mathgl's Slerp
 	res := mgl32.QuatSlerp(q1, q2, t).Normalize()

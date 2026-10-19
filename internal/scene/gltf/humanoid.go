@@ -99,10 +99,9 @@ func RetargetClip(srcRig, dstRig *HumanoidRig, srcClip *ecs.AnimationClip) *ecs.
 			continue
 		}
 		// Naive copy - may cause deformation but compiles and runs
-		dstClip.Tracks = append(dstClip.Tracks, ecs.AnimationTrack{
-			NodeIndex: dstNode,
-			Keyframes: track.Keyframes,
-		})
+		retargeted := track
+		retargeted.NodeIndex = dstNode
+		dstClip.Tracks = append(dstClip.Tracks, retargeted)
 	}
 	return dstClip
 }
